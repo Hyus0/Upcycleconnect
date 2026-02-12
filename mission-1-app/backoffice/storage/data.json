@@ -1,30 +1,104 @@
 {
-  "users": [
-    { "id": "u1", "role": "particulier", "name": "Alice" },
-    { "id": "u2", "role": "pro", "name": "Atelier Reno" },
-    { "id": "u3", "role": "salarie", "name": "Marc" }
-  ],
-  "annonces": [
-    { "id": "a1", "title": "Chaise en bois a retaper", "description": "Structure saine", "type": "vente", "price": 18 }
-  ],
-  "conseils": [
-    { "id": "c1", "title": "Poncer avant de repeindre" },
-    { "id": "c2", "title": "Demontage propre des composants" }
-  ],
-  "formations": [
-    { "id": "f1", "title": "Initiation Upcycling", "description": "Bases de la revalorisation", "priceEUR": 20 },
-    { "id": "f2", "title": "Atelier mobilier avance", "description": "Transformation de meubles", "priceEUR": 55 }
-  ],
-  "planning": [
-    { "id": "p1", "userId": "demo-user-1", "date": "2026-02-20", "task": "Atelier textile" }
-  ],
-  "containerDeposits": [],
-  "proSubscriptions": [],
-  "proProjects": [],
-  "employeeTrainings": [],
-  "news": [
-    { "id": "n1", "title": "Ouverture nouvelle box", "content": "Nouvelle zone de depot active" }
-  ],
-  "moderationActions": [],
-  "notifications": []
+    "users": [
+        {
+            "id": "u1",
+            "role": "particulier",
+            "name": "Alice"
+        },
+        {
+            "id": "u2",
+            "role": "pro",
+            "name": "Atelier Reno"
+        },
+        {
+            "id": "u3",
+            "role": "salarie",
+            "name": "Marc"
+        }
+    ],
+    "annonces": [
+        {
+            "id": "a1",
+            "title": "Chaise en bois a retaper",
+            "description": "Structure saine",
+            "type": "vente",
+            "price": 18
+        },
+        {
+            "id": "a-1498b31e",
+            "title": "Test",
+            "description": "Test",
+            "type": "vente",
+            "price": 1000
+        }
+    ],
+    "conseils": [
+        {
+            "id": "c1",
+            "title": "Poncer avant de repeindre"
+        },
+        {
+            "id": "c2",
+            "title": "Demontage propre des composants"
+        }
+    ],
+    "formations": [
+        {
+            "id": "f1",
+            "title": "Initiation Upcycling",
+            "description": "Bases de la revalorisation",
+            "priceEUR": 20
+        },
+        {
+            "id": "f2",
+            "title": "Atelier mobilier avance",
+            "description": "Transformation de meubles",
+            "priceEUR": 55
+        }
+    ],
+    "planning": [
+        {
+            "id": "p1",
+            "userId": "demo-user-1",
+            "date": "2026-02-20",
+            "task": "Atelier textile"
+        },
+        {
+            "id": "p-739ff4e4",
+            "userId": "demo-user-1",
+            "date": "2026-02-19",
+            "task": "Atelier sac"
+        }
+    ],
+    "containerDeposits": [],
+    "proSubscriptions": [
+        {
+            "id": "sub-29a90c43",
+            "plan": "pro",
+            "billingState": "pending_stripe_integration"
+        },
+        {
+            "id": "sub-1375d969",
+            "plan": "starter",
+            "billingState": "pending_stripe_integration"
+        }
+    ],
+    "proProjects": [
+        {
+            "id": "proj-73d10186",
+            "name": "Test",
+            "summary": "Test",
+            "featured": true
+        }
+    ],
+    "employeeTrainings": [],
+    "news": [
+        {
+            "id": "n1",
+            "title": "Ouverture nouvelle box",
+            "content": "Nouvelle zone de depot active"
+        }
+    ],
+    "moderationActions": [],
+    "notifications": []
 }

@@ -5,6 +5,7 @@ RUN a2enmod rewrite
 WORKDIR /var/www/html
 COPY public/ /var/www/html/
 COPY storage/ /var/www/storage/
+COPY apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 RUN chown -R www-data:www-data /var/www/storage
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html

@@ -109,6 +109,9 @@ button:hover { opacity: 0.95; }
   display: grid;
   place-items: center;
 }
+.modal[hidden] {
+  display: none !important;
+}
 .modal-content {
   width: min(560px, 92vw);
   background: #fff;

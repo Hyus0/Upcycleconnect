@@ -1,0 +1,130 @@
+:root {
+  --bg: #f3f5ef;
+  --surface: #ffffff;
+  --ink: #1f2a2a;
+  --brand: #196f5f;
+  --brand-soft: #d3ebe5;
+  --warn: #9e3f24;
+  --line: #d8dfda;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at top right, #e9efe3, var(--bg));
+}
+
+.hero {
+  padding: 1.5rem;
+  background: linear-gradient(120deg, #eff8f3, #d5ece5);
+  border-bottom: 1px solid var(--line);
+}
+
+.hero h1 { margin: 0 0 0.5rem; }
+.hero p { margin: 0; }
+
+.lang-switch { margin-top: 0.9rem; }
+.lang-switch button {
+  margin-right: 0.4rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+.lang-switch button.active { background: var(--brand); color: white; }
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: #f7faf8;
+}
+
+.tab {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+.tab.active {
+  border-color: var(--brand);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+main { padding: 1rem; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.cards article,
+.card-block {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+input, textarea, select, button {
+  width: 100%;
+  padding: 0.55rem;
+  margin: 0.3rem 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+}
+button {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+button:hover { opacity: 0.95; }
+
+.feedback {
+  min-height: 1.2em;
+  font-size: 0.92rem;
+  color: var(--warn);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: grid;
+  place-items: center;
+}
+.modal-content {
+  width: min(560px, 92vw);
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+}
+
+pre {
+  background: #11141a;
+  color: #d6e2ff;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+@media (max-width: 640px) {
+  .hero { padding: 1rem; }
+  main { padding: 0.8rem; }
+}

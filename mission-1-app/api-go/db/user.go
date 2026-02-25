@@ -1,22 +1,22 @@
 package db
 
 import (
-	"upcylcle/models"
+	"upcycleconnect/api-go/models"
 	"database/sql"
 	"fmt"
 )
 
 func GetAllUsers() ([]models.User, error) {
 	users := []models.User{}
-	rows, err := Conn.Query("SELECT id, name, price FROM users")
+	rows, err := Conn.Query("SELECT id, prenom, nom FROM UTILISATEUR")
 	if err != nil {
 		return nil, fmt.Errorf("package DB GetAllUsers : %v", err.Error())
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var user models.Game
-		err := rows.Scan(&user.Id, &user.Name, &user.Price)
+		var user models.User
+		err := rows.Scan(&user.Id, &user.Prenom, &user.Nom)
 		if err != nil {
 			return nil, fmt.Errorf("package DB GetAllUsers : %v", err.Error())
 		}
@@ -31,8 +31,8 @@ func GetAllUsers() ([]models.User, error) {
 
 func GetUser(userId int) (*models.User, error) { 
 	user := models.User{Id: userId}
-	row := Conn.QueryRow("SELECT name, price FROM users WHERE id = ?", userId)
-	err := row.Scan(&user.Name, &user.Price)
+	row := Conn.QueryRow("SELECT id, prenom, nom FROM UTILISATEUR WHERE id = ?", userId)
+	err := row.Scan(&user.Id, &user.Prenom, &user.Nom)
 
 	if err == sql.ErrNoRows {
 		return nil, nil

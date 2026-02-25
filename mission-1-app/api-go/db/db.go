@@ -14,7 +14,7 @@ const (
 	port     = 3306
 	user     = "root"
 	password = ""
-	dbname   = "partielb_go"
+	dbname   = "upcycle_test"
 )
 
 func NewDB() *sql.DB {

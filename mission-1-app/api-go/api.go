@@ -1,8 +1,8 @@
 package main
 
 import (
-	"upcycle/app"
-	"upcycle/db"
+	"upcycleconnect/api-go/app"
+	"upcycleconnect/api-go/db"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,10 +21,10 @@ func main() {
 
 	http.HandleFunc("GET /{$}", healthCheck)
 	http.HandleFunc("GET /users", app.GetAllUsers)
-	http.HandleFunc("GET /games/{id}", app.GetGame)
-	http.HandleFunc("POST /games", app.CreateGame)
-	http.HandleFunc("PUT /games/{id}", app.ModifyGame)
-	http.HandleFunc("DELETE /games/{id}", app.DeleteGame)
+	http.HandleFunc("GET /user/{id}", app.GetUser)
+	//http.HandleFunc("POST /games", app.CreateGame)
+	//http.HandleFunc("PUT /games/{id}", app.ModifyGame)
+	//http.HandleFunc("DELETE /games/{id}", app.DeleteGame)
 
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", nil)

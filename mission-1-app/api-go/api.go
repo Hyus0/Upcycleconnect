@@ -22,7 +22,7 @@ func main() {
 	http.HandleFunc("GET /{$}", healthCheck)
 	http.HandleFunc("GET /users", app.GetAllUsers)
 	http.HandleFunc("GET /user/{id}", app.GetUser)
-	//http.HandleFunc("POST /games", app.CreateGame)
+	http.HandleFunc("POST /users", app.CreateUser)
 	//http.HandleFunc("PUT /games/{id}", app.ModifyGame)
 	//http.HandleFunc("DELETE /games/{id}", app.DeleteGame)
 

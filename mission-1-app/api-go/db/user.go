@@ -45,3 +45,17 @@ func GetUser(userId int) (*models.User, error) {
 	return &user, nil 
 }
 
+func CreateUser(user models.User) error {
+    if user.Id > 0 {
+        _, err := Conn.Exec("INSERT INTO UTILISATEUR(id, prenom, nom) VALUES(?, ?, ?)", user.Id, user.Prenom, user.Nom)
+        if err != nil {
+            return fmt.Errorf("package db CreateUser (avec ID): %v", err.Error())
+        }
+    } else {
+        _, err := Conn.Exec("INSERT INTO UTILISATEUR(prenom, nom) VALUES(?, ?)", user.Prenom, user.Nom)
+        if err != nil {
+            return fmt.Errorf("package db CreateUser (sans ID): %v", err.Error())
+        }
+    }
+	return nil
+}

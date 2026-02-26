@@ -56,3 +56,55 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK) 
 	fmt.Fprintf(w, "%s", string(res))
 }
+
+func ValidateUser(userDto models.User) []string {
+	var errsMsg []string
+
+	if len(userDto.Prenom) < 4 {
+		errsMsg = append(errsMsg, "Prenom length must be at least 4")
+	}
+	if len(userDto.Prenom) > 25 {
+		errsMsg = append(errsMsg, "Prenom length must not be longer than 25")
+	}
+	
+	if len(userDto.Nom) < 4 {
+		errsMsg = append(errsMsg, "Nom length must be at least 4")
+	}
+	if len(userDto.Nom) > 25 {
+		errsMsg = append(errsMsg, "Nom length must not be longer than 25")
+	}
+
+	if strings.ContainsAny(userDto.Prenom, "$<>[{}]*%") {
+		errsMsg = append(errsMsg, "Prenom can't contain these char ($ < > [ ] { } * %)")
+	}
+	
+	if strings.ContainsAny(userDto.Nom, "$<>[{}]*%") {
+		errsMsg = append(errsMsg, "Name can't contain these char ($ < > [ ] { } * %)")
+	}
+    return errsMsg
+}
+
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	var userDto models.User
+
+	err := json.NewDecoder(r.Body).Decode(&userDto)
+	if err != nil {
+		http.Error(w, "Incorrect body format", http.StatusBadRequest)
+		return
+	}
+
+	errsMsg := ValidateUser(userDto)
+
+	if len(errsMsg) > 0 {
+		encoded, _ := json.Marshal(errsMsg)
+		http.Error(w, string(encoded), http.StatusBadRequest)
+		return
+	}
+
+	err = db.CreateUser(userDto)
+	if err != nil {
+		http.Error(w, "pb d'insertion", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}

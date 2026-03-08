@@ -59,3 +59,36 @@ func CreateUser(user models.User) error {
     }
 	return nil
 }
+
+func ModifyUser(userId int, user models.User) error {
+	result, err := Conn.Exec("UPDATE UTILISATEUR SET prenom = ?, nom = ? WHERE id = ?", user.Prenom, user.Nom, userId)
+	
+	if err != nil {
+		return fmt.Errorf("package db ModifyUser : échec de la mise à jour : %v", err.Error())
+	}
+
+ 	rowsAffected, err := result.RowsAffected()
+
+ 	if rowsAffected == 0 {
+ 		return fmt.Errorf("package db ModifyUser : aucun user trouvé avec l'ID %d", userId)
+ 	}	
+	return nil
+}
+
+func DeleteUser(id int) error {
+	if id <= 0 {
+		return fmt.Errorf("package db DeleteUser : L'ID doit être un entier positif")
+	}
+	result, err := Conn.Exec("DELETE UTILISATEUR WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("package db DeleteUser : échec de la suppression : %v", err.Error())
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("package db DeleteUser : erreur de RowsAffected : %v", err.Error())
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("package db DeleteUser : aucun utilisateur trouvé avec l'ID %d", id)
+	}
+	return nil
+}

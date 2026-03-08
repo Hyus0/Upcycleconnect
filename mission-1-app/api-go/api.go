@@ -23,8 +23,8 @@ func main() {
 	http.HandleFunc("GET /users", app.GetAllUsers)
 	http.HandleFunc("GET /user/{id}", app.GetUser)
 	http.HandleFunc("POST /users", app.CreateUser)
-	//http.HandleFunc("PUT /games/{id}", app.ModifyGame)
-	//http.HandleFunc("DELETE /games/{id}", app.DeleteGame)
+	http.HandleFunc("PUT /users/{id}", app.ModifyUser)
+	http.HandleFunc("DELETE /users/{id}", app.DeleteUser)
 
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", nil)

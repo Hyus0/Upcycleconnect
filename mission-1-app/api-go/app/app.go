@@ -108,3 +108,44 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 }
+
+func ModifyUser(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("id")
+	var userDto models.Game
+
+	err := json.NewDecoder(r.Body).Decode(&userDto)
+	if err != nil {
+		http.Error(w, "Format JSON du corps invalide", http.StatusBadRequest)
+		return
+	}
+	
+	userId, err := strconv.Atoi(userIDStr)
+	if err != nil || userId <= 0 {
+		http.Error(w, "ID de jeu invalide dans l'URI", http.StatusBadRequest)
+		return
+	}
+	
+	userDto.Id = userId
+
+	errsMsg := ValidateUser(userDto)
+
+	if len(errsMsg) > 0 {
+		encoded, _ := json.Marshal(errsMsg)
+		http.Error(w, string(encoded), http.StatusBadRequest)
+		return
+	}
+
+	err = db.ModifyGame(userId ,userDto)
+	if err != nil {
+		if strings.Contains(err.Error(), "aucun utilisateur trouvé") {
+			http.Error(w, fmt.Sprintf("Utilisateur non trouvé avec l'ID : %d", userId), http.StatusNotFound)
+			return
+		}
+		
+		fmt.Println(err.Error())
+		http.Error(w, "Erreur serveur lors de la mise à jour de l'utilisateur", http.StatusInternalServerError)
+		return
+	}
+	
+	w.WriteHeader(http.StatusNoContent) 
+}

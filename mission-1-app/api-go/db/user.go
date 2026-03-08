@@ -79,7 +79,7 @@ func DeleteUser(id int) error {
 	if id <= 0 {
 		return fmt.Errorf("package db DeleteUser : L'ID doit être un entier positif")
 	}
-	result, err := Conn.Exec("DELETE UTILISATEUR WHERE id = ?", id)
+	result, err := Conn.Exec("DELETE FROM UTILISATEUR WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("package db DeleteUser : échec de la suppression : %v", err.Error())
 	}

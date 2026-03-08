@@ -2,7 +2,7 @@ package app
 
 import (
 	"upcycleconnect/api-go/db"
-	_ "upcycleconnect/api-go/models"
+	"upcycleconnect/api-go/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -148,4 +148,29 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	w.WriteHeader(http.StatusNoContent) 
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("id")
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID de utilisateur invalide dans l'URI (doit être un entier positif)", http.StatusBadRequest)
+		return
+	}
+
+	err = db.DeleteUser(userID)
+	
+	if err != nil {
+		if strings.Contains(err.Error(), "aucun utilisateur trouvé") {
+			http.Error(w, fmt.Sprintf("utilisateur non trouvé avec l'ID %d", userID), http.StatusNotFound) 
+			return
+		}
+		
+		fmt.Println("Erreur DB lors de la suppression:", err.Error())
+		http.Error(w, "Erreur serveur lors de la suppression du utilisateur", http.StatusInternalServerError) 
+		return
+	}
+	
+	w.WriteHeader(http.StatusNoContent)
 }

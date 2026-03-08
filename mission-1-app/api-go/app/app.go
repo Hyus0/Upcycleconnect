@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	_ "strings"
+	"strings"
 )
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +111,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 func ModifyUser(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.PathValue("id")
-	var userDto models.Game
+	var userDto models.User
 
 	err := json.NewDecoder(r.Body).Decode(&userDto)
 	if err != nil {
@@ -135,7 +135,7 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = db.ModifyGame(userId ,userDto)
+	err = db.ModifyUser(userId ,userDto)
 	if err != nil {
 		if strings.Contains(err.Error(), "aucun utilisateur trouvé") {
 			http.Error(w, fmt.Sprintf("Utilisateur non trouvé avec l'ID : %d", userId), http.StatusNotFound)

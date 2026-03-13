@@ -60,28 +60,79 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 func ValidateUser(userDto models.User) []string {
 	var errsMsg []string
 
-	if len(userDto.Prenom) < 4 {
-		errsMsg = append(errsMsg, "Prenom length must be at least 4")
+	if len(userDto.Prenom) < 2 {
+		errsMsg = append(errsMsg, "Prenom length must be at least 2")
 	}
-	if len(userDto.Prenom) > 25 {
-		errsMsg = append(errsMsg, "Prenom length must not be longer than 25")
+	if len(userDto.Prenom) > 50 {
+		errsMsg = append(errsMsg, "Prenom length must not be longer than 50")
 	}
 	
-	if len(userDto.Nom) < 4 {
-		errsMsg = append(errsMsg, "Nom length must be at least 4")
+	if len(userDto.Nom) < 2 {
+		errsMsg = append(errsMsg, "Nom length must be at least 2")
 	}
-	if len(userDto.Nom) > 25 {
-		errsMsg = append(errsMsg, "Nom length must not be longer than 25")
+	if len(userDto.Nom) > 50 {
+		errsMsg = append(errsMsg, "Nom length must not be longer than 50")
+	}
+	
+	if len(userDto.Mail) < 5 {
+		errsMsg = append(errsMsg, "Mail length must be at least 5")
+	}
+	if !strings.Contains(userDto.Mail, "@") || !strings.Contains(userDto.Mail, ".") {
+		errsMsg = append(errsMsg, "Mail format is invalid")
+	}
+
+	if len(userDto.Password) < 8 {
+		errsMsg = append(errsMsg, "Password must be at least 8 characters")
+	}
+	
+	hasUpper := false
+	hasSpecial := false
+	for _, char := range userDto.Password {
+		if char >= 'A' && char <= 'Z' {
+			hasUpper = true
+		}
+	}
+	if strings.ContainsAny(userDto.Password, "!@#$%^&*()-_=+[]{}|;:,.<>?") {
+		hasSpecial = true
+	}
+
+	if !hasUpper {
+		errsMsg = append(errsMsg, "Password must contain at least one uppercase letter")
+	}
+	if !hasSpecial {
+		errsMsg = append(errsMsg, "Password must contain at least one special character")
+	}
+	
+	if len(userDto.Adresse) < 5 {
+		errsMsg = append(errsMsg, "Adresse length must be at least 5")
+	}
+	if len(userDto.Adresse) > 100 {
+		errsMsg = append(errsMsg, "Adresse length must not be longer than 100")
+	}
+	
+	if len(userDto.Ville) < 2 {
+		errsMsg = append(errsMsg, "Ville length must be at least 2")
+	}
+	if len(userDto.Ville) > 50 {
+		errsMsg = append(errsMsg, "Ville length must not be longer than 50")
+	}
+	
+	if len(userDto.Code_postal) != 5 {
+		errsMsg = append(errsMsg, "Code postal must be exactly 5 numbers")
+	}
+	
+	if userDto.Role != "Particulier" && userDto.Role != "Prestataire" && userDto.Role != "Admin" {
+		errsMsg = append(errsMsg, "Role must be Particulier, Prestataire or Admin")
 	}
 
 	if strings.ContainsAny(userDto.Prenom, "$<>[{}]*%") {
 		errsMsg = append(errsMsg, "Prenom can't contain these char ($ < > [ ] { } * %)")
 	}
-	
 	if strings.ContainsAny(userDto.Nom, "$<>[{}]*%") {
 		errsMsg = append(errsMsg, "Name can't contain these char ($ < > [ ] { } * %)")
 	}
-    return errsMsg
+
+	return errsMsg
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {

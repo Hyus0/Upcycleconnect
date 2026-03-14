@@ -245,12 +245,37 @@ func GetAllAnnonces(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", string(res))
 }
 
-func CreateAnnonce(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Méthode non autorisée", http.StatusMethodNotAllowed)
+func GetAnnonce(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id <= 0 {
+		http.Error(w, "ID d'annonce invalide (doit être un entier positif)", http.StatusBadRequest)
 		return
 	}
 
+	annonce, err := db.GetAnnonce(id)
+	if err != nil {
+		fmt.Println("Erreur DB GetAnnonce:", err.Error())
+		http.Error(w, "Erreur serveur lors de la récupération de l'annonce", http.StatusInternalServerError)
+		return
+	}
+	if annonce == nil {
+		http.Error(w, fmt.Sprintf("Annonce non trouvée avec l'ID : %d", id), http.StatusNotFound)
+		return
+	}
+
+	res, err := json.Marshal(annonce)
+	if err != nil {
+		http.Error(w, "Erreur d'encodage JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%s", string(res))
+}
+
+func CreateAnnonce(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var a models.Annonce
@@ -268,34 +293,51 @@ func CreateAnnonce(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func GetAnnonce(w http.ResponseWriter, r *http.Request) {
+func ModifyAnnonce(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	idStr := r.PathValue("id")
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || id <= 0 {
-		http.Error(w, "ID d'annonce invalide (doit être un entier positif)", http.StatusBadRequest)
+		http.Error(w, "ID d'annonce invalide dans l'URI", http.StatusBadRequest)
 		return
 	}
 
-	annonce, err := db.GetAnnonce(id)
-	if err != nil {
-		fmt.Println("Erreur DB GetAnnonce:", err.Error())
-		http.Error(w, "Erreur serveur lors de la récupération de l'annonce", http.StatusInternalServerError)
+	var a models.Annonce
+	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
+		http.Error(w, "Format JSON du corps invalide", http.StatusBadRequest)
+		return
+	}
+	a.ID = id
+
+	if err := db.ModifyAnnonce(id, a); err != nil {
+		if strings.Contains(err.Error(), "aucune annonce trouvée") {
+			http.Error(w, fmt.Sprintf("Annonce non trouvée avec l'ID : %d", id), http.StatusNotFound)
+			return
+		}
+		fmt.Println("Erreur DB ModifyAnnonce:", err.Error())
+		http.Error(w, "Erreur serveur lors de la mise à jour de l'annonce", http.StatusInternalServerError)
 		return
 	}
 
-	if annonce == nil {
-		http.Error(w, fmt.Sprintf("Annonce non trouvée avec l'ID : %d", id), http.StatusNotFound)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func DeleteAnnonce(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id <= 0 {
+		http.Error(w, "ID d'annonce invalide dans l'URI (doit être un entier positif)", http.StatusBadRequest)
 		return
 	}
 
-	res, err := json.Marshal(annonce)
-	if err != nil {
-		http.Error(w, "Erreur d'encodage JSON du résultat", http.StatusInternalServerError)
+	if err := db.DeleteAnnonce(id); err != nil {
+		if strings.Contains(err.Error(), "aucune annonce trouvée") {
+			http.Error(w, fmt.Sprintf("Annonce non trouvée avec l'ID %d", id), http.StatusNotFound)
+			return
+		}
+		fmt.Println("Erreur DB DeleteAnnonce:", err.Error())
+		http.Error(w, "Erreur serveur lors de la suppression de l'annonce", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "%s", string(res))
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -28,6 +28,8 @@ func main() {
 	http.HandleFunc("GET /annonces", app.GetAllAnnonces)
 	http.HandleFunc("POST /annonces", app.CreateAnnonce)
 	http.HandleFunc("GET /annonces/{id}", app.GetAnnonce)
+	http.HandleFunc("PUT /annonces/{id}", app.ModifyAnnonce)
+	http.HandleFunc("DELETE /annonces/{id}", app.DeleteAnnonce)
 
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", nil)

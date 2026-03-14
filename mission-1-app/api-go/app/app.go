@@ -1,13 +1,13 @@
 package app
 
 import (
-	"upcycleconnect/api-go/db"
-	"upcycleconnect/api-go/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"upcycleconnect/api-go/db"
+	"upcycleconnect/api-go/models"
 )
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
@@ -34,8 +34,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ID de user invalide ou manquant (doit être un entier positif)", http.StatusBadRequest)
 		return
 	}
-	user, err := db.GetUser(userID) 
-	
+	user, err := db.GetUser(userID)
+
 	if err != nil {
 		fmt.Println("Erreur DB GetUser:", err.Error())
 		http.Error(w, "Erreur serveur lors de la récupération du jeu", http.StatusInternalServerError)
@@ -52,8 +52,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erreur d'encodage JSON du résultat", http.StatusInternalServerError)
 		return
 	}
-	
-	w.WriteHeader(http.StatusOK) 
+
+	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "%s", string(res))
 }
 
@@ -66,14 +66,14 @@ func ValidateUser(userDto models.User) []string {
 	if len(userDto.Prenom) > 50 {
 		errsMsg = append(errsMsg, "Prenom length must not be longer than 50")
 	}
-	
+
 	if len(userDto.Nom) < 2 {
 		errsMsg = append(errsMsg, "Nom length must be at least 2")
 	}
 	if len(userDto.Nom) > 50 {
 		errsMsg = append(errsMsg, "Nom length must not be longer than 50")
 	}
-	
+
 	if len(userDto.Mail) < 5 {
 		errsMsg = append(errsMsg, "Mail length must be at least 5")
 	}
@@ -84,7 +84,7 @@ func ValidateUser(userDto models.User) []string {
 	if len(userDto.Password) < 8 {
 		errsMsg = append(errsMsg, "Password must be at least 8 characters")
 	}
-	
+
 	hasUpper := false
 	hasSpecial := false
 	for _, char := range userDto.Password {
@@ -102,25 +102,25 @@ func ValidateUser(userDto models.User) []string {
 	if !hasSpecial {
 		errsMsg = append(errsMsg, "Password must contain at least one special character")
 	}
-	
+
 	if len(userDto.Adresse) < 5 {
 		errsMsg = append(errsMsg, "Adresse length must be at least 5")
 	}
 	if len(userDto.Adresse) > 100 {
 		errsMsg = append(errsMsg, "Adresse length must not be longer than 100")
 	}
-	
+
 	if len(userDto.Ville) < 2 {
 		errsMsg = append(errsMsg, "Ville length must be at least 2")
 	}
 	if len(userDto.Ville) > 50 {
 		errsMsg = append(errsMsg, "Ville length must not be longer than 50")
 	}
-	
+
 	if len(userDto.Code_postal) != 5 {
 		errsMsg = append(errsMsg, "Code postal must be exactly 5 numbers")
 	}
-	
+
 	if userDto.Role != "Particulier" && userDto.Role != "Prestataire" && userDto.Role != "Admin" {
 		errsMsg = append(errsMsg, "Role must be Particulier, Prestataire or Admin")
 	}
@@ -169,13 +169,13 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Format JSON du corps invalide", http.StatusBadRequest)
 		return
 	}
-	
+
 	userId, err := strconv.Atoi(userIDStr)
 	if err != nil || userId <= 0 {
 		http.Error(w, "ID de jeu invalide dans l'URI", http.StatusBadRequest)
 		return
 	}
-	
+
 	userDto.Id = userId
 
 	errsMsg := ValidateUser(userDto)
@@ -186,19 +186,19 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = db.ModifyUser(userId ,userDto)
+	err = db.ModifyUser(userId, userDto)
 	if err != nil {
 		if strings.Contains(err.Error(), "aucun utilisateur trouvé") {
 			http.Error(w, fmt.Sprintf("Utilisateur non trouvé avec l'ID : %d", userId), http.StatusNotFound)
 			return
 		}
-		
+
 		fmt.Println(err.Error())
 		http.Error(w, "Erreur serveur lors de la mise à jour de l'utilisateur", http.StatusInternalServerError)
 		return
 	}
-	
-	w.WriteHeader(http.StatusNoContent) 
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -211,17 +211,91 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = db.DeleteUser(userID)
-	
+
 	if err != nil {
 		if strings.Contains(err.Error(), "aucun utilisateur trouvé") {
-			http.Error(w, fmt.Sprintf("utilisateur non trouvé avec l'ID %d", userID), http.StatusNotFound) 
+			http.Error(w, fmt.Sprintf("utilisateur non trouvé avec l'ID %d", userID), http.StatusNotFound)
 			return
 		}
-		
+
 		fmt.Println("Erreur DB lors de la suppression:", err.Error())
-		http.Error(w, "Erreur serveur lors de la suppression du utilisateur", http.StatusInternalServerError) 
+		http.Error(w, "Erreur serveur lors de la suppression du utilisateur", http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func GetAllAnnonces(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	annonces, err := db.GetAllAnnonces()
+	if err != nil {
+		fmt.Println("Erreur DB GetAllAnnonces:", err.Error())
+		http.Error(w, "Erreur de récupération des annonces", http.StatusInternalServerError)
+		return
+	}
+
+	res, err := json.Marshal(annonces)
+	if err != nil {
+		http.Error(w, "Erreur d'encodage JSON des annonces", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "%s", string(res))
+}
+
+func CreateAnnonce(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Méthode non autorisée", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var a models.Annonce
+	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.CreateAnnonce(a); err != nil {
+		fmt.Println("Erreur DB CreateAnnonce:", err.Error())
+		http.Error(w, "Erreur serveur lors de la création de l'annonce", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func GetAnnonce(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		http.Error(w, "ID d'annonce invalide (doit être un entier positif)", http.StatusBadRequest)
+		return
+	}
+
+	annonce, err := db.GetAnnonce(id)
+	if err != nil {
+		fmt.Println("Erreur DB GetAnnonce:", err.Error())
+		http.Error(w, "Erreur serveur lors de la récupération de l'annonce", http.StatusInternalServerError)
+		return
+	}
+
+	if annonce == nil {
+		http.Error(w, fmt.Sprintf("Annonce non trouvée avec l'ID : %d", id), http.StatusNotFound)
+		return
+	}
+
+	res, err := json.Marshal(annonce)
+	if err != nil {
+		http.Error(w, "Erreur d'encodage JSON du résultat", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%s", string(res))
 }

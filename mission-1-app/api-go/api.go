@@ -1,11 +1,11 @@
 package main
 
 import (
-	"upcycleconnect/api-go/app"
-	"upcycleconnect/api-go/db"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"upcycleconnect/api-go/app"
+	"upcycleconnect/api-go/db"
 )
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
@@ -25,6 +25,9 @@ func main() {
 	http.HandleFunc("POST /users", app.CreateUser)
 	http.HandleFunc("PUT /users/{id}", app.ModifyUser)
 	http.HandleFunc("DELETE /users/{id}", app.DeleteUser)
+	http.HandleFunc("GET /annonces", app.GetAllAnnonces)
+	http.HandleFunc("POST /annonces", app.CreateAnnonce)
+	http.HandleFunc("GET /annonces/{id}", app.GetAnnonce)
 
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", nil)

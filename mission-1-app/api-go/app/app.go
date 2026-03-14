@@ -341,3 +341,119 @@ func DeleteAnnonce(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func GetAllEvenements(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	evenements, err := db.GetAllEvenements()
+	if err != nil {
+		fmt.Println("Erreur DB GetAllEvenements:", err.Error())
+		http.Error(w, "Erreur de récupération des événements", http.StatusInternalServerError)
+		return
+	}
+
+	res, err := json.Marshal(evenements)
+	if err != nil {
+		http.Error(w, "Erreur d'encodage JSON", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "%s", string(res))
+}
+
+func GetEvenement(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id <= 0 {
+		http.Error(w, "ID d'événement invalide (doit être un entier positif)", http.StatusBadRequest)
+		return
+	}
+
+	evenement, err := db.GetEvenement(id)
+	if err != nil {
+		fmt.Println("Erreur DB GetEvenement:", err.Error())
+		http.Error(w, "Erreur serveur lors de la récupération de l'événement", http.StatusInternalServerError)
+		return
+	}
+	if evenement == nil {
+		http.Error(w, fmt.Sprintf("Événement non trouvé avec l'ID : %d", id), http.StatusNotFound)
+		return
+	}
+
+	res, err := json.Marshal(evenement)
+	if err != nil {
+		http.Error(w, "Erreur d'encodage JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%s", string(res))
+}
+
+func CreateEvenement(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var e models.Evenement
+	if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.CreateEvenement(e); err != nil {
+		fmt.Println("Erreur DB CreateEvenement:", err.Error())
+		http.Error(w, "Erreur serveur lors de la création de l'événement", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func ModifyEvenement(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id <= 0 {
+		http.Error(w, "ID d'événement invalide dans l'URI", http.StatusBadRequest)
+		return
+	}
+
+	var e models.Evenement
+	if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
+		http.Error(w, "Format JSON du corps invalide", http.StatusBadRequest)
+		return
+	}
+	e.ID = id
+
+	if err := db.ModifyEvenement(id, e); err != nil {
+		if strings.Contains(err.Error(), "aucun evenement trouvé") {
+			http.Error(w, fmt.Sprintf("Événement non trouvé avec l'ID : %d", id), http.StatusNotFound)
+			return
+		}
+		fmt.Println("Erreur DB ModifyEvenement:", err.Error())
+		http.Error(w, "Erreur serveur lors de la mise à jour de l'événement", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func DeleteEvenement(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id <= 0 {
+		http.Error(w, "ID d'événement invalide dans l'URI (doit être un entier positif)", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.DeleteEvenement(id); err != nil {
+		if strings.Contains(err.Error(), "aucun evenement trouvé") {
+			http.Error(w, fmt.Sprintf("Événement non trouvé avec l'ID %d", id), http.StatusNotFound)
+			return
+		}
+		fmt.Println("Erreur DB DeleteEvenement:", err.Error())
+		http.Error(w, "Erreur serveur lors de la suppression de l'événement", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

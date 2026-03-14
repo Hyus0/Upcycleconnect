@@ -30,6 +30,11 @@ func main() {
 	http.HandleFunc("GET /annonces/{id}", app.GetAnnonce)
 	http.HandleFunc("PUT /annonces/{id}", app.ModifyAnnonce)
 	http.HandleFunc("DELETE /annonces/{id}", app.DeleteAnnonce)
+	http.HandleFunc("GET /evenements", app.GetAllEvenements)
+	http.HandleFunc("GET /evenements/{id}", app.GetEvenement)
+	http.HandleFunc("POST /evenements", app.CreateEvenement)
+	http.HandleFunc("PUT /evenements/{id}", app.ModifyEvenement)
+	http.HandleFunc("DELETE /evenements/{id}", app.DeleteEvenement)
 
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", nil)

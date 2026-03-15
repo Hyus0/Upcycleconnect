@@ -600,3 +600,189 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func GetAllFormations(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	formations, err := db.GetAllFormations()
+	if err != nil {
+		fmt.Println("Erreur GetAllFormations:", err.Error())
+		http.Error(w, "Erreur lors de la récupération des formations", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(formations)
+}
+
+func GetFormation(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	w.Header().Set("Content-Type", "application/json")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		http.Error(w, "ID de formation invalide", http.StatusBadRequest)
+		return
+	}
+
+	formation, err := db.GetFormation(id)
+	if err != nil {
+		fmt.Println("Erreur DB GetFormation:", err.Error())
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	if formation == nil {
+		http.Error(w, fmt.Sprintf("Formation %d non trouvée", id), http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(formation)
+}
+
+func ValidateFormation(f models.Formation) []string {
+	var errsMsg []string
+
+	if len(f.Titre) < 5 || len(f.Titre) > 100 {
+		errsMsg = append(errsMsg, "Le titre doit contenir entre 5 et 100 caractères")
+	}
+	if len(f.Description) < 10 {
+		errsMsg = append(errsMsg, "La description est trop courte (min 10)")
+	}
+
+	if f.Capacite_max <= 0 {
+		errsMsg = append(errsMsg, "La capacité maximale doit être supérieure à 0")
+	}
+	if f.Prix_unitaire < 0 {
+		errsMsg = append(errsMsg, "Le prix ne peut pas être négatif")
+	}
+
+	if f.Type != "Atelier" && f.Type != "Webinaire" {
+		errsMsg = append(errsMsg, "Le type doit être 'Atelier' ou 'Webinaire'")
+	}
+	if f.Statut != "Ouvert" && f.Statut != "Fermé" && f.Statut != "Annulé" {
+		errsMsg = append(errsMsg, "Statut invalide (Ouvert, Fermé, Annulé)")
+	}
+
+	if f.Type == "Atelier" {
+		if f.Ville == "" || len(f.Code_postal) != 5 {
+			errsMsg = append(errsMsg, "Un atelier en présentiel nécessite une ville et un code postal valide")
+		}
+	}
+
+	if f.Date_debut == "" || f.Date_fin == "" {
+		errsMsg = append(errsMsg, "Les dates de début et de fin sont obligatoires")
+	}
+
+	return errsMsg
+}
+
+func CreateFormation(w http.ResponseWriter, r *http.Request) {
+	var f models.Formation
+
+	if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	errs := ValidateFormation(f)
+	if len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errs)
+		return
+	}
+
+	if err := db.CreateFormation(f); err != nil {
+		fmt.Println("Erreur CreateFormation:", err)
+		http.Error(w, "Erreur lors de la création", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+func ModifyFormation(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	var f models.Formation
+	if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	errs := ValidateFormation(f)
+	if len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errs)
+		return
+	}
+
+	if err := db.ModifyFormation(id, f); err != nil {
+		if strings.Contains(err.Error(), "aucune formation trouvée") {
+			http.Error(w, "Formation non trouvée", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erreur lors de la modification", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func DeleteFormation(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.DeleteFormation(id); err != nil {
+		if strings.Contains(err.Error(), "aucune formation trouvée") {
+			http.Error(w, "Formation inexistante", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erreur lors de la suppression", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func JoinFormation(w http.ResponseWriter, r *http.Request) {
+	formationID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || formationID <= 0 {
+		http.Error(w, "ID de formation invalide", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		UserID int `json:"id_utilisateur"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	if body.UserID <= 0 {
+		http.Error(w, "ID utilisateur manquant ou invalide", http.StatusBadRequest)
+		return
+	}
+
+	err = db.JoinFormation(body.UserID, formationID)
+	if err != nil {
+		if strings.Contains(err.Error(), "formation complète") {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+		fmt.Println("Erreur JoinFormation:", err)
+		http.Error(w, "Erreur lors de l'inscription", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Inscription enregistrée avec succès"))
+}

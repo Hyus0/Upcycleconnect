@@ -457,3 +457,146 @@ func DeleteEvenement(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func ValidAnnonce(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id <= 0 {
+		http.Error(w, "ID d'annonce invalide dans l'URI (doit être un entier positif)", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.ValidAnnonce(id); err != nil {
+		if strings.Contains(err.Error(), "aucune annonce trouvée") {
+			http.Error(w, fmt.Sprintf("Annonce non trouvée avec l'ID %d", id), http.StatusNotFound)
+			return
+		}
+		
+		fmt.Println("Erreur DB ValidAnnonce:", err.Error())
+		http.Error(w, "Erreur serveur lors de la validation de l'annonce", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Annonce validée avec succès"))
+}
+
+func GetAllCategories(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	categories, err := db.GetAllCategories()
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, "erreur de récupération des catégorie", http.StatusInternalServerError)
+	}
+
+	res, _ := json.Marshal(categories)
+	fmt.Fprintf(w, "%s", string(res))
+}
+
+func GetCategory(w http.ResponseWriter, r *http.Request) {
+	categoryIDStr := r.PathValue("id")
+
+	w.Header().Set("Content-Type", "application/json")
+
+	categoryId, err := strconv.Atoi(categoryIDStr)
+	if err != nil || categoryId <= 0 {
+		http.Error(w, "ID de user invalide ou manquant (doit être un entier positif)", http.StatusBadRequest)
+		return
+	}
+	category, err := db.GetCategory(categoryId)
+
+	if err != nil {
+		fmt.Println("Erreur DB GetUser:", err.Error())
+		http.Error(w, "Erreur serveur lors de la récupération de la catégorie", http.StatusInternalServerError)
+		return
+	}
+
+	if category == nil {
+		http.Error(w, fmt.Sprintf("Catégorie non trouvé avec l'ID : %d", categoryId), http.StatusNotFound)
+		return
+	}
+
+	res, err := json.Marshal(category)
+	if err != nil {
+		http.Error(w, "Erreur d'encodage JSON du résultat", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%s", string(res))
+}
+
+func CreateCategory(w http.ResponseWriter, r *http.Request) {
+	var categoryDto models.Category
+
+	err := json.NewDecoder(r.Body).Decode(&categoryDto)
+	if err != nil {
+		http.Error(w, "Incorrect body format", http.StatusBadRequest)
+		return
+	}
+
+	err = db.CreateCategory(categoryDto)
+	if err != nil {
+		http.Error(w, "pb d'insertion", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+func ModifyCategory(w http.ResponseWriter, r *http.Request) {
+	categoryIDStr := r.PathValue("id")
+	var categoryDto models.Category
+
+	err := json.NewDecoder(r.Body).Decode(&categoryDto)
+	if err != nil {
+		http.Error(w, "Format JSON du corps invalide", http.StatusBadRequest)
+		return
+	}
+
+	categoryID, err := strconv.Atoi(categoryIDStr)
+	if err != nil || categoryID <= 0 {
+		http.Error(w, "ID de la catégorie invalide dans l'URI", http.StatusBadRequest)
+		return
+	}
+
+	categoryDto.ID = categoryID
+
+	err = db.ModifyCategory(categoryID, categoryDto)
+	if err != nil {
+		if strings.Contains(err.Error(), "aucune catégorie trouvé") {
+			http.Error(w, fmt.Sprintf("Categorie non trouvé avec l'ID : %d", categoryID), http.StatusNotFound)
+			return
+		}
+
+		fmt.Println(err.Error())
+		http.Error(w, "Erreur serveur lors de la mise à jour de la catégorie", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func DeleteCategory(w http.ResponseWriter, r *http.Request) {
+	categoryIDStr := r.PathValue("id")
+
+	categoryID, err := strconv.Atoi(categoryIDStr)
+	if err != nil || categoryID <= 0 {
+		http.Error(w, "ID de la catégorie invalide dans l'URI (doit être un entier positif)", http.StatusBadRequest)
+		return
+	}
+
+	err = db.DeleteCategory(categoryID)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "aucune catégorie trouvé") {
+			http.Error(w, fmt.Sprintf("Catégorie non trouvée avec l'ID %d", categoryID), http.StatusNotFound)
+			return
+		}
+
+		fmt.Println("Erreur DB lors de la suppression:", err.Error())
+		http.Error(w, "Erreur serveur lors de la suppression de la catégorie", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

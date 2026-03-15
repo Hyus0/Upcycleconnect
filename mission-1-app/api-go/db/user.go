@@ -26,11 +26,11 @@ func GetAllUsers() ([]models.GetUser, error) {
 	return users, nil
 }
 
-func GetUser(userId int) (*models.GetUser, error) { 
+func GetUser(userId int) (*models.GetUser, error) {
 	var u models.GetUser
 	query := "SELECT id, prenom, nom, mail, adresse, ville, code_postal, date_naissance, date_inscription, role, id_langue FROM UTILISATEUR WHERE id = ?"
 	row := Conn.QueryRow(query, userId)
-	
+
 	err := row.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.Code_postal, &u.Date_naissance, &u.Date_inscription, &u.Role, &u.Id_langue)
 
 	if err == sql.ErrNoRows {
@@ -40,19 +40,19 @@ func GetUser(userId int) (*models.GetUser, error) {
 		return nil, fmt.Errorf("GetUser scan: %v", err)
 	}
 
-	return &u, nil 
+	return &u, nil
 }
 
 func CreateUser(user models.User) error {
-	query := `INSERT INTO UTILISATEUR (prenom, nom, password, mail, adresse, ville, code_postal, date_naissance, role, id_langue, date_inscription) 
+	query := `INSERT INTO UTILISATEUR (prenom, nom, password, mail, adresse, ville, code_postal, date_naissance, role, id_langue, date_inscription)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`
-	
-	_, err := Conn.Exec(query, 
-		user.Prenom, user.Nom, user.Password, user.Mail, 
-		user.Adresse, user.Ville, user.Code_postal, 
+
+	_, err := Conn.Exec(query,
+		user.Prenom, user.Nom, user.Password, user.Mail,
+		user.Adresse, user.Ville, user.Code_postal,
 		user.Date_naissance, user.Role, user.Id_langue,
 	)
-	
+
 	if err != nil {
 		return fmt.Errorf("CreateUser: %v", err)
 	}
@@ -60,25 +60,25 @@ func CreateUser(user models.User) error {
 }
 
 func ModifyUser(userId int, user models.User) error {
-	query := `UPDATE UTILISATEUR SET 
-				prenom = ?, 
-				nom = ?, 
-				mail = ?, 
-				adresse = ?, 
-				ville = ?, 
-				code_postal = ?, 
-				role = ?, 
-				id_langue = ? 
+	query := `UPDATE UTILISATEUR SET
+				prenom = ?,
+				nom = ?,
+				mail = ?,
+				adresse = ?,
+				ville = ?,
+				code_postal = ?,
+				role = ?,
+				id_langue = ?
 			  WHERE id = ?`
-	result, err := Conn.Exec(query, 
-		user.Prenom, 
-		user.Nom, 
-		user.Mail, 
-		user.Adresse, 
-		user.Ville, 
-		user.Code_postal, 
-		user.Role, 
-		user.Id_langue, 
+	result, err := Conn.Exec(query,
+		user.Prenom,
+		user.Nom,
+		user.Mail,
+		user.Adresse,
+		user.Ville,
+		user.Code_postal,
+		user.Role,
+		user.Id_langue,
 		userId,
 	)
 

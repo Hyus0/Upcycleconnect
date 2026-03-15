@@ -261,3 +261,25 @@ func DeleteAnnonce(id int) error {
 	}
 	return nil
 }
+
+func ValidAnnonce(id int) error {
+	if Conn == nil {
+		return fmt.Errorf("connexion DB non initialisée")
+	}
+
+	result, err := Conn.Exec("UPDATE ANNONCE SET est_valide = 'Validé' WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("ValidAnnonce: %v", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("ValidAnnonce RowsAffected: %v", err)
+	}
+	
+	if rows == 0 {
+		return fmt.Errorf("aucune annonce trouvée avec l'ID %d ou déjà validée", id)
+	}
+	
+	return nil
+}

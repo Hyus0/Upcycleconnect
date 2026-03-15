@@ -5,7 +5,7 @@ import "time"
 type Annonce struct {
 	ID           int       `json:"id" db:"id"`
 	IdVendeur    int       `json:"id_vendeur" db:"idvendeur"`
-	IdAcheteur   int       `json:"id_acheteur,omitempty" db:"idacheteur"`
+	IdAcheteur   *int      `json:"id_acheteur,omitempty" db:"idacheteur"`
 	Titre        string    `json:"titre" db:"titre"`
 	Description  string    `json:"description" db:"description"`
 	Statut       string    `json:"statut" db:"statut"`

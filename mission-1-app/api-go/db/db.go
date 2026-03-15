@@ -3,7 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	 _ "github.com/go-sql-driver/mysql"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var Conn *sql.DB
@@ -14,12 +15,12 @@ const (
 	port     = 3306
 	user     = "root"
 	password = ""
-	dbname   = "upcycle_test"
+	dbname   = "upcycletest"
 )
 
 func NewDB() *sql.DB {
-		var sqlInfo = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
-		 			user, password,host, port, dbname)
+	var sqlInfo = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
+		user, password, host, port, dbname)
 	conn, err := sql.Open(driver, sqlInfo)
 	if err != nil {
 		panic(err.Error())

@@ -1,0 +1,143 @@
+<template>
+  <div class="surface-card table-shell">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th
+              v-for="column in columns"
+              :key="column.key"
+              :class="column.align ? `align-${column.align}` : ''"
+            >
+              {{ column.label }}
+            </th>
+            <th v-if="$slots.actions" class="align-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in rows" :key="row[rowKey]">
+            <td
+              v-for="column in columns"
+              :key="column.key"
+              :class="column.align ? `align-${column.align}` : ''"
+            >
+              <slot :name="`cell-${column.key}`" :row="row">
+                {{ row[column.key] }}
+              </slot>
+            </td>
+            <td v-if="$slots.actions" class="align-right actions-cell">
+              <slot name="actions" :row="row" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-if="pagination" class="table-footer">
+      <span>
+        Page {{ pagination.page }} / {{ pagination.totalPages }} · {{ pagination.total }} elements
+      </span>
+      <div class="toolbar">
+        <button
+          class="button button-secondary"
+          :disabled="pagination.page <= 1"
+          @click="$emit('page-change', pagination.page - 1)"
+        >
+          Precedent
+        </button>
+        <button
+          class="button button-secondary"
+          :disabled="pagination.page >= pagination.totalPages"
+          @click="$emit('page-change', pagination.page + 1)"
+        >
+          Suivant
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+defineProps({
+  columns: {
+    type: Array,
+    required: true
+  },
+  rows: {
+    type: Array,
+    required: true
+  },
+  rowKey: {
+    type: String,
+    default: "id"
+  },
+  pagination: {
+    type: Object,
+    default: null
+  }
+});
+
+defineEmits(["page-change"]);
+</script>
+
+<style scoped>
+.table-shell {
+  overflow: hidden;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(216, 229, 220, 0.8);
+  vertical-align: middle;
+}
+
+th {
+  text-align: left;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-family: "Space Mono", monospace;
+}
+
+tbody tr:hover {
+  background: rgba(45, 122, 79, 0.03);
+}
+
+.align-right {
+  text-align: right;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.actions-cell :deep(.button) {
+  padding: 9px 12px;
+}
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+@media (max-width: 700px) {
+  .table-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+</style>

@@ -2,25 +2,27 @@
   <section class="stack">
     <header class="page-header">
       <div>
-        <div class="eyebrow">Dashboard admin</div>
-        <h2 class="page-title">Synthese des ressources critiques</h2>
-        <p class="page-description">
-          Les chiffres consolident uniquement les endpoints disponibles aujourd'hui, et signalent
-          visiblement les zones backend encore absentes.
-        </p>
+        <div class="eyebrow">Dashboard</div>
+        <h2 class="page-title">Vue d'ensemble</h2>
       </div>
       <button class="button button-primary" @click="loadDashboard">Actualiser</button>
     </header>
 
     <LoadingState v-if="loading" />
-    <ErrorState
-      v-else-if="error"
-      :message="error"
-      retry-label="Recharger"
-      @retry="loadDashboard"
-    />
+    <ErrorState v-else-if="error" :message="error" retry-label="Recharger" @retry="loadDashboard" />
 
     <template v-else>
+      <article class="surface-card section-card dashboard-hero">
+        <div>
+          <div class="eyebrow">Mode</div>
+          <strong>{{ dashboard.source === "local" ? "Base locale active" : "API connectee" }}</strong>
+        </div>
+        <div class="hero-actions">
+          <span class="hero-chip">{{ dashboard.stats[0]?.value ?? 0 }} utilisateurs</span>
+          <span class="hero-chip">{{ dashboard.stats[1]?.value ?? 0 }} prestations</span>
+        </div>
+      </article>
+
       <div class="stats-grid">
         <StatCard
           v-for="stat in dashboard.stats"
@@ -33,38 +35,27 @@
       </div>
 
       <div class="two-up">
-        <SimpleBarChart
-          title="Utilisateurs par type"
-          subtitle="Repartition selon les donnees admin disponibles"
-          :items="dashboard.charts.usersByRole"
-        />
-        <SimpleBarChart
-          title="Ressources cataloguees"
-          subtitle="Prestations connectees, categories et evenements a completer"
-          :items="dashboard.charts.resources"
-        />
+        <SimpleBarChart title="Utilisateurs par type" subtitle="Repartition" :items="dashboard.charts.usersByRole" />
+        <SimpleBarChart title="Ressources" subtitle="Vue globale" :items="dashboard.charts.resources" />
       </div>
 
       <div class="split-grid">
         <ResourceNotice
-          title="Notes de statut rapide"
-          message="Points d'attention remontes lors de la lecture des APIs."
+          title="Statut"
+          message="Points a surveiller."
           :items="dashboard.quickNotes.map((note) => note.text)"
           tone="green"
           badge="surveille"
         />
 
         <article class="surface-card section-card">
-          <h3>Activites recentes</h3>
-          <p class="muted">Flux derive des prestations disponibles.</p>
+          <h3>Activites</h3>
           <ul class="activity-list">
             <li v-for="item in dashboard.recentActivity" :key="item.id">
               <strong>{{ item.title }}</strong>
               <span>{{ item.subtitle }}</span>
             </li>
-            <li v-if="dashboard.recentActivity.length === 0" class="muted">
-              Aucune activite recente disponible.
-            </li>
+            <li v-if="dashboard.recentActivity.length === 0" class="muted">Aucune activite recente disponible.</li>
           </ul>
         </article>
       </div>
@@ -84,11 +75,9 @@ import { adminApi } from "../services/api";
 const loading = ref(true);
 const error = ref("");
 const dashboard = ref({
+  source: "local",
   stats: [],
-  charts: {
-    usersByRole: [],
-    resources: []
-  },
+  charts: { usersByRole: [], resources: [] },
   quickNotes: [],
   recentActivity: []
 });
@@ -96,7 +85,6 @@ const dashboard = ref({
 async function loadDashboard() {
   loading.value = true;
   error.value = "";
-
   try {
     dashboard.value = await adminApi.getDashboard();
   } catch (err) {
@@ -110,10 +98,37 @@ onMounted(loadDashboard);
 </script>
 
 <style scoped>
+.dashboard-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.dashboard-hero strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.2rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hero-chip {
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(45, 122, 79, 0.08);
+  color: var(--brand-green);
+  font-weight: 700;
+}
+
 .activity-list {
   display: grid;
   gap: 12px;
-  margin: 16px 0 0;
+  margin: 14px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -121,12 +136,19 @@ onMounted(loadDashboard);
 .activity-list li {
   display: grid;
   gap: 4px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(45, 122, 79, 0.05);
+  background: linear-gradient(180deg, rgba(45, 122, 79, 0.06), rgba(45, 122, 79, 0.03));
 }
 
 .activity-list span {
   color: var(--text-secondary);
+}
+
+@media (max-width: 700px) {
+  .dashboard-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>

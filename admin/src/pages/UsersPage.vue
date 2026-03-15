@@ -2,112 +2,114 @@
   <section class="stack">
     <header class="page-header">
       <div>
-        <div class="eyebrow">Gestion des utilisateurs</div>
-        <h2 class="page-title">Superviser sans masquer les manques API</h2>
-        <p class="page-description">
-          La liste, le filtrage et la pagination sont operationnels. Les actions CRUD sont
-          preparees cote interface, mais le backend n'expose pas encore les endpoints necessaires.
-        </p>
+        <div class="eyebrow">Utilisateurs</div>
+        <h2 class="page-title">Gestion des comptes</h2>
+        <p class="page-description">Recherche, edition rapide et mode local persistant.</p>
       </div>
       <div class="toolbar">
-        <button class="button button-primary" disabled>Creer un utilisateur</button>
+        <button class="button button-primary" @click="openCreate">Nouvel utilisateur</button>
         <button class="button button-secondary" @click="loadUsers">Actualiser</button>
       </div>
     </header>
 
-    <ResourceNotice
-      title="Etat d'integration des utilisateurs"
-      message="L'endpoint de liste est disponible, mais les operations detail, creation, modification, activation et suppression restent a implementer cote backend."
-      :items="missingUserEndpoints"
-    />
+    <div class="split-grid">
+      <article class="surface-card section-card stack">
+        <div class="panel-head">
+          <h3>Filtres</h3>
+          <span class="mini-note">{{ pagination?.total ?? 0 }} comptes</span>
+        </div>
+        <div class="filters-grid">
+          <FormField label="Recherche">
+            <input v-model="filters.search" placeholder="Nom, email, ville" />
+          </FormField>
+          <FormField label="Role">
+            <BaseSelect v-model="filters.role" :options="roleOptions" />
+          </FormField>
+          <FormField label="Statut">
+            <BaseSelect v-model="filters.status" :options="statusOptions" />
+          </FormField>
+        </div>
+      </article>
 
-    <article class="surface-card section-card">
-      <div class="filters-grid">
-        <FormField label="Recherche">
-          <input v-model="filters.search" placeholder="Nom, email, ville" />
-        </FormField>
-        <FormField label="Role">
-          <BaseSelect v-model="filters.role" :options="roleOptions" />
-        </FormField>
-        <FormField label="Statut">
-          <BaseSelect v-model="filters.status" :options="statusOptions" />
-        </FormField>
-      </div>
-    </article>
+      <article class="surface-card section-card stack">
+        <div class="panel-head">
+          <h3>{{ editingId ? "Modifier" : "Nouveau compte" }}</h3>
+          <button class="button button-ghost" @click="resetForm">Vider</button>
+        </div>
+        <div class="filters-grid">
+          <FormField label="Prenom" :error="formErrors.firstName">
+            <input v-model="form.firstName" placeholder="Alice" />
+          </FormField>
+          <FormField label="Nom" :error="formErrors.lastName">
+            <input v-model="form.lastName" placeholder="Martin" />
+          </FormField>
+          <FormField label="Email" :error="formErrors.email">
+            <input v-model="form.email" type="email" placeholder="alice@mail.com" />
+          </FormField>
+          <FormField label="Ville">
+            <input v-model="form.city" placeholder="Paris" />
+          </FormField>
+          <FormField label="Code postal">
+            <input v-model="form.postalCode" placeholder="75011" />
+          </FormField>
+          <FormField label="Role">
+            <BaseSelect v-model="form.role" :options="roleOptions.slice(1)" />
+          </FormField>
+        </div>
+        <div class="toolbar">
+          <button class="button button-primary" @click="submitForm">
+            {{ editingId ? "Enregistrer" : "Creer" }}
+          </button>
+          <button v-if="editingId" class="button button-secondary" @click="resetForm">Annuler</button>
+        </div>
+      </article>
+    </div>
 
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :message="error" retry-label="Recharger" @retry="loadUsers" />
-    <EmptyState
-      v-else-if="rows.length === 0"
-      title="Aucun utilisateur"
-      message="Aucun utilisateur ne correspond aux filtres selectionnes."
-    />
+    <EmptyState v-else-if="rows.length === 0" title="Aucun utilisateur" message="Aucun resultat." />
     <DataTable v-else :columns="columns" :rows="rows" :pagination="pagination" @page-change="changePage">
       <template #cell-fullName="{ row }">
         <div class="identity">
-          <strong>{{ row.fullName || "Nom indisponible" }}</strong>
-          <span>{{ row.email || "Email indisponible" }}</span>
+          <strong>{{ row.fullName }}</strong>
+          <span>{{ row.email }}</span>
         </div>
       </template>
-
       <template #cell-role="{ row }">
         <StatusBadge :label="row.role" :tone="roleTone(row.role)" />
       </template>
-
       <template #cell-status="{ row }">
         <StatusBadge :label="row.status" :tone="row.status === 'active' ? 'green' : 'amber'" />
       </template>
-
       <template #actions="{ row }">
         <div class="toolbar actions">
-          <button class="button button-ghost" @click="viewUser(row)">Voir</button>
-          <button class="button button-secondary" disabled>Modifier</button>
-          <button class="button button-warning" disabled>Activer / desactiver</button>
-          <button class="button button-danger" disabled>Supprimer</button>
+          <button class="button button-secondary" @click="startEdit(row)">Editer</button>
+          <button class="button button-warning" @click="toggleStatus(row)">Statut</button>
+          <button class="button button-danger" @click="confirmDelete(row)">Supprimer</button>
         </div>
       </template>
     </DataTable>
 
-    <article v-if="selectedUser" class="surface-card section-card">
-      <div class="page-header compact">
-        <div>
-          <div class="eyebrow">Fiche lecture seule</div>
-          <h3 class="detail-title">{{ selectedUser.fullName }}</h3>
-          <p class="page-description">{{ selectedUser.email || "Email indisponible" }}</p>
-        </div>
-        <button class="button button-secondary" @click="selectedUser = null">Fermer</button>
-      </div>
-      <div class="two-up">
-        <div>
-          <strong>Role</strong>
-          <p>{{ selectedUser.role }}</p>
-        </div>
-        <div>
-          <strong>Ville</strong>
-          <p>{{ selectedUser.city || "-" }}</p>
-        </div>
-        <div>
-          <strong>Code postal</strong>
-          <p>{{ selectedUser.postalCode || "-" }}</p>
-        </div>
-        <div>
-          <strong>Statut</strong>
-          <p>{{ selectedUser.status }}</p>
-        </div>
-      </div>
-    </article>
+    <ConfirmModal
+      :open="Boolean(rowToDelete)"
+      title="Supprimer ce compte ?"
+      :message="rowToDelete ? `${rowToDelete.fullName} sera retire de la base locale.` : ''"
+      confirm-label="Supprimer"
+      @cancel="rowToDelete = null"
+      @confirm="deleteCurrent"
+    />
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import BaseSelect from "../components/BaseSelect.vue";
+import ConfirmModal from "../components/ConfirmModal.vue";
 import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import ErrorState from "../components/ErrorState.vue";
 import FormField from "../components/FormField.vue";
 import LoadingState from "../components/LoadingState.vue";
-import ResourceNotice from "../components/ResourceNotice.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { adminApi } from "../services/api";
 import { useToastStore } from "../store/toastStore";
@@ -118,48 +120,98 @@ const loading = ref(true);
 const error = ref("");
 const rows = ref([]);
 const pagination = ref(null);
-const selectedUser = ref(null);
-const filters = reactive({
-  search: "",
-  role: "",
-  status: "",
-  page: 1,
-  pageSize: 8
+const editingId = ref("");
+const rowToDelete = ref(null);
+
+const filters = reactive({ search: "", role: "", status: "", page: 1, pageSize: 7 });
+const form = reactive({
+  firstName: "",
+  lastName: "",
+  email: "",
+  city: "",
+  postalCode: "",
+  role: "Particulier",
+  status: "active"
 });
+const formErrors = reactive({ firstName: "", lastName: "", email: "" });
 
 const columns = [
-  { key: "fullName", label: "Utilisateur" },
+  { key: "fullName", label: "Compte" },
   { key: "role", label: "Role" },
   { key: "status", label: "Statut" },
   { key: "city", label: "Ville" }
 ];
 
 const roleOptions = [
-  { label: "Tous les roles", value: "" },
+  { label: "Tous", value: "" },
   { label: "Particulier", value: "Particulier" },
   { label: "Prestataire", value: "Prestataire" },
   { label: "Admin", value: "Admin" }
 ];
 
 const statusOptions = [
-  { label: "Tous les statuts", value: "" },
+  { label: "Tous", value: "" },
   { label: "Actif", value: "active" },
   { label: "Inactif", value: "inactive" }
 ];
-
-const missingUserEndpoints = computed(() => [
-  "GET /api/admin/users/:id",
-  "POST /api/admin/users",
-  "PUT /api/admin/users/:id",
-  "PATCH /api/admin/users/:id/status",
-  "DELETE /api/admin/users/:id"
-]);
 
 function roleTone(role) {
   const key = role.toLowerCase();
   if (key.includes("admin")) return "coral";
   if (key.includes("prest")) return "teal";
   return "green";
+}
+
+function validateForm() {
+  formErrors.firstName = form.firstName.trim().length < 2 ? "Minimum 2 caracteres." : "";
+  formErrors.lastName = form.lastName.trim().length < 2 ? "Minimum 2 caracteres." : "";
+  formErrors.email = /\S+@\S+\.\S+/.test(form.email) ? "" : "Email invalide.";
+  return !formErrors.firstName && !formErrors.lastName && !formErrors.email;
+}
+
+function resetForm() {
+  editingId.value = "";
+  form.firstName = "";
+  form.lastName = "";
+  form.email = "";
+  form.city = "";
+  form.postalCode = "";
+  form.role = "Particulier";
+  form.status = "active";
+  formErrors.firstName = "";
+  formErrors.lastName = "";
+  formErrors.email = "";
+}
+
+function openCreate() {
+  resetForm();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function startEdit(row) {
+  editingId.value = row.id;
+  form.firstName = row.firstName;
+  form.lastName = row.lastName;
+  form.email = row.email;
+  form.city = row.city;
+  form.postalCode = row.postalCode;
+  form.role = row.role;
+  form.status = row.status;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function submitForm() {
+  if (!validateForm()) return;
+  const payload = { ...form };
+  if (editingId.value) {
+    await adminApi.updateUser(editingId.value, payload);
+    pushToast({ title: "Compte mis a jour", message: "Modification enregistree.", tone: "green" });
+  } else {
+    await adminApi.createUser(payload);
+    pushToast({ title: "Compte cree", message: "Nouvel utilisateur ajoute.", tone: "green" });
+  }
+  resetForm();
+  await loadUsers();
 }
 
 async function loadUsers() {
@@ -176,25 +228,29 @@ async function loadUsers() {
   }
 }
 
+async function toggleStatus(row) {
+  await adminApi.toggleUserStatus(row.id);
+  pushToast({ title: "Statut mis a jour", message: `${row.fullName} a change d'etat.`, tone: "amber" });
+  await loadUsers();
+}
+
+function confirmDelete(row) {
+  rowToDelete.value = row;
+}
+
+async function deleteCurrent() {
+  if (!rowToDelete.value) return;
+  await adminApi.deleteUser(rowToDelete.value.id);
+  pushToast({ title: "Compte supprime", message: "Suppression locale effectuee.", tone: "coral" });
+  rowToDelete.value = null;
+  await loadUsers();
+}
+
 function changePage(page) {
   filters.page = page;
 }
 
-function viewUser(row) {
-  selectedUser.value = row;
-  pushToast({
-    title: "Lecture utilisateur",
-    message: "La fiche detail s'appuie pour l'instant sur les donnees de liste deja chargees.",
-    tone: "amber"
-  });
-}
-
-watch(
-  () => [filters.search, filters.role, filters.status, filters.page],
-  () => {
-    loadUsers();
-  }
-);
+watch(() => [filters.search, filters.role, filters.status, filters.page], loadUsers);
 
 onMounted(loadUsers);
 </script>
@@ -205,21 +261,24 @@ onMounted(loadUsers);
   gap: 4px;
 }
 
-.identity span {
+.identity span,
+.mini-note {
   color: var(--text-secondary);
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-head h3 {
+  margin: 0;
+  font-family: "Syne", sans-serif;
 }
 
 .actions {
   justify-content: flex-end;
-}
-
-.compact {
-  margin-bottom: 18px;
-}
-
-.detail-title {
-  margin: 10px 0 6px;
-  font-family: "Syne", sans-serif;
-  font-size: 1.8rem;
 }
 </style>

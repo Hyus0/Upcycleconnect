@@ -34,9 +34,7 @@
     </div>
 
     <div v-if="pagination" class="table-footer">
-      <span>
-        Page {{ pagination.page }} / {{ pagination.totalPages }} · {{ pagination.total }} elements
-      </span>
+      <span>Page {{ pagination.page }} / {{ pagination.totalPages }} - {{ pagination.total }} elements</span>
       <div class="toolbar">
         <button
           class="button button-secondary"
@@ -83,6 +81,7 @@ defineEmits(["page-change"]);
 <style scoped>
 .table-shell {
   overflow: hidden;
+  border-radius: 26px;
 }
 
 .table-wrap {
@@ -96,7 +95,7 @@ table {
 
 th,
 td {
-  padding: 14px 18px;
+  padding: 16px 18px;
   border-bottom: 1px solid rgba(216, 229, 220, 0.8);
   vertical-align: middle;
 }
@@ -111,7 +110,7 @@ th {
 }
 
 tbody tr:hover {
-  background: rgba(45, 122, 79, 0.03);
+  background: linear-gradient(90deg, rgba(45, 122, 79, 0.045), rgba(45, 122, 79, 0.02));
 }
 
 .align-right {
@@ -132,6 +131,7 @@ tbody tr:hover {
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
+  background: rgba(248, 250, 248, 0.82);
 }
 
 @media (max-width: 700px) {

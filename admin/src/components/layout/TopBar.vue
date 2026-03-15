@@ -1,30 +1,67 @@
 <template>
   <header class="topbar surface-card">
-    <div>
-      <div class="eyebrow">Administration separee</div>
-      <strong class="title">Vue.js admin connected to the existing APIs</strong>
+    <div class="left">
+      <button class="menu-trigger" @click="$emit('toggle-menu')">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div>
+        <div class="eyebrow">UpcycleConnect</div>
+        <strong class="title">Admin</strong>
+      </div>
     </div>
     <div class="topbar-meta">
-      <span class="pill">Vue 3 Composition API</span>
-      <span class="pill pill-green">REST orchestration</span>
+      <span class="pill pill-green">Local ready</span>
     </div>
   </header>
 </template>
 
+<script setup>
+defineEmits(["toggle-menu"]);
+</script>
+
 <style scoped>
 .topbar {
-  margin: 18px 18px 0 0;
-  padding: 18px 22px;
+  margin: 20px 20px 0 0;
+  padding: 14px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  border-radius: 20px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-trigger {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.86);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-trigger span {
+  width: 16px;
+  height: 2px;
+  background: var(--brand-dark);
+  border-radius: 999px;
 }
 
 .title {
   display: block;
-  margin-top: 6px;
-  font-size: 1rem;
+  margin-top: 4px;
+  font-size: 1.1rem;
 }
 
 .topbar-meta {
@@ -35,10 +72,10 @@
 
 .pill {
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 8px 11px;
   background: var(--brand-sand);
   color: var(--brand-earth);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
@@ -51,12 +88,16 @@
   .topbar {
     margin-right: 0;
   }
+
+  .menu-trigger {
+    display: inline-flex;
+  }
 }
 
 @media (max-width: 700px) {
   .topbar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
   }
 }
 </style>

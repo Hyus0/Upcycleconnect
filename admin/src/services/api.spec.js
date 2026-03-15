@@ -1,14 +1,26 @@
 import { adminApi } from "./api";
-import { MissingEndpointError } from "./http";
 
 describe("adminApi", () => {
-  it("exposes capabilities for missing resources", () => {
+  it("exposes local CRUD capabilities", () => {
     const capabilities = adminApi.getCapabilities();
-    expect(capabilities.categories.list).toBe(false);
+    expect(capabilities.categories.list).toBe(true);
     expect(capabilities.prestations.create).toBe(true);
+    expect(capabilities.users.delete).toBe(true);
   });
 
-  it("throws a MissingEndpointError for category listing", async () => {
-    await expect(adminApi.listCategories()).rejects.toBeInstanceOf(MissingEndpointError);
+  it("returns a portal snapshot structure", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => ({
+        users: [],
+        prestations: [],
+        categories: [],
+        events: []
+      })
+    });
+
+    const snapshot = await adminApi.getPortalSnapshot();
+    expect(snapshot).toHaveProperty("particulier");
+    expect(snapshot).toHaveProperty("prestataire");
+    expect(snapshot).toHaveProperty("salarie");
   });
 });

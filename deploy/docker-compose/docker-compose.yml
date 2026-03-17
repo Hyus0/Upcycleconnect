@@ -4,7 +4,8 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ../../admin/dist:/usr/share/nginx/html:ro
+      - ../../mission-1-app/web-app/dist:/usr/share/nginx/html:ro
+      - ../../admin/dist:/usr/share/nginx/admin:ro
       - ../server-config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backoffice

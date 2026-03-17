@@ -4,7 +4,7 @@ Socle de demarrage conforme au CDC fourni pour les 3 lots, avec implementation i
 
 ## Structure
 
-- `mission-1-app/web-app`: Frontend JavaScript (espaces Particuliers, Pro/Artisans, Salaries, Admin).
+- `admin`: Frontend Vue.js d'administration servi en statique apres build.
 - `mission-1-app/backoffice`: Backend PHP (API metier + administration).
 - `mission-1-app/api-go`: API Go (upcycling score, validation code-barres, preview notifications).
 - `deploy/docker-compose`: Orchestration Docker de l'application.
@@ -26,7 +26,7 @@ Health checks:
 
 ## Etat d'implementation Mission 1
 
-- Front JavaScript: OK (MVP fonctionnel).
+- Front Admin Vue.js: OK (servi depuis `admin/dist` dans la stack Docker).
 - Back PHP: OK (routes principales, stockage JSON, metriques admin).
 - API Go: OK (score/validation).
 - Stripe/OneSignal/PDF: points d'integration prepares, implementation complete a brancher dans l'iteration suivante.

@@ -342,24 +342,6 @@ export const adminApi = {
     return deleteCollectionItem("events", id);
   },
 
-  async getPortalSnapshot() {
-    const db = await getDashboardSnapshot();
-    return {
-      particulier: {
-        quickActions: ["Deposer un objet", "Suivre un atelier", "Voir mes depots"],
-        prestations: (db.prestations ?? []).slice(0, 3)
-      },
-      prestataire: {
-        quickActions: ["Publier une offre", "Suivre les demandes", "Mettre a jour le stock"],
-        prestations: (db.prestations ?? []).slice(0, 4)
-      },
-      salarie: {
-        quickActions: ["Planifier un atelier", "Publier une actualite", "Verifier les evenements"],
-        events: (db.events ?? []).slice(0, 3)
-      }
-    };
-  },
-
   getCapabilities() {
     return capabilities;
   }

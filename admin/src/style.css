@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap");
+
 :root {
   font-family: "DM Sans", sans-serif;
   color: #1a1f1c;
@@ -18,8 +20,6 @@
   --text-muted: #8a9590;
   --border: #d8e5dc;
 }
-
-@import url("https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap");
 
 * {
   box-sizing: border-box;

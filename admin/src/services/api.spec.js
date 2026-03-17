@@ -7,20 +7,4 @@ describe("adminApi", () => {
     expect(capabilities.prestations.create).toBe(true);
     expect(capabilities.users.delete).toBe(true);
   });
-
-  it("returns a portal snapshot structure", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: async () => ({
-        users: [],
-        prestations: [],
-        categories: [],
-        events: []
-      })
-    });
-
-    const snapshot = await adminApi.getPortalSnapshot();
-    expect(snapshot).toHaveProperty("particulier");
-    expect(snapshot).toHaveProperty("prestataire");
-    expect(snapshot).toHaveProperty("salarie");
-  });
 });

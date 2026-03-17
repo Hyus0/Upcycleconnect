@@ -42,7 +42,6 @@ L'application essaie d'abord les endpoints existants, puis bascule sur la base l
 - Prestations CRUD local + tentative d'appel API `/api/annonces`
 - Categories CRUD local
 - Evenements CRUD local
-- Espaces de depart : particulier, prestataire, salarie
 
 ## Endpoints utilises
 

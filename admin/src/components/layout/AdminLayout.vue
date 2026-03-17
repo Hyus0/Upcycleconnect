@@ -22,21 +22,6 @@
           <span><strong>{{ item.label }}</strong></span>
         </RouterLink>
       </nav>
-
-      <nav class="nav-group nav-group-soft">
-        <div class="nav-heading">Espaces</div>
-        <RouterLink
-          v-for="item in portalItems"
-          :key="item.name"
-          :to="item.to"
-          class="nav-link nav-link-soft"
-          active-class="nav-link-active"
-          @click="sidebarOpen = false"
-        >
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span><strong>{{ item.label }}</strong></span>
-        </RouterLink>
-      </nav>
     </aside>
 
     <div class="main-column">
@@ -64,12 +49,6 @@ const adminItems = [
   { name: "prestations", label: "Prestations", to: { name: "prestations" }, icon: "03" },
   { name: "categories", label: "Categories", to: { name: "categories" }, icon: "04" },
   { name: "events", label: "Evenements", to: { name: "events" }, icon: "05" }
-];
-
-const portalItems = [
-  { name: "space-particulier", label: "Particulier", to: { name: "space-particulier" }, icon: "P" },
-  { name: "space-prestataire", label: "Prestataire", to: { name: "space-prestataire" }, icon: "R" },
-  { name: "space-salarie", label: "Salarie", to: { name: "space-salarie" }, icon: "S" }
 ];
 </script>
 
@@ -138,10 +117,6 @@ const portalItems = [
   gap: 12px;
 }
 
-.nav-group-soft {
-  margin-top: auto;
-}
-
 .nav-heading {
   padding: 0 4px;
   color: rgba(255, 255, 255, 0.45);
@@ -161,10 +136,6 @@ const portalItems = [
   color: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.03);
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
-
-.nav-link-soft {
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .nav-link-active {

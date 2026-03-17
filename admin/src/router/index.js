@@ -5,9 +5,6 @@ import UsersPage from "../pages/UsersPage.vue";
 import PrestationsPage from "../pages/PrestationsPage.vue";
 import CategoriesPage from "../pages/CategoriesPage.vue";
 import EventsPage from "../pages/EventsPage.vue";
-import ParticulierPortalPage from "../pages/portals/ParticulierPortalPage.vue";
-import PrestatairePortalPage from "../pages/portals/PrestatairePortalPage.vue";
-import SalariePortalPage from "../pages/portals/SalariePortalPage.vue";
 
 const routes = [
   {
@@ -28,25 +25,7 @@ const routes = [
         component: CategoriesPage,
         meta: { title: "Categories" }
       },
-      { path: "events", name: "events", component: EventsPage, meta: { title: "Evenements" } },
-      {
-        path: "spaces/particulier",
-        name: "space-particulier",
-        component: ParticulierPortalPage,
-        meta: { title: "Espace Particulier" }
-      },
-      {
-        path: "spaces/prestataire",
-        name: "space-prestataire",
-        component: PrestatairePortalPage,
-        meta: { title: "Espace Prestataire" }
-      },
-      {
-        path: "spaces/salarie",
-        name: "space-salarie",
-        component: SalariePortalPage,
-        meta: { title: "Espace Salarie" }
-      }
+      { path: "events", name: "events", component: EventsPage, meta: { title: "Evenements" } }
     ]
   }
 ];

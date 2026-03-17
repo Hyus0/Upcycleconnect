@@ -2,7 +2,7 @@
 
 ## Technologies imposees
 
-- Front JavaScript: implemente (`mission-1-app/web-app`).
+- Front admin Vue.js: implemente (`admin/`).
 - Back PHP: implemente (`mission-1-app/backoffice`).
 - API Go: implemente (`mission-1-app/api-go`).
 - Stripe: integration preparee (etat `pending_stripe_integration`).

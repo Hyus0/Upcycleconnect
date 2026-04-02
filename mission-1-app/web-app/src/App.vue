@@ -1,174 +1,261 @@
 <template>
-  <div class="page-shell">
-    <header class="hero">
-      <div class="hero-copy">
-        <div class="eyebrow">Mission 1</div>
-        <h1>Annonces disponibles</h1>
-        <p>
-          Consulte les objets proposes sur UpcycleConnect, filtre par type et trouve rapidement ce
-          qui est reutilisable.
-        </p>
+  <div class="dashboard-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img :src="logoSrc" alt="UpcycleConnect" class="sidebar-brand__logo" />
       </div>
 
-      <aside class="hero-panel">
-        <span class="hero-chip">Catalogue public</span>
-        <strong>{{ filteredAnnonces.length }} annonce{{ filteredAnnonces.length > 1 ? "s" : "" }}</strong>
-        <small>{{ sourceLabel }}</small>
-      </aside>
-    </header>
-
-    <section class="toolbar-card">
-      <label class="search-field">
-        <span>Recherche</span>
-        <input v-model="filters.search" type="search" placeholder="Titre, ville, description..." />
-      </label>
-
-      <label class="select-field">
-        <span>Type</span>
-        <select v-model="filters.type">
-          <option value="">Tous</option>
-          <option value="don">Don</option>
-          <option value="vente">Vente</option>
-        </select>
-      </label>
-
-      <label class="select-field">
-        <span>Statut</span>
-        <select v-model="filters.status">
-          <option value="">Tous</option>
-          <option value="en ligne">En ligne</option>
-          <option value="reserve">Reserve</option>
-          <option value="vendu">Vendu</option>
-        </select>
-      </label>
-    </section>
-
-    <section class="content-grid">
-      <aside class="summary-card">
-        <div class="summary-head">
-          <h2>Vue rapide</h2>
-          <span class="source-badge" :class="{ fallback: source !== 'api' }">{{ sourceBadge }}</span>
+      <article class="sidebar-user">
+        <div class="sidebar-user__avatar">{{ displayInitials(currentUser.fullName) }}</div>
+        <div>
+          <strong>{{ displayValue(currentUser.fullName) }}</strong>
+          <span>{{ displayValue(currentUser.role) }} - Score {{ displayValue(stats.score) }} pts</span>
         </div>
+      </article>
 
-        <div class="summary-stats">
-          <article>
-            <span>Total</span>
-            <strong>{{ filteredAnnonces.length }}</strong>
-          </article>
-          <article>
-            <span>Dons</span>
-            <strong>{{ donationsCount }}</strong>
-          </article>
-          <article>
-            <span>Ventes</span>
-            <strong>{{ salesCount }}</strong>
-          </article>
+      <div class="sidebar-group">
+        <span class="sidebar-label">Principal</span>
+        <a class="sidebar-link active" href="#">Tableau de bord</a>
+        <a class="sidebar-link" href="#">Mes annonces</a>
+        <a class="sidebar-link" href="#">Mes depots conteneurs</a>
+        <a class="sidebar-link" href="#">Upcycling Score</a>
+      </div>
+
+      <div class="sidebar-group">
+        <span class="sidebar-label">Services</span>
+        <a class="sidebar-link" href="#">Formations & Ateliers</a>
+        <a class="sidebar-link" href="#">Mon planning</a>
+        <a class="sidebar-link" href="#">Espace Conseils</a>
+        <a class="sidebar-link" href="#">Catalogue offres</a>
+      </div>
+
+      <div class="sidebar-group">
+        <span class="sidebar-label">Communaute</span>
+        <a class="sidebar-link" href="#">Forums</a>
+        <a class="sidebar-link" href="#">Evenements</a>
+      </div>
+
+      <button class="sidebar-logout">Se deconnecter</button>
+    </aside>
+
+    <main class="dashboard-main">
+      <header class="dashboard-header">
+        <div>
+          <div class="breadcrumbs">Accueil > Tableau de bord</div>
+          <h1>Bonjour {{ displayValue(currentUser.firstName) }} 👋</h1>
+          <p>Voici un resume de votre activite sur UpcycleConnect.</p>
         </div>
+        <button class="primary-action">+ Deposer une annonce</button>
+      </header>
 
-        <div class="summary-block">
-          <h3>Conseil</h3>
-          <p>Affiche d'abord un type d'annonce puis affine avec une ville ou un mot-clé.</p>
-        </div>
-      </aside>
+      <section class="headline-grid">
+        <article class="score-card">
+          <div class="card-kicker">Upcycling Score</div>
+          <strong>{{ displayValue(stats.score, " pts") }}</strong>
+          <p>Niveau : {{ displayValue(stats.level) }}</p>
+          <div class="score-details">
+            <div>
+              <strong>{{ displayValue(stats.co2, " kg") }}</strong>
+              <span>CO2 evite</span>
+            </div>
+            <div>
+              <strong>{{ displayValue(stats.recycled) }}</strong>
+              <span>Objets recycles</span>
+            </div>
+            <div>
+              <strong>{{ displayValue(stats.saved, " EUR") }}</strong>
+              <span>Economise</span>
+            </div>
+          </div>
+        </article>
 
-      <main class="list-card">
-        <div class="list-head">
-          <div>
-            <h2>Catalogue</h2>
-            <p>
-              {{ loading ? "Chargement..." : `${filteredAnnonces.length} resultat${filteredAnnonces.length > 1 ? "s" : ""}` }}
-            </p>
+        <article class="metric-card">
+          <strong>{{ displayValue(metrics.activeAnnonces) }}</strong>
+          <span>Annonces actives</span>
+          <small>{{ metrics.activeAnnonces === null ? "NULL" : "+1 ce mois" }}</small>
+        </article>
+
+        <article class="metric-card warning">
+          <strong>{{ displayValue(metrics.pendingDeposits) }}</strong>
+          <span>Depots en attente</span>
+          <small>{{ metrics.pendingDeposits === null ? "NULL" : "EN COURS" }}</small>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Mes dernieres annonces</h2>
+          <div class="panel-actions">
+            <input type="search" placeholder="Rechercher..." />
+            <select>
+              <option>Tous statuts</option>
+            </select>
+            <button class="secondary-action">+ Nouvelle annonce</button>
           </div>
         </div>
 
-        <div v-if="loading" class="state-card">Chargement des annonces...</div>
-        <div v-else-if="error" class="state-card state-error">Impossible de charger les annonces.</div>
-        <div v-else-if="filteredAnnonces.length === 0" class="state-card">
-          Aucune annonce ne correspond a ces filtres.
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Objet</th>
+              <th>Categorie</th>
+              <th>Type</th>
+              <th>Statut</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in latestAnnonces" :key="item.id">
+              <td>{{ displayValue(item.title) }}</td>
+              <td>{{ displayValue(item.category) }}</td>
+              <td><span class="pill">{{ displayValue(item.type) }}</span></td>
+              <td><span class="pill soft">{{ displayValue(item.status) }}</span></td>
+              <td>{{ displayValue(item.date) }}</td>
+              <td class="table-actions">
+                <button>Voir</button>
+                <button class="ghost">Modifier</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Mon planning - semaine</h2>
+          <button class="outline-action">Vue mensuelle</button>
         </div>
 
-        <section v-else class="annonces-grid">
-          <article v-for="annonce in filteredAnnonces" :key="annonce.id" class="annonce-card">
-            <div class="card-top">
-              <div>
-                <h3>{{ annonce.titre }}</h3>
-              </div>
-              <span class="type-badge" :class="annonce.type">{{ annonce.type || "annonce" }}</span>
-            </div>
-
-            <div class="card-meta">
-              <span>{{ annonce.ville || "Ville non renseignee" }}</span>
-              <span>{{ annonce.etat_objet || "Etat non renseigne" }}</span>
-              <span>{{ formatDate(annonce.date_creation) }}</span>
-            </div>
-
-            <p class="card-description">{{ annonce.description || "Aucune description disponible." }}</p>
-
-            <div class="card-foot">
-              <div>
-                <strong class="price">{{ formatPrice(annonce.prix, annonce.type) }}</strong>
-                <span>{{ annonce.statut || "en ligne" }}</span>
-              </div>
-              <span>{{ annonce.code_postal || "" }}</span>
+        <div class="calendar-grid">
+          <article v-for="day in planningDays" :key="day.label" class="calendar-day">
+            <span class="calendar-day__label">{{ day.label }}</span>
+            <strong>{{ day.date }}</strong>
+            <div class="calendar-event">
+              {{ displayValue(day.event) }}
             </div>
           </article>
-        </section>
-      </main>
-    </section>
+        </div>
+      </section>
+
+      <section class="bottom-grid">
+        <article class="info-card">
+          <div class="card-kicker">Conseil du jour</div>
+          <h3>{{ displayValue(advice.title) }}</h3>
+          <p>{{ displayValue(advice.content) }}</p>
+          <a href="#">Lire la suite ></a>
+        </article>
+
+        <article class="info-card warning-card">
+          <div class="card-kicker">Notification</div>
+          <h3>{{ displayValue(notification.title) }}</h3>
+          <p>{{ displayValue(notification.content) }}</p>
+          <a href="#">Voir le projet ></a>
+        </article>
+      </section>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
-import { fetchAnnonces, fallbackAnnonces } from "./services/annoncesApi";
+import { computed, onMounted, ref } from "vue";
+import logoSrc from "./components/logo.png";
+import { fetchUserDashboard } from "./services/userDashboardApi";
 
-const loading = ref(true);
-const error = ref(false);
-const source = ref("api");
-const annonces = ref([]);
-
-const filters = reactive({
-  search: "",
-  type: "",
-  status: ""
+const state = ref({
+  user: null,
+  annonces: null,
+  planning: null,
+  advice: null,
+  notification: null
 });
 
-const filteredAnnonces = computed(() => {
-  const search = filters.search.trim().toLowerCase();
-  return annonces.value.filter((annonce) => {
-    const matchesSearch =
-      !search ||
-      [
-        annonce.titre,
-        annonce.description,
-        annonce.ville,
-        annonce.adresse,
-        annonce.etat_objet
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(search);
+const currentUser = computed(() => ({
+  firstName: state.value.user?.firstName ?? null,
+  fullName: state.value.user?.fullName ?? null,
+  role: state.value.user?.role ?? null
+}));
 
-    const matchesType = !filters.type || annonce.type === filters.type;
-    const matchesStatus =
-      !filters.status || (annonce.statut || "").toLowerCase() === filters.status.toLowerCase();
+const stats = computed(() => ({
+  score: null,
+  level: null,
+  co2: null,
+  recycled: state.value.annonces ? state.value.annonces.length : null,
+  saved: null
+}));
 
-    return matchesSearch && matchesType && matchesStatus;
-  });
+const metrics = computed(() => ({
+  activeAnnonces: state.value.annonces
+    ? state.value.annonces.filter((item) => (item.statut ?? "").toLowerCase() !== "vendu").length
+    : null,
+  pendingDeposits: state.value.planning
+    ? state.value.planning.filter((item) => (item.task ?? "").trim() !== "").length
+    : null
+}));
+
+const latestAnnonces = computed(() => {
+  if (!state.value.annonces || state.value.annonces.length === 0) {
+    return [
+      {
+        id: "null-annonce",
+        title: null,
+        category: null,
+        type: null,
+        status: null,
+        date: null
+      }
+    ];
+  }
+
+  return state.value.annonces.slice(0, 3).map((item) => ({
+    id: item.id,
+    title: item.titre ?? null,
+    category: item.categorie ?? null,
+    type: item.type ?? null,
+    status: item.statut ?? null,
+    date: formatDate(item.date_creation)
+  }));
 });
 
-const donationsCount = computed(() => filteredAnnonces.value.filter((item) => item.type === "don").length);
-const salesCount = computed(() => filteredAnnonces.value.filter((item) => item.type === "vente").length);
-const sourceBadge = computed(() => (source.value === "api" ? "API" : "Mode local"));
-const sourceLabel = computed(() =>
-  source.value === "api" ? "Mise a jour depuis l'API annonces" : "Affichage avec donnees locales"
-);
+const planningDays = computed(() => {
+  const labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  const items = state.value.planning ?? [];
+
+  return labels.map((label, index) => ({
+    label,
+    date: String(23 + index),
+    event: items[index]?.task ?? null
+  }));
+});
+
+const advice = computed(() => ({
+  title: state.value.advice?.title ?? null,
+  content: state.value.advice?.content ?? null
+}));
+
+const notification = computed(() => ({
+  title: state.value.notification?.title ?? null,
+  content: state.value.notification?.content ?? null
+}));
+
+function displayValue(value, suffix = "") {
+  return value === null || value === undefined || value === "" ? "NULL" : `${value}${suffix}`;
+}
+
+function displayInitials(value) {
+  if (!value) return "NU";
+  return value
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 function formatDate(value) {
+  if (!value) return null;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
+  if (Number.isNaN(date.getTime())) return null;
   return new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
     month: "short",
@@ -176,28 +263,7 @@ function formatDate(value) {
   }).format(date);
 }
 
-function formatPrice(value, type) {
-  if (type === "don" || Number(value) === 0) {
-    return "Gratuit";
-  }
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR"
-  }).format(Number(value));
-}
-
 onMounted(async () => {
-  loading.value = true;
-  error.value = false;
-  try {
-    annonces.value = await fetchAnnonces();
-    source.value = "api";
-  } catch {
-    annonces.value = fallbackAnnonces;
-    source.value = "fallback";
-    error.value = false;
-  } finally {
-    loading.value = false;
-  }
+  state.value = await fetchUserDashboard();
 });
 </script>

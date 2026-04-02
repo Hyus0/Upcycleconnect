@@ -2,7 +2,7 @@ services:
   gateway:
     image: nginx:1.27-alpine
     ports:
-      - "8080:80"
+      - "8088:80"
     volumes:
       - ../../mission-1-app/web-app/dist:/usr/share/nginx/html:ro
       - ../../admin/dist:/usr/share/nginx/admin:ro

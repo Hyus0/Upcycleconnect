@@ -1,7 +1,10 @@
 FROM golang:1.25-alpine AS build
 WORKDIR /app
-COPY go.mod ./
-COPY main.go ./
+COPY go.mod go.sum ./
+COPY api.go ./
+COPY app/ ./app/
+COPY db/ ./db/
+COPY models/ ./models/
 RUN go build -o api-go .
 
 FROM alpine:3.21

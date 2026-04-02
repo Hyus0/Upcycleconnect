@@ -1,14 +1,10 @@
-import { MissingEndpointError, request } from "./http";
+import { request } from "./http";
 import {
-  deleteCollectionItem,
   getDashboardSnapshot,
-  insertCollectionItem,
   readCollection,
-  updateCollectionItem
 } from "./mockDb";
 
-const BACKOFFICE_API_BASE =
-  import.meta.env.VITE_BACKOFFICE_API_BASE ?? "http://localhost:8080/api";
+const GO_API_BASE = import.meta.env.VITE_GO_API_BASE ?? "/api-go";
 
 function buildQuery(params = {}) {
   const searchParams = new URLSearchParams();
@@ -161,13 +157,23 @@ function filterEvents(items, filters = {}) {
 }
 
 async function readUsersFromApi() {
-  const response = await request(`${BACKOFFICE_API_BASE}/admin/users`);
+  const response = await request(`${GO_API_BASE}/admin/users`);
   return (response.items ?? []).map(normalizeUser);
 }
 
 async function readPrestationsFromApi(filters = {}) {
-  const response = await request(`${BACKOFFICE_API_BASE}/annonces${buildQuery({ type: filters.type })}`);
+  const response = await request(`${GO_API_BASE}/admin/prestations${buildQuery({ type: filters.type })}`);
   return (response.items ?? []).map(normalizePrestation);
+}
+
+async function readCategoriesFromApi() {
+  const response = await request(`${GO_API_BASE}/admin/categories`);
+  return (response.items ?? []).map(normalizeCategory);
+}
+
+async function readEventsFromApi() {
+  const response = await request(`${GO_API_BASE}/admin/events`);
+  return (response.items ?? []).map(normalizeEvent);
 }
 
 async function readUsersLocal() {
@@ -198,7 +204,7 @@ export const adminApi = {
   async getDashboard() {
     try {
       const [metricsResponse, users, prestations] = await Promise.all([
-        request(`${BACKOFFICE_API_BASE}/admin/metrics`),
+        request(`${GO_API_BASE}/admin/metrics`),
         readUsersFromApi(),
         readPrestationsFromApi()
       ]);
@@ -206,8 +212,8 @@ export const adminApi = {
       return buildDashboard({
         users,
         prestations,
-        categories: await readCategoriesLocal(),
-        events: await readEventsLocal(),
+        categories: await readCategoriesFromApi(),
+        events: await readEventsFromApi(),
         metrics: metricsResponse.metrics ?? {},
         source: "api"
       });
@@ -235,32 +241,33 @@ export const adminApi = {
   },
 
   async createUser(payload) {
-    return insertCollectionItem(
-      "users",
-      {
+    const response = await request(`${GO_API_BASE}/admin/users`, {
+      method: "POST",
+      body: JSON.stringify({
         ...payload,
         createdAt: payload.createdAt ?? new Date().toISOString().slice(0, 10)
-      },
-      "u"
-    );
+      })
+    });
+    return response.created ?? response;
   },
 
   async updateUser(id, payload) {
-    return updateCollectionItem("users", id, payload);
+    const response = await request(`${GO_API_BASE}/admin/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    return response.updated ?? response;
   },
 
   async toggleUserStatus(id) {
-    const users = await readUsersLocal();
-    const user = users.find((entry) => entry.id === id);
-    if (!user) {
-      throw new MissingEndpointError("utilisateur.toggle", "Utilisateur introuvable en local.");
-    }
-    const nextStatus = user.status === "active" ? "inactive" : "active";
-    return updateCollectionItem("users", id, { status: nextStatus });
+    const response = await request(`${GO_API_BASE}/admin/users/${id}/status`, {
+      method: "PATCH"
+    });
+    return response.updated ?? response;
   },
 
   async deleteUser(id) {
-    return deleteCollectionItem("users", id);
+    return request(`${GO_API_BASE}/admin/users/${id}`, { method: "DELETE" });
   },
 
   async listPrestations(filters = {}) {
@@ -278,68 +285,91 @@ export const adminApi = {
       title: payload.title,
       description: payload.description,
       type: payload.type,
-      price: Number(payload.price ?? 0)
+      price: Number(payload.price ?? 0),
+      status: payload.status ?? "draft",
+      provider: payload.provider ?? "Equipe locale"
     };
 
-    try {
-      return await request(`${BACKOFFICE_API_BASE}/annonces`, {
-        method: "POST",
-        body: JSON.stringify(requestPayload)
-      });
-    } catch {
-      return insertCollectionItem(
-        "prestations",
-        {
-          ...requestPayload,
-          status: payload.status ?? "draft",
-          provider: payload.provider ?? "Equipe locale",
-          createdAt: new Date().toISOString().slice(0, 10)
-        },
-        "p"
-      );
-    }
+    const response = await request(`${GO_API_BASE}/admin/prestations`, {
+      method: "POST",
+      body: JSON.stringify({
+        ...requestPayload,
+        createdAt: new Date().toISOString().slice(0, 10)
+      })
+    });
+    return response.created ?? response;
   },
 
   async updatePrestation(id, payload) {
-    return updateCollectionItem("prestations", id, payload);
+    const response = await request(`${GO_API_BASE}/admin/prestations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    return response.updated ?? response;
   },
 
   async deletePrestation(id) {
-    return deleteCollectionItem("prestations", id);
+    return request(`${GO_API_BASE}/admin/prestations/${id}`, { method: "DELETE" });
   },
 
   async listCategories(filters = {}) {
-    const items = await readCategoriesLocal();
+    let items;
+    try {
+      items = await readCategoriesFromApi();
+    } catch {
+      items = await readCategoriesLocal();
+    }
     return paginate(filterCategories(items, filters), filters.page, filters.pageSize);
   },
 
   async createCategory(payload) {
-    return insertCollectionItem("categories", payload, "c");
+    const response = await request(`${GO_API_BASE}/admin/categories`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    return response.created ?? response;
   },
 
   async updateCategory(id, payload) {
-    return updateCollectionItem("categories", id, payload);
+    const response = await request(`${GO_API_BASE}/admin/categories/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    return response.updated ?? response;
   },
 
   async deleteCategory(id) {
-    return deleteCollectionItem("categories", id);
+    return request(`${GO_API_BASE}/admin/categories/${id}`, { method: "DELETE" });
   },
 
   async listEvents(filters = {}) {
-    const items = await readEventsLocal();
+    let items;
+    try {
+      items = await readEventsFromApi();
+    } catch {
+      items = await readEventsLocal();
+    }
     return paginate(filterEvents(items, filters), filters.page, filters.pageSize);
   },
 
   async createEvent(payload) {
-    return insertCollectionItem("events", payload, "e");
+    const response = await request(`${GO_API_BASE}/admin/events`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    return response.created ?? response;
   },
 
   async updateEvent(id, payload) {
-    return updateCollectionItem("events", id, payload);
+    const response = await request(`${GO_API_BASE}/admin/events/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    return response.updated ?? response;
   },
 
   async deleteEvent(id) {
-    return deleteCollectionItem("events", id);
+    return request(`${GO_API_BASE}/admin/events/${id}`, { method: "DELETE" });
   },
 
   getCapabilities() {

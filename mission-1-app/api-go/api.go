@@ -19,13 +19,32 @@ func main() {
 
 	db.Conn = db.NewDB()
 
-	//Utilisateur
+	http.HandleFunc("GET /", healthCheck)
+	http.HandleFunc("GET /health", healthCheck)
+
+	// Admin API consumed by the Vue backoffice.
+	http.HandleFunc("GET /api/admin/metrics", app.AdminMetrics)
 	http.HandleFunc("GET /{$}", healthCheck)
-	http.HandleFunc("GET /api/admin/users", app.GetAllUsers)
+	http.HandleFunc("GET /api/admin/users", app.AdminListUsers)
+	http.HandleFunc("POST /api/admin/users", app.AdminCreateUser)
+	http.HandleFunc("PUT /api/admin/users/{id}", app.AdminUpdateUser)
+	http.HandleFunc("PATCH /api/admin/users/{id}/status", app.AdminToggleUserStatus)
+	http.HandleFunc("DELETE /api/admin/users/{id}", app.AdminDeleteUser)
+	http.HandleFunc("GET /api/admin/prestations", app.AdminListPrestations)
+	http.HandleFunc("POST /api/admin/prestations", app.AdminCreatePrestation)
+	http.HandleFunc("PUT /api/admin/prestations/{id}", app.AdminUpdatePrestation)
+	http.HandleFunc("DELETE /api/admin/prestations/{id}", app.AdminDeletePrestation)
+	http.HandleFunc("GET /api/admin/categories", app.AdminListCategories)
+	http.HandleFunc("POST /api/admin/categories", app.AdminCreateCategory)
+	http.HandleFunc("PUT /api/admin/categories/{id}", app.AdminUpdateCategory)
+	http.HandleFunc("DELETE /api/admin/categories/{id}", app.AdminDeleteCategory)
+	http.HandleFunc("GET /api/admin/events", app.AdminListEvents)
+	http.HandleFunc("POST /api/admin/events", app.AdminCreateEvent)
+	http.HandleFunc("PUT /api/admin/events/{id}", app.AdminUpdateEvent)
+	http.HandleFunc("DELETE /api/admin/events/{id}", app.AdminDeleteEvent)
+
+	// Legacy routes.
 	http.HandleFunc("GET /api/admin/user/{id}", app.GetUser)
-	http.HandleFunc("POST /api/admin/users", app.CreateUser)
-	http.HandleFunc("PUT /api/admin/users/{id}", app.ModifyUser)
-	http.HandleFunc("DELETE /api/admin/users/{id}", app.DeleteUser)
 	
 	//Annonce
 	http.HandleFunc("GET /annonces", app.GetAllAnnonces)

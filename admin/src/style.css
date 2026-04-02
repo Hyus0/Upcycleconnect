@@ -2,23 +2,23 @@
 
 :root {
   font-family: "DM Sans", sans-serif;
-  color: #1a1f1c;
-  background: #f7f9f7;
-  --brand-green: #2d7a4f;
-  --brand-green-light: #4bab73;
-  --brand-green-pale: #e8f5ee;
-  --brand-earth: #8b5e3c;
-  --brand-sand: #f2e8d9;
-  --brand-dark: #1a1f1c;
-  --brand-charcoal: #2e3530;
-  --brand-mist: #f7f9f7;
-  --accent-amber: #e8a030;
-  --accent-coral: #d95f4b;
-  --accent-teal: #1b8a8a;
-  --text-primary: #1a1f1c;
-  --text-secondary: #5a6660;
-  --text-muted: #8a9590;
-  --border: #d8e5dc;
+  color: #edf4ef;
+  background: #0b1210;
+  --brand-green: #62c488;
+  --brand-green-light: #88dca8;
+  --brand-green-pale: rgba(98, 196, 136, 0.14);
+  --brand-earth: #ddb48a;
+  --brand-sand: #2a2218;
+  --brand-dark: #08100d;
+  --brand-charcoal: #dce9e1;
+  --brand-mist: #101916;
+  --accent-amber: #f0b24b;
+  --accent-coral: #e56f5c;
+  --accent-teal: #3fc2b6;
+  --text-primary: #edf4ef;
+  --text-secondary: #a7bbb0;
+  --text-muted: #72857b;
+  --border: rgba(152, 179, 163, 0.2);
 }
 
 * {
@@ -34,9 +34,9 @@ body,
 
 body {
   background:
-    radial-gradient(circle at 10% 8%, rgba(75, 171, 115, 0.1), transparent 20%),
-    radial-gradient(circle at 88% 90%, rgba(27, 138, 138, 0.08), transparent 24%),
-    linear-gradient(180deg, #f6f8f5 0%, #edf3ee 100%);
+    radial-gradient(circle at 10% 8%, rgba(75, 171, 115, 0.14), transparent 20%),
+    radial-gradient(circle at 88% 90%, rgba(63, 194, 182, 0.12), transparent 24%),
+    linear-gradient(180deg, #0b1210 0%, #111b17 54%, #0d1512 100%);
   color: var(--text-primary);
 }
 
@@ -99,13 +99,13 @@ button:focus {
 }
 
 .surface-card {
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(18, 28, 24, 0.82);
   backdrop-filter: blur(18px);
-  border: 1px solid rgba(216, 229, 220, 0.78);
+  border: 1px solid rgba(152, 179, 163, 0.14);
   border-radius: 26px;
   box-shadow:
-    0 16px 40px rgba(34, 55, 42, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    0 18px 42px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .surface-card h3 {
@@ -148,8 +148,8 @@ button:focus {
 }
 
 .button-secondary {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--brand-charcoal);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
   border: 1px solid var(--border);
 }
 
@@ -164,8 +164,37 @@ button:focus {
 }
 
 .button-ghost {
-  background: rgba(45, 122, 79, 0.08);
-  color: var(--brand-green);
+  background: rgba(98, 196, 136, 0.1);
+  color: var(--brand-green-light);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(7, 14, 12, 0.92);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+select option {
+  background: #12201a;
+  color: var(--text-primary);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  background: rgba(10, 18, 15, 0.98);
+  border-color: rgba(98, 196, 136, 0.45);
 }
 
 .toolbar {

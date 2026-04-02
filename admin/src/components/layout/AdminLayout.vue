@@ -5,7 +5,7 @@
     <aside class="sidebar surface-card" :class="{ open: sidebarOpen }">
       <div class="sidebar-brand">
         <div class="sidebar-badge">Admin</div>
-        <h1>Upcycle<span>Connect</span></h1>
+        <img class="sidebar-logo" :src="logoSrc" alt="UpcycleConnect" />
       </div>
 
       <nav class="nav-group">
@@ -40,6 +40,7 @@ import { ref } from "vue";
 import { RouterLink, RouterView } from "vue-router";
 import TopBar from "./TopBar.vue";
 import ToastHost from "../ToastHost.vue";
+import logoSrc from "../logo.png";
 
 const sidebarOpen = ref(false);
 
@@ -88,16 +89,11 @@ const adminItems = [
   margin-bottom: 6px;
 }
 
-.sidebar h1 {
-  margin: 14px 0 0;
-  font-family: "Syne", sans-serif;
-  font-size: 2.65rem;
-  line-height: 0.88;
-  letter-spacing: -0.05em;
-}
-
-.sidebar h1 span {
-  color: var(--brand-green-light);
+.sidebar-logo {
+  display: block;
+  width: min(100%, 88px);
+  margin-top: 14px;
+  object-fit: contain;
 }
 
 .sidebar-badge {

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import AdminLayout from "../components/layout/AdminLayout.vue";
+import LoginPage from "../pages/LoginPage.vue";
 import DashboardPage from "../pages/DashboardPage.vue";
 import UsersPage from "../pages/UsersPage.vue";
 import PrestationsPage from "../pages/PrestationsPage.vue";
@@ -7,6 +8,12 @@ import CategoriesPage from "../pages/CategoriesPage.vue";
 import EventsPage from "../pages/EventsPage.vue";
 
 const routes = [
+  {
+    path: "/login",
+    name: "login",
+    component: LoginPage,
+    meta: { title: "Connexion" }
+  },
   {
     path: "/",
     component: AdminLayout,
@@ -31,7 +38,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 });
 

@@ -11,9 +11,6 @@
         <strong class="title">Admin</strong>
       </div>
     </div>
-    <div class="topbar-meta">
-      <span class="pill pill-green">Local ready</span>
-    </div>
   </header>
 </template>
 
@@ -62,26 +59,6 @@ defineEmits(["toggle-menu"]);
   display: block;
   margin-top: 4px;
   font-size: 1.1rem;
-}
-
-.topbar-meta {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.pill {
-  border-radius: 999px;
-  padding: 8px 11px;
-  background: var(--brand-sand);
-  color: var(--brand-earth);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.pill-green {
-  background: var(--brand-green-pale);
-  color: var(--brand-green);
 }
 
 @media (max-width: 1080px) {

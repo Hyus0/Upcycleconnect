@@ -39,6 +39,8 @@
     </aside>
 
     <main class="dashboard-main">
+      <SiteNavbar variant="app" :user-name="currentUser.fullName ?? 'Marie Lambert'" :is-authenticated="true" />
+
       <header class="dashboard-header">
         <div>
           <div class="breadcrumbs">Accueil > Tableau de bord</div>
@@ -159,6 +161,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import SiteNavbar from "./components/SiteNavbar.vue";
 import logoSrc from "./components/logo.png";
 import { fetchUserDashboard } from "./services/userDashboardApi";
 

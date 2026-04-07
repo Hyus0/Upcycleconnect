@@ -4,8 +4,8 @@
 
     <aside class="sidebar surface-card" :class="{ open: sidebarOpen }">
       <div class="sidebar-brand">
-        <div class="sidebar-badge">Admin</div>
         <img class="sidebar-logo" :src="logoSrc" alt="UpcycleConnect" />
+        <div class="sidebar-badge">Admin</div>
       </div>
 
       <nav class="nav-group">
@@ -93,12 +93,13 @@ const currentRouteName = computed(() => route.name);
 
 .sidebar-brand {
   margin-bottom: 6px;
+  display: grid;
+  gap: 14px;
 }
 
 .sidebar-logo {
   display: block;
   width: min(100%, 88px);
-  margin-top: 14px;
   object-fit: contain;
 }
 

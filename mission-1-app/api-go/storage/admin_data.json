@@ -1,0 +1,22 @@
+{
+  "users": [],
+  "prestations": [
+    {
+      "id": "p1",
+      "title": "Diagnostic mobilier",
+      "description": "Analyse d'etat et estimation de remise en valeur.",
+      "type": "service",
+      "price": 45,
+      "status": "published",
+      "provider": "Atelier Renouveau",
+      "createdAt": "2026-03-04"
+    }
+  ],
+  "categories": [],
+  "events": [],
+  "userSeq": 4,
+  "prestationSeq": 3,
+  "categorySeq": 4,
+  "eventSeq": 4,
+  "lastUpdatedAt": "2026-04-07T12:06:26Z"
+}

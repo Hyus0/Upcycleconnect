@@ -22,3 +22,5 @@ services:
     build:
       context: ../../mission-1-app/api-go
       dockerfile: Dockerfile
+    volumes:
+      - ../../mission-1-app/api-go/storage:/app/storage

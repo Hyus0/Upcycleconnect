@@ -1,8 +1,4 @@
 import { request } from "./http";
-import {
-  getDashboardSnapshot,
-  readCollection,
-} from "./mockDb";
 
 const GO_API_BASE = import.meta.env.VITE_GO_API_BASE ?? "/api-go";
 
@@ -176,67 +172,36 @@ async function readEventsFromApi() {
   return (response.items ?? []).map(normalizeEvent);
 }
 
-async function readUsersLocal() {
-  return (await readCollection("users")).map(normalizeUser);
-}
-
-async function readPrestationsLocal() {
-  return (await readCollection("prestations")).map(normalizePrestation);
-}
-
-async function readCategoriesLocal() {
-  return (await readCollection("categories")).map(normalizeCategory);
-}
-
-async function readEventsLocal() {
-  return (await readCollection("events")).map(normalizeEvent);
-}
-
 export const capabilities = {
-  dashboard: { metrics: true, localFallback: true },
+  dashboard: { metrics: true, localFallback: false },
   users: { list: true, detail: true, create: true, update: true, toggle: true, delete: true },
-  prestations: { list: true, create: true, update: true, delete: true },
-  categories: { list: true, create: true, update: true, delete: true },
-  events: { list: true, create: true, update: true, delete: true }
+  prestations: { list: true, detail: true, create: true, update: true, delete: true },
+  categories: { list: true, detail: true, create: true, update: true, delete: true },
+  events: { list: true, detail: true, create: true, update: true, delete: true }
 };
 
 export const adminApi = {
   async getDashboard() {
-    try {
-      const [metricsResponse, users, prestations] = await Promise.all([
-        request(`${GO_API_BASE}/admin/metrics`),
-        readUsersFromApi(),
-        readPrestationsFromApi()
-      ]);
+    const [metricsResponse, users, prestations, categories, events] = await Promise.all([
+      request(`${GO_API_BASE}/admin/metrics`),
+      readUsersFromApi(),
+      readPrestationsFromApi(),
+      readCategoriesFromApi(),
+      readEventsFromApi()
+    ]);
 
-      return buildDashboard({
-        users,
-        prestations,
-        categories: await readCategoriesFromApi(),
-        events: await readEventsFromApi(),
-        metrics: metricsResponse.metrics ?? {},
-        source: "api"
-      });
-    } catch {
-      const db = await getDashboardSnapshot();
-      return buildDashboard({
-        users: (db.users ?? []).map(normalizeUser),
-        prestations: (db.prestations ?? []).map(normalizePrestation),
-        categories: (db.categories ?? []).map(normalizeCategory),
-        events: (db.events ?? []).map(normalizeEvent),
-        metrics: {},
-        source: "local"
-      });
-    }
+    return buildDashboard({
+      users,
+      prestations,
+      categories,
+      events,
+      metrics: metricsResponse.metrics ?? {},
+      source: metricsResponse.source ?? "api"
+    });
   },
 
   async listUsers(filters = {}) {
-    let items;
-    try {
-      items = await readUsersFromApi();
-    } catch {
-      items = await readUsersLocal();
-    }
+    const items = await readUsersFromApi();
     return paginate(filterUsers(items, filters), filters.page, filters.pageSize);
   },
 
@@ -270,13 +235,12 @@ export const adminApi = {
     return request(`${GO_API_BASE}/admin/users/${id}`, { method: "DELETE" });
   },
 
+  async getUser(id) {
+    return request(`${GO_API_BASE}/admin/users/${id}`);
+  },
+
   async listPrestations(filters = {}) {
-    let items;
-    try {
-      items = await readPrestationsFromApi(filters);
-    } catch {
-      items = await readPrestationsLocal();
-    }
+    const items = await readPrestationsFromApi(filters);
     return paginate(filterPrestations(items, filters), filters.page, filters.pageSize);
   },
 
@@ -312,13 +276,12 @@ export const adminApi = {
     return request(`${GO_API_BASE}/admin/prestations/${id}`, { method: "DELETE" });
   },
 
+  async getPrestation(id) {
+    return request(`${GO_API_BASE}/admin/prestations/${id}`);
+  },
+
   async listCategories(filters = {}) {
-    let items;
-    try {
-      items = await readCategoriesFromApi();
-    } catch {
-      items = await readCategoriesLocal();
-    }
+    const items = await readCategoriesFromApi();
     return paginate(filterCategories(items, filters), filters.page, filters.pageSize);
   },
 
@@ -342,13 +305,12 @@ export const adminApi = {
     return request(`${GO_API_BASE}/admin/categories/${id}`, { method: "DELETE" });
   },
 
+  async getCategory(id) {
+    return request(`${GO_API_BASE}/admin/categories/${id}`);
+  },
+
   async listEvents(filters = {}) {
-    let items;
-    try {
-      items = await readEventsFromApi();
-    } catch {
-      items = await readEventsLocal();
-    }
+    const items = await readEventsFromApi();
     return paginate(filterEvents(items, filters), filters.page, filters.pageSize);
   },
 
@@ -370,6 +332,10 @@ export const adminApi = {
 
   async deleteEvent(id) {
     return request(`${GO_API_BASE}/admin/events/${id}`, { method: "DELETE" });
+  },
+
+  async getEvent(id) {
+    return request(`${GO_API_BASE}/admin/events/${id}`);
   },
 
   getCapabilities() {

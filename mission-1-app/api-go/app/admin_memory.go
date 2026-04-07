@@ -2,10 +2,14 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type AdminUser struct {
@@ -50,43 +54,121 @@ type AdminEvent struct {
 	Description string `json:"description"`
 }
 
+type adminStoreData struct {
+	Users          []AdminUser       `json:"users"`
+	Prestations    []AdminPrestation `json:"prestations"`
+	Categories     []AdminCategory   `json:"categories"`
+	Events         []AdminEvent      `json:"events"`
+	UserSeq        int               `json:"userSeq"`
+	PrestationSeq  int               `json:"prestationSeq"`
+	CategorySeq    int               `json:"categorySeq"`
+	EventSeq       int               `json:"eventSeq"`
+	LastUpdatedAt  string            `json:"lastUpdatedAt"`
+}
+
 type adminStore struct {
-	mu           sync.RWMutex
-	users        []AdminUser
-	prestations  []AdminPrestation
-	categories   []AdminCategory
-	events       []AdminEvent
-	userSeq      int
-	prestationSeq int
-	categorySeq  int
-	eventSeq     int
+	mu       sync.RWMutex
+	filePath string
+	data     adminStoreData
 }
 
 var store = newAdminStore()
 
 func newAdminStore() *adminStore {
-	return &adminStore{
-		users: []AdminUser{
+	filePath := os.Getenv("ADMIN_STORE_PATH")
+	if strings.TrimSpace(filePath) == "" {
+		filePath = filepath.Join("storage", "admin_data.json")
+	}
+
+	s := &adminStore{
+		filePath: filePath,
+		data:     defaultAdminStoreData(),
+	}
+
+	if err := s.load(); err != nil {
+		_ = s.saveLocked()
+	}
+
+	return s
+}
+
+func defaultAdminStoreData() adminStoreData {
+	return adminStoreData{
+		Users: []AdminUser{
 			{ID: "u1", FirstName: "Alice", LastName: "Martin", Email: "alice@upcycleconnect.local", City: "Paris", PostalCode: "75011", Role: "Particulier", Status: "active", CreatedAt: "2026-03-01"},
 			{ID: "u2", FirstName: "Karim", LastName: "Benali", Email: "karim@atelier.local", City: "Lyon", PostalCode: "69002", Role: "Prestataire", Status: "active", CreatedAt: "2026-02-18"},
 			{ID: "u3", FirstName: "Nina", LastName: "Roux", Email: "nina.admin@upcycleconnect.local", City: "Lille", PostalCode: "59000", Role: "Admin", Status: "inactive", CreatedAt: "2026-01-14"},
 		},
-		prestations: []AdminPrestation{
+		Prestations: []AdminPrestation{
 			{ID: "p1", Title: "Diagnostic mobilier", Description: "Analyse d'etat et estimation de remise en valeur.", Type: "service", Price: 45, Status: "published", Provider: "Atelier Renouveau", CreatedAt: "2026-03-04"},
 			{ID: "p2", Title: "Lot textile recycle", Description: "Selection textile revalorisee pour ateliers creatifs.", Type: "vente", Price: 120, Status: "draft", Provider: "ReTex", CreatedAt: "2026-03-08"},
 		},
-		categories: []AdminCategory{
+		Categories: []AdminCategory{
 			{ID: "c1", Name: "Mobilier", ParentID: "", Description: "Meubles et accessoires", Status: "active"},
 			{ID: "c2", Name: "Chaises", ParentID: "c1", Description: "Assises et tabourets", Status: "active"},
 		},
-		events: []AdminEvent{
+		Events: []AdminEvent{
 			{ID: "e1", Title: "Atelier bois", Location: "Paris 11", Date: "2026-03-28", Status: "planned", Capacity: 18, Description: "Session pratique autour de la remise en etat du bois."},
 			{ID: "e2", Title: "Collecte textile", Location: "Lyon 2", Date: "2026-04-02", Status: "published", Capacity: 40, Description: "Journee de collecte et tri textile."},
 		},
-		userSeq:       3,
-		prestationSeq: 2,
-		categorySeq:   2,
-		eventSeq:      2,
+		UserSeq:       3,
+		PrestationSeq: 2,
+		CategorySeq:   2,
+		EventSeq:      2,
+		LastUpdatedAt: time.Now().UTC().Format(time.RFC3339),
+	}
+}
+
+func (s *adminStore) load() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	raw, err := os.ReadFile(s.filePath)
+	if err != nil {
+		return err
+	}
+	if len(raw) == 0 {
+		return errors.New("empty admin store")
+	}
+
+	var payload adminStoreData
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return err
+	}
+
+	s.data = payload
+	s.ensureDefaultsLocked()
+	return nil
+}
+
+func (s *adminStore) saveLocked() error {
+	s.ensureDefaultsLocked()
+	s.data.LastUpdatedAt = time.Now().UTC().Format(time.RFC3339)
+
+	if err := os.MkdirAll(filepath.Dir(s.filePath), 0o755); err != nil {
+		return err
+	}
+
+	raw, err := json.MarshalIndent(s.data, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(s.filePath, raw, 0o644)
+}
+
+func (s *adminStore) ensureDefaultsLocked() {
+	if s.data.UserSeq < len(s.data.Users) {
+		s.data.UserSeq = len(s.data.Users)
+	}
+	if s.data.PrestationSeq < len(s.data.Prestations) {
+		s.data.PrestationSeq = len(s.data.Prestations)
+	}
+	if s.data.CategorySeq < len(s.data.Categories) {
+		s.data.CategorySeq = len(s.data.Categories)
+	}
+	if s.data.EventSeq < len(s.data.Events) {
+		s.data.EventSeq = len(s.data.Events)
 	}
 }
 
@@ -94,6 +176,10 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func writeError(w http.ResponseWriter, status int, message string) {
+	writeJSON(w, status, map[string]string{"error": message})
 }
 
 func decodeJSON(r *http.Request, dest any) error {
@@ -109,17 +195,171 @@ func nextID(prefix string, seq *int) string {
 	return prefix + strconv.Itoa(*seq)
 }
 
+func defaultString(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}
+
+func isAllowedValue(value string, allowed ...string) bool {
+	for _, item := range allowed {
+		if value == item {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeUser(payload AdminUser) AdminUser {
+	payload.FirstName = strings.TrimSpace(payload.FirstName)
+	payload.LastName = strings.TrimSpace(payload.LastName)
+	payload.Email = strings.TrimSpace(payload.Email)
+	payload.City = strings.TrimSpace(payload.City)
+	payload.PostalCode = strings.TrimSpace(payload.PostalCode)
+	payload.Role = defaultString(payload.Role, "Particulier")
+	payload.Status = defaultString(payload.Status, "active")
+	payload.CreatedAt = defaultString(payload.CreatedAt, time.Now().Format("2006-01-02"))
+	payload.FullName = fullName(payload.FirstName, payload.LastName)
+	return payload
+}
+
+func normalizePrestation(payload AdminPrestation) AdminPrestation {
+	payload.Title = strings.TrimSpace(payload.Title)
+	payload.Description = strings.TrimSpace(payload.Description)
+	payload.Type = defaultString(payload.Type, "service")
+	payload.Status = defaultString(payload.Status, "draft")
+	payload.Provider = defaultString(payload.Provider, "Equipe locale")
+	payload.CreatedAt = defaultString(payload.CreatedAt, time.Now().Format("2006-01-02"))
+	return payload
+}
+
+func normalizeCategory(payload AdminCategory) AdminCategory {
+	payload.Name = strings.TrimSpace(payload.Name)
+	payload.ParentID = strings.TrimSpace(payload.ParentID)
+	payload.Description = strings.TrimSpace(payload.Description)
+	payload.Status = defaultString(payload.Status, "active")
+	return payload
+}
+
+func normalizeEvent(payload AdminEvent) AdminEvent {
+	payload.Title = strings.TrimSpace(payload.Title)
+	payload.Location = strings.TrimSpace(payload.Location)
+	payload.Date = strings.TrimSpace(payload.Date)
+	payload.Status = defaultString(payload.Status, "planned")
+	payload.Description = strings.TrimSpace(payload.Description)
+	if payload.Capacity < 0 {
+		payload.Capacity = 0
+	}
+	return payload
+}
+
+func validateUser(payload AdminUser) []string {
+	var issues []string
+	if len(payload.FirstName) < 2 {
+		issues = append(issues, "firstName must be at least 2 characters")
+	}
+	if len(payload.LastName) < 2 {
+		issues = append(issues, "lastName must be at least 2 characters")
+	}
+	if !strings.Contains(payload.Email, "@") || !strings.Contains(payload.Email, ".") {
+		issues = append(issues, "email is invalid")
+	}
+	if payload.PostalCode != "" && len(payload.PostalCode) < 4 {
+		issues = append(issues, "postalCode is invalid")
+	}
+	if !isAllowedValue(payload.Role, "Particulier", "Prestataire", "Admin") {
+		issues = append(issues, "role is invalid")
+	}
+	if !isAllowedValue(payload.Status, "active", "inactive", "archived") {
+		issues = append(issues, "status is invalid")
+	}
+	return issues
+}
+
+func validatePrestation(payload AdminPrestation) []string {
+	var issues []string
+	if len(payload.Title) < 3 {
+		issues = append(issues, "title must be at least 3 characters")
+	}
+	if len(payload.Description) < 10 {
+		issues = append(issues, "description must be at least 10 characters")
+	}
+	if payload.Price < 0 {
+		issues = append(issues, "price must be >= 0")
+	}
+	if !isAllowedValue(payload.Type, "service", "vente", "don") {
+		issues = append(issues, "type is invalid")
+	}
+	if !isAllowedValue(payload.Status, "draft", "published", "archived") {
+		issues = append(issues, "status is invalid")
+	}
+	return issues
+}
+
+func validateCategory(payload AdminCategory) []string {
+	var issues []string
+	if len(payload.Name) < 2 {
+		issues = append(issues, "name must be at least 2 characters")
+	}
+	if !isAllowedValue(payload.Status, "active", "archived") {
+		issues = append(issues, "status is invalid")
+	}
+	return issues
+}
+
+func validateEvent(payload AdminEvent) []string {
+	var issues []string
+	if len(payload.Title) < 3 {
+		issues = append(issues, "title must be at least 3 characters")
+	}
+	if strings.TrimSpace(payload.Date) == "" {
+		issues = append(issues, "date is required")
+	}
+	if payload.Capacity < 0 {
+		issues = append(issues, "capacity must be >= 0")
+	}
+	if !isAllowedValue(payload.Status, "planned", "published", "archived") {
+		issues = append(issues, "status is invalid")
+	}
+	return issues
+}
+
+func emailExistsLocked(email, excludedID string) bool {
+	for _, item := range store.data.Users {
+		if strings.EqualFold(strings.TrimSpace(item.Email), strings.TrimSpace(email)) && item.ID != excludedID {
+			return true
+		}
+	}
+	return false
+}
+
+func categoryExistsLocked(id string) bool {
+	for _, item := range store.data.Categories {
+		if item.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func writeValidationError(w http.ResponseWriter, issues []string) {
+	writeJSON(w, http.StatusBadRequest, map[string]any{"error": "validation_failed", "issues": issues})
+}
+
 func AdminMetrics(w http.ResponseWriter, r *http.Request) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
 	writeJSON(w, http.StatusOK, map[string]any{
+		"source": "api",
 		"metrics": map[string]int{
-			"users":     len(store.users),
-			"annonces":  len(store.prestations),
-			"categories": len(store.categories),
-			"events":    len(store.events),
+			"users":      len(store.data.Users),
+			"annonces":   len(store.data.Prestations),
+			"categories": len(store.data.Categories),
+			"events":     len(store.data.Events),
 		},
+		"updatedAt": store.data.LastUpdatedAt,
 	})
 }
 
@@ -127,31 +367,54 @@ func AdminListUsers(w http.ResponseWriter, r *http.Request) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
-	items := make([]AdminUser, len(store.users))
-	copy(items, store.users)
-	for i := range items {
-		items[i].FullName = fullName(items[i].FirstName, items[i].LastName)
+	items := make([]AdminUser, len(store.data.Users))
+	copy(items, store.data.Users)
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func AdminGetUser(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	for _, item := range store.data.Users {
+		if item.ID == id {
+			writeJSON(w, http.StatusOK, item)
+			return
+		}
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	writeError(w, http.StatusNotFound, "user_not_found")
 }
 
 func AdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	var payload AdminUser
 	if err := decodeJSON(r, &payload); err != nil {
-		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	payload = normalizeUser(payload)
+	if issues := validateUser(payload); len(issues) > 0 {
+		writeValidationError(w, issues)
 		return
 	}
 
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	payload.ID = nextID("u", &store.userSeq)
-	payload.CreatedAt = defaultString(payload.CreatedAt, "2026-04-02")
-	payload.Status = defaultString(payload.Status, "active")
-	payload.Role = defaultString(payload.Role, "Particulier")
-	payload.FullName = fullName(payload.FirstName, payload.LastName)
-	store.users = append(store.users, payload)
+	if emailExistsLocked(payload.Email, "") {
+		writeValidationError(w, []string{"email must be unique"})
+		return
+	}
+
+	payload.ID = nextID("u", &store.data.UserSeq)
+	store.data.Users = append(store.data.Users, payload)
+	if err := store.saveLocked(); err != nil {
+		writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+		return
+	}
 
 	writeJSON(w, http.StatusCreated, map[string]any{"created": payload})
 }
@@ -160,29 +423,38 @@ func AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var payload AdminUser
 	if err := decodeJSON(r, &payload); err != nil {
-		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, user := range store.users {
-		if user.ID != id {
+	for index, item := range store.data.Users {
+		if item.ID != id {
 			continue
 		}
-
+		payload = normalizeUser(payload)
 		payload.ID = id
-		payload.CreatedAt = defaultString(payload.CreatedAt, user.CreatedAt)
-		payload.Status = defaultString(payload.Status, user.Status)
-		payload.Role = defaultString(payload.Role, user.Role)
-		payload.FullName = fullName(payload.FirstName, payload.LastName)
-		store.users[index] = payload
+		payload.CreatedAt = defaultString(payload.CreatedAt, item.CreatedAt)
+		if issues := validateUser(payload); len(issues) > 0 {
+			writeValidationError(w, issues)
+			return
+		}
+		if emailExistsLocked(payload.Email, id) {
+			writeValidationError(w, []string{"email must be unique"})
+			return
+		}
+		store.data.Users[index] = payload
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"updated": payload})
 		return
 	}
 
-	http.Error(w, "Utilisateur introuvable", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "user_not_found")
 }
 
 func AdminToggleUserStatus(w http.ResponseWriter, r *http.Request) {
@@ -191,20 +463,24 @@ func AdminToggleUserStatus(w http.ResponseWriter, r *http.Request) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, user := range store.users {
-		if user.ID != id {
+	for index, item := range store.data.Users {
+		if item.ID != id {
 			continue
 		}
-		if user.Status == "active" {
-			store.users[index].Status = "inactive"
+		if item.Status == "active" {
+			store.data.Users[index].Status = "inactive"
 		} else {
-			store.users[index].Status = "active"
+			store.data.Users[index].Status = "active"
 		}
-		writeJSON(w, http.StatusOK, map[string]any{"updated": store.users[index]})
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": store.data.Users[index]})
 		return
 	}
 
-	http.Error(w, "Utilisateur introuvable", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "user_not_found")
 }
 
 func AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -213,25 +489,30 @@ func AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, user := range store.users {
-		if user.ID != id {
+	for index, item := range store.data.Users {
+		if item.ID != id {
 			continue
 		}
-		store.users = append(store.users[:index], store.users[index+1:]...)
-		writeJSON(w, http.StatusOK, map[string]any{"deleted": user.ID})
+		store.data.Users = append(store.data.Users[:index], store.data.Users[index+1:]...)
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"deleted": item.ID})
 		return
 	}
 
-	http.Error(w, "Utilisateur introuvable", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "user_not_found")
 }
 
 func AdminListPrestations(w http.ResponseWriter, r *http.Request) {
+	filterType := strings.TrimSpace(r.URL.Query().Get("type"))
+
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
-	filterType := strings.TrimSpace(r.URL.Query().Get("type"))
-	items := make([]AdminPrestation, 0, len(store.prestations))
-	for _, item := range store.prestations {
+	items := make([]AdminPrestation, 0, len(store.data.Prestations))
+	for _, item := range store.data.Prestations {
 		if filterType != "" && item.Type != filterType {
 			continue
 		}
@@ -241,21 +522,44 @@ func AdminListPrestations(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
+func AdminGetPrestation(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	for _, item := range store.data.Prestations {
+		if item.ID == id {
+			writeJSON(w, http.StatusOK, item)
+			return
+		}
+	}
+
+	writeError(w, http.StatusNotFound, "prestation_not_found")
+}
+
 func AdminCreatePrestation(w http.ResponseWriter, r *http.Request) {
 	var payload AdminPrestation
 	if err := decodeJSON(r, &payload); err != nil {
-		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	payload = normalizePrestation(payload)
+	if issues := validatePrestation(payload); len(issues) > 0 {
+		writeValidationError(w, issues)
 		return
 	}
 
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	payload.ID = nextID("p", &store.prestationSeq)
-	payload.Status = defaultString(payload.Status, "draft")
-	payload.Provider = defaultString(payload.Provider, "Equipe locale")
-	payload.CreatedAt = defaultString(payload.CreatedAt, "2026-04-02")
-	store.prestations = append(store.prestations, payload)
+	payload.ID = nextID("p", &store.data.PrestationSeq)
+	store.data.Prestations = append(store.data.Prestations, payload)
+	if err := store.saveLocked(); err != nil {
+		writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+		return
+	}
 
 	writeJSON(w, http.StatusCreated, map[string]any{"created": payload})
 }
@@ -264,27 +568,34 @@ func AdminUpdatePrestation(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var payload AdminPrestation
 	if err := decodeJSON(r, &payload); err != nil {
-		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, item := range store.prestations {
+	for index, item := range store.data.Prestations {
 		if item.ID != id {
 			continue
 		}
+		payload = normalizePrestation(payload)
 		payload.ID = id
-		payload.Provider = defaultString(payload.Provider, item.Provider)
 		payload.CreatedAt = defaultString(payload.CreatedAt, item.CreatedAt)
-		payload.Status = defaultString(payload.Status, item.Status)
-		store.prestations[index] = payload
+		if issues := validatePrestation(payload); len(issues) > 0 {
+			writeValidationError(w, issues)
+			return
+		}
+		store.data.Prestations[index] = payload
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"updated": payload})
 		return
 	}
 
-	http.Error(w, "Prestation introuvable", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "prestation_not_found")
 }
 
 func AdminDeletePrestation(w http.ResponseWriter, r *http.Request) {
@@ -293,40 +604,74 @@ func AdminDeletePrestation(w http.ResponseWriter, r *http.Request) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, item := range store.prestations {
+	for index, item := range store.data.Prestations {
 		if item.ID != id {
 			continue
 		}
-		store.prestations = append(store.prestations[:index], store.prestations[index+1:]...)
+		store.data.Prestations = append(store.data.Prestations[:index], store.data.Prestations[index+1:]...)
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"deleted": item.ID})
 		return
 	}
 
-	http.Error(w, "Prestation introuvable", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "prestation_not_found")
 }
 
 func AdminListCategories(w http.ResponseWriter, r *http.Request) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
-	items := make([]AdminCategory, len(store.categories))
-	copy(items, store.categories)
+	items := make([]AdminCategory, len(store.data.Categories))
+	copy(items, store.data.Categories)
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func AdminGetCategory(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	for _, item := range store.data.Categories {
+		if item.ID == id {
+			writeJSON(w, http.StatusOK, item)
+			return
+		}
+	}
+
+	writeError(w, http.StatusNotFound, "category_not_found")
 }
 
 func AdminCreateCategory(w http.ResponseWriter, r *http.Request) {
 	var payload AdminCategory
 	if err := decodeJSON(r, &payload); err != nil {
-		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	payload = normalizeCategory(payload)
+	if issues := validateCategory(payload); len(issues) > 0 {
+		writeValidationError(w, issues)
 		return
 	}
 
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	payload.ID = nextID("c", &store.categorySeq)
-	payload.Status = defaultString(payload.Status, "active")
-	store.categories = append(store.categories, payload)
+	if payload.ParentID != "" && !categoryExistsLocked(payload.ParentID) {
+		writeValidationError(w, []string{"parentId references an unknown category"})
+		return
+	}
+
+	payload.ID = nextID("c", &store.data.CategorySeq)
+	store.data.Categories = append(store.data.Categories, payload)
+	if err := store.saveLocked(); err != nil {
+		writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+		return
+	}
 
 	writeJSON(w, http.StatusCreated, map[string]any{"created": payload})
 }
@@ -335,25 +680,44 @@ func AdminUpdateCategory(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var payload AdminCategory
 	if err := decodeJSON(r, &payload); err != nil {
-		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, item := range store.categories {
+	for index, item := range store.data.Categories {
 		if item.ID != id {
 			continue
 		}
+		payload = normalizeCategory(payload)
 		payload.ID = id
-		payload.Status = defaultString(payload.Status, item.Status)
-		store.categories[index] = payload
+		if issues := validateCategory(payload); len(issues) > 0 {
+			writeValidationError(w, issues)
+			return
+		}
+		if payload.ParentID == id {
+			writeValidationError(w, []string{"parentId cannot reference the current category"})
+			return
+		}
+		if payload.ParentID != "" && !categoryExistsLocked(payload.ParentID) {
+			writeValidationError(w, []string{"parentId references an unknown category"})
+			return
+		}
+		if payload.Status == "" {
+			payload.Status = item.Status
+		}
+		store.data.Categories[index] = payload
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"updated": payload})
 		return
 	}
 
-	http.Error(w, "Categorie introuvable", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "category_not_found")
 }
 
 func AdminDeleteCategory(w http.ResponseWriter, r *http.Request) {
@@ -362,40 +726,76 @@ func AdminDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, item := range store.categories {
+	for _, item := range store.data.Categories {
+		if item.ParentID == id {
+			writeValidationError(w, []string{"category has children and cannot be deleted"})
+			return
+		}
+	}
+
+	for index, item := range store.data.Categories {
 		if item.ID != id {
 			continue
 		}
-		store.categories = append(store.categories[:index], store.categories[index+1:]...)
+		store.data.Categories = append(store.data.Categories[:index], store.data.Categories[index+1:]...)
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"deleted": item.ID})
 		return
 	}
 
-	http.Error(w, "Categorie introuvable", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "category_not_found")
 }
 
 func AdminListEvents(w http.ResponseWriter, r *http.Request) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
-	items := make([]AdminEvent, len(store.events))
-	copy(items, store.events)
+	items := make([]AdminEvent, len(store.data.Events))
+	copy(items, store.data.Events)
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func AdminGetEvent(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	for _, item := range store.data.Events {
+		if item.ID == id {
+			writeJSON(w, http.StatusOK, item)
+			return
+		}
+	}
+
+	writeError(w, http.StatusNotFound, "event_not_found")
 }
 
 func AdminCreateEvent(w http.ResponseWriter, r *http.Request) {
 	var payload AdminEvent
 	if err := decodeJSON(r, &payload); err != nil {
-		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	payload = normalizeEvent(payload)
+	if issues := validateEvent(payload); len(issues) > 0 {
+		writeValidationError(w, issues)
 		return
 	}
 
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	payload.ID = nextID("e", &store.eventSeq)
-	payload.Status = defaultString(payload.Status, "planned")
-	store.events = append(store.events, payload)
+	payload.ID = nextID("e", &store.data.EventSeq)
+	store.data.Events = append(store.data.Events, payload)
+	if err := store.saveLocked(); err != nil {
+		writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+		return
+	}
 
 	writeJSON(w, http.StatusCreated, map[string]any{"created": payload})
 }
@@ -404,25 +804,34 @@ func AdminUpdateEvent(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var payload AdminEvent
 	if err := decodeJSON(r, &payload); err != nil {
-		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, item := range store.events {
+	for index, item := range store.data.Events {
 		if item.ID != id {
 			continue
 		}
+		payload = normalizeEvent(payload)
 		payload.ID = id
+		if issues := validateEvent(payload); len(issues) > 0 {
+			writeValidationError(w, issues)
+			return
+		}
 		payload.Status = defaultString(payload.Status, item.Status)
-		store.events[index] = payload
+		store.data.Events[index] = payload
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"updated": payload})
 		return
 	}
 
-	http.Error(w, "Evenement introuvable", http.StatusNotFound)
+	writeError(w, http.StatusNotFound, "event_not_found")
 }
 
 func AdminDeleteEvent(w http.ResponseWriter, r *http.Request) {
@@ -431,21 +840,18 @@ func AdminDeleteEvent(w http.ResponseWriter, r *http.Request) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	for index, item := range store.events {
+	for index, item := range store.data.Events {
 		if item.ID != id {
 			continue
 		}
-		store.events = append(store.events[:index], store.events[index+1:]...)
+		store.data.Events = append(store.data.Events[:index], store.data.Events[index+1:]...)
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"deleted": item.ID})
 		return
 	}
 
-	http.Error(w, "Evenement introuvable", http.StatusNotFound)
-}
-
-func defaultString(value, fallback string) string {
-	if strings.TrimSpace(value) == "" {
-		return fallback
-	}
-	return value
+	writeError(w, http.StatusNotFound, "event_not_found")
 }

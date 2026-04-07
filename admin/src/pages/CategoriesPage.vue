@@ -4,7 +4,10 @@
       <div>
         <div class="eyebrow">Categories</div>
         <h2 class="page-title">Taxonomie</h2>
-        <p class="page-description">CRUD local pour preparer la future integration backend.</p>
+        <p class="page-description">CRUD admin complet pour piloter la taxonomie du catalogue.</p>
+      </div>
+      <div class="toolbar">
+        <button class="button button-secondary" @click="loadCategories">Actualiser</button>
       </div>
     </header>
 
@@ -14,7 +17,7 @@
           <h3>{{ editingId ? "Modifier" : "Nouvelle categorie" }}</h3>
           <button class="button button-ghost" @click="resetForm">Vider</button>
         </div>
-        <FormField label="Nom">
+        <FormField label="Nom" :error="formError">
           <input v-model="form.name" />
         </FormField>
         <FormField label="Categorie parente">
@@ -22,6 +25,9 @@
         </FormField>
         <FormField label="Description">
           <textarea v-model="form.description"></textarea>
+        </FormField>
+        <FormField label="Statut">
+          <BaseSelect v-model="form.status" :options="statusOptions" />
         </FormField>
         <div class="toolbar">
           <button class="button button-primary" @click="submitForm">
@@ -42,6 +48,8 @@
     </div>
 
     <LoadingState v-if="loading" />
+    <ErrorState v-else-if="error" :message="error" retry-label="Recharger" @retry="loadCategories" />
+    <EmptyState v-else-if="rows.length === 0" title="Aucune categorie" message="Aucun resultat." />
     <DataTable v-else :columns="columns" :rows="rows" :pagination="pagination" @page-change="changePage">
       <template #cell-name="{ row }">
         <div class="identity">
@@ -79,6 +87,8 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import BaseSelect from "../components/BaseSelect.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import DataTable from "../components/DataTable.vue";
+import EmptyState from "../components/EmptyState.vue";
+import ErrorState from "../components/ErrorState.vue";
 import FormField from "../components/FormField.vue";
 import LoadingState from "../components/LoadingState.vue";
 import StatusBadge from "../components/StatusBadge.vue";
@@ -88,17 +98,24 @@ import { useToastStore } from "../store/toastStore";
 const { pushToast } = useToastStore();
 
 const loading = ref(true);
+const error = ref("");
 const rows = ref([]);
 const pagination = ref(null);
 const editingId = ref("");
 const rowToDelete = ref(null);
 const filters = reactive({ search: "", page: 1, pageSize: 7 });
 const form = reactive({ name: "", parentId: "", description: "", status: "active" });
+const formError = ref("");
 
 const columns = [
   { key: "name", label: "Categorie" },
   { key: "parentId", label: "Parente" },
   { key: "status", label: "Statut" }
+];
+
+const statusOptions = [
+  { label: "Actif", value: "active" },
+  { label: "Archive", value: "archived" }
 ];
 
 const parentOptions = computed(() => [
@@ -117,6 +134,7 @@ function resetForm() {
   form.parentId = "";
   form.description = "";
   form.status = "active";
+  formError.value = "";
 }
 
 function startEdit(row) {
@@ -128,23 +146,39 @@ function startEdit(row) {
 }
 
 async function submitForm() {
-  if (editingId.value) {
-    await adminApi.updateCategory(editingId.value, { ...form });
-    pushToast({ title: "Categorie mise a jour", message: "Modification enregistree.", tone: "green" });
-  } else {
-    await adminApi.createCategory({ ...form });
-    pushToast({ title: "Categorie creee", message: "Nouvelle categorie ajoutee.", tone: "green" });
+  formError.value = form.name.trim().length < 2 ? "Le nom doit contenir au moins 2 caracteres." : "";
+  if (formError.value) {
+    pushToast({ title: "Categorie invalide", message: formError.value, tone: "coral" });
+    return;
   }
-  resetForm();
-  await loadCategories();
+
+  try {
+    if (editingId.value) {
+      await adminApi.updateCategory(editingId.value, { ...form });
+      pushToast({ title: "Categorie mise a jour", message: "Modification enregistree.", tone: "green" });
+    } else {
+      await adminApi.createCategory({ ...form });
+      pushToast({ title: "Categorie creee", message: "Nouvelle categorie ajoutee.", tone: "green" });
+    }
+    resetForm();
+    await loadCategories();
+  } catch (err) {
+    pushToast({ title: "Echec de l'enregistrement", message: err.message ?? "Operation impossible.", tone: "coral" });
+  }
 }
 
 async function loadCategories() {
   loading.value = true;
-  const response = await adminApi.listCategories(filters);
-  rows.value = response.items;
-  pagination.value = response.pagination;
-  loading.value = false;
+  error.value = "";
+  try {
+    const response = await adminApi.listCategories(filters);
+    rows.value = response.items;
+    pagination.value = response.pagination;
+  } catch (err) {
+    error.value = err.message ?? "Impossible de charger les categories.";
+  } finally {
+    loading.value = false;
+  }
 }
 
 function confirmDelete(row) {
@@ -153,10 +187,14 @@ function confirmDelete(row) {
 
 async function deleteCurrent() {
   if (!rowToDelete.value) return;
-  await adminApi.deleteCategory(rowToDelete.value.id);
-  pushToast({ title: "Categorie supprimee", message: "Suppression locale effectuee.", tone: "coral" });
-  rowToDelete.value = null;
-  await loadCategories();
+  try {
+    await adminApi.deleteCategory(rowToDelete.value.id);
+    pushToast({ title: "Categorie supprimee", message: "Suppression effectuee.", tone: "coral" });
+    rowToDelete.value = null;
+    await loadCategories();
+  } catch (err) {
+    pushToast({ title: "Echec de suppression", message: err.message ?? "Operation impossible.", tone: "coral" });
+  }
 }
 
 function changePage(page) {

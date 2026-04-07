@@ -4,7 +4,7 @@
       <div>
         <div class="eyebrow">Utilisateurs</div>
         <h2 class="page-title">Gestion des comptes</h2>
-        <p class="page-description">Recherche, edition rapide et mode local persistant.</p>
+        <p class="page-description">Recherche, edition rapide et gestion complete via l'API admin.</p>
       </div>
       <div class="toolbar">
         <button class="button button-primary" @click="openCreate">Nouvel utilisateur</button>
@@ -93,7 +93,7 @@
     <ConfirmModal
       :open="Boolean(rowToDelete)"
       title="Supprimer ce compte ?"
-      :message="rowToDelete ? `${rowToDelete.fullName} sera retire de la base locale.` : ''"
+      :message="rowToDelete ? `${rowToDelete.fullName} sera retire de l'administration.` : ''"
       confirm-label="Supprimer"
       @cancel="rowToDelete = null"
       @confirm="deleteCurrent"
@@ -202,16 +202,20 @@ function startEdit(row) {
 
 async function submitForm() {
   if (!validateForm()) return;
-  const payload = { ...form };
-  if (editingId.value) {
-    await adminApi.updateUser(editingId.value, payload);
-    pushToast({ title: "Compte mis a jour", message: "Modification enregistree.", tone: "green" });
-  } else {
-    await adminApi.createUser(payload);
-    pushToast({ title: "Compte cree", message: "Nouvel utilisateur ajoute.", tone: "green" });
+  try {
+    const payload = { ...form };
+    if (editingId.value) {
+      await adminApi.updateUser(editingId.value, payload);
+      pushToast({ title: "Compte mis a jour", message: "Modification enregistree.", tone: "green" });
+    } else {
+      await adminApi.createUser(payload);
+      pushToast({ title: "Compte cree", message: "Nouvel utilisateur ajoute.", tone: "green" });
+    }
+    resetForm();
+    await loadUsers();
+  } catch (err) {
+    pushToast({ title: "Echec de l'enregistrement", message: err.message ?? "Operation impossible.", tone: "coral" });
   }
-  resetForm();
-  await loadUsers();
 }
 
 async function loadUsers() {
@@ -229,9 +233,13 @@ async function loadUsers() {
 }
 
 async function toggleStatus(row) {
-  await adminApi.toggleUserStatus(row.id);
-  pushToast({ title: "Statut mis a jour", message: `${row.fullName} a change d'etat.`, tone: "amber" });
-  await loadUsers();
+  try {
+    await adminApi.toggleUserStatus(row.id);
+    pushToast({ title: "Statut mis a jour", message: `${row.fullName} a change d'etat.`, tone: "amber" });
+    await loadUsers();
+  } catch (err) {
+    pushToast({ title: "Echec de mise a jour", message: err.message ?? "Operation impossible.", tone: "coral" });
+  }
 }
 
 function confirmDelete(row) {
@@ -240,10 +248,14 @@ function confirmDelete(row) {
 
 async function deleteCurrent() {
   if (!rowToDelete.value) return;
-  await adminApi.deleteUser(rowToDelete.value.id);
-  pushToast({ title: "Compte supprime", message: "Suppression locale effectuee.", tone: "coral" });
-  rowToDelete.value = null;
-  await loadUsers();
+  try {
+    await adminApi.deleteUser(rowToDelete.value.id);
+    pushToast({ title: "Compte supprime", message: "Suppression effectuee.", tone: "coral" });
+    rowToDelete.value = null;
+    await loadUsers();
+  } catch (err) {
+    pushToast({ title: "Echec de suppression", message: err.message ?? "Operation impossible.", tone: "coral" });
+  }
 }
 
 function changePage(page) {

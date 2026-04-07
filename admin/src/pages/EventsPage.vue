@@ -4,7 +4,10 @@
       <div>
         <div class="eyebrow">Evenements</div>
         <h2 class="page-title">Planning</h2>
-        <p class="page-description">Gestion locale des sessions, ateliers et collectes.</p>
+        <p class="page-description">Gestion admin des sessions, ateliers et collectes via l'API.</p>
+      </div>
+      <div class="toolbar">
+        <button class="button button-secondary" @click="loadEvents">Actualiser</button>
       </div>
     </header>
 
@@ -15,10 +18,10 @@
           <button class="button button-ghost" @click="resetForm">Vider</button>
         </div>
         <div class="filters-grid">
-          <FormField label="Titre"><input v-model="form.title" /></FormField>
+          <FormField label="Titre" :error="formErrors.title"><input v-model="form.title" /></FormField>
           <FormField label="Lieu"><input v-model="form.location" /></FormField>
-          <FormField label="Date"><DatePickerField v-model="form.date" /></FormField>
-          <FormField label="Capacite"><input v-model="form.capacity" type="number" min="0" /></FormField>
+          <FormField label="Date" :error="formErrors.date"><DatePickerField v-model="form.date" /></FormField>
+          <FormField label="Capacite" :error="formErrors.capacity"><input v-model="form.capacity" type="number" min="0" /></FormField>
           <FormField label="Statut"><BaseSelect v-model="form.status" :options="statusOptions.slice(1)" /></FormField>
         </div>
         <FormField label="Description"><textarea v-model="form.description"></textarea></FormField>
@@ -43,6 +46,8 @@
     </div>
 
     <LoadingState v-if="loading" />
+    <ErrorState v-else-if="error" :message="error" retry-label="Recharger" @retry="loadEvents" />
+    <EmptyState v-else-if="rows.length === 0" title="Aucun evenement" message="Aucun resultat." />
     <DataTable v-else :columns="columns" :rows="rows" :pagination="pagination" @page-change="changePage">
       <template #cell-title="{ row }">
         <div class="identity">
@@ -77,6 +82,8 @@ import BaseSelect from "../components/BaseSelect.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import DataTable from "../components/DataTable.vue";
 import DatePickerField from "../components/DatePickerField.vue";
+import EmptyState from "../components/EmptyState.vue";
+import ErrorState from "../components/ErrorState.vue";
 import FormField from "../components/FormField.vue";
 import LoadingState from "../components/LoadingState.vue";
 import StatusBadge from "../components/StatusBadge.vue";
@@ -86,12 +93,14 @@ import { useToastStore } from "../store/toastStore";
 const { pushToast } = useToastStore();
 
 const loading = ref(true);
+const error = ref("");
 const rows = ref([]);
 const pagination = ref(null);
 const editingId = ref("");
 const rowToDelete = ref(null);
 const filters = reactive({ search: "", date: "", status: "", page: 1, pageSize: 7 });
 const form = reactive({ title: "", location: "", date: "", status: "planned", capacity: 0, description: "" });
+const formErrors = reactive({ title: "", date: "", capacity: "" });
 
 const statusOptions = [
   { label: "Tous", value: "" },
@@ -115,6 +124,9 @@ function resetForm() {
   form.status = "planned";
   form.capacity = 0;
   form.description = "";
+  formErrors.title = "";
+  formErrors.date = "";
+  formErrors.capacity = "";
 }
 
 function startEdit(row) {
@@ -128,24 +140,42 @@ function startEdit(row) {
 }
 
 async function submitForm() {
-  const payload = { ...form, capacity: Number(form.capacity) };
-  if (editingId.value) {
-    await adminApi.updateEvent(editingId.value, payload);
-    pushToast({ title: "Evenement mis a jour", message: "Modification enregistree.", tone: "green" });
-  } else {
-    await adminApi.createEvent(payload);
-    pushToast({ title: "Evenement cree", message: "Nouvelle entree ajoutee.", tone: "green" });
+  formErrors.title = form.title.trim().length < 3 ? "Titre trop court." : "";
+  formErrors.date = form.date ? "" : "La date est obligatoire.";
+  formErrors.capacity = Number(form.capacity) < 0 ? "Capacite invalide." : "";
+  if (formErrors.title || formErrors.date || formErrors.capacity) {
+    pushToast({ title: "Evenement invalide", message: "Corrige les champs avant enregistrement.", tone: "coral" });
+    return;
   }
-  resetForm();
-  await loadEvents();
+
+  const payload = { ...form, capacity: Number(form.capacity) };
+  try {
+    if (editingId.value) {
+      await adminApi.updateEvent(editingId.value, payload);
+      pushToast({ title: "Evenement mis a jour", message: "Modification enregistree.", tone: "green" });
+    } else {
+      await adminApi.createEvent(payload);
+      pushToast({ title: "Evenement cree", message: "Nouvelle entree ajoutee.", tone: "green" });
+    }
+    resetForm();
+    await loadEvents();
+  } catch (err) {
+    pushToast({ title: "Echec de l'enregistrement", message: err.message ?? "Operation impossible.", tone: "coral" });
+  }
 }
 
 async function loadEvents() {
   loading.value = true;
-  const response = await adminApi.listEvents(filters);
-  rows.value = response.items;
-  pagination.value = response.pagination;
-  loading.value = false;
+  error.value = "";
+  try {
+    const response = await adminApi.listEvents(filters);
+    rows.value = response.items;
+    pagination.value = response.pagination;
+  } catch (err) {
+    error.value = err.message ?? "Impossible de charger les evenements.";
+  } finally {
+    loading.value = false;
+  }
 }
 
 function confirmDelete(row) {
@@ -154,10 +184,14 @@ function confirmDelete(row) {
 
 async function deleteCurrent() {
   if (!rowToDelete.value) return;
-  await adminApi.deleteEvent(rowToDelete.value.id);
-  pushToast({ title: "Evenement supprime", message: "Suppression locale effectuee.", tone: "coral" });
-  rowToDelete.value = null;
-  await loadEvents();
+  try {
+    await adminApi.deleteEvent(rowToDelete.value.id);
+    pushToast({ title: "Evenement supprime", message: "Suppression effectuee.", tone: "coral" });
+    rowToDelete.value = null;
+    await loadEvents();
+  } catch (err) {
+    pushToast({ title: "Echec de suppression", message: err.message ?? "Operation impossible.", tone: "coral" });
+  }
 }
 
 function changePage(page) {

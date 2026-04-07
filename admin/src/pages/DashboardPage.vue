@@ -15,7 +15,7 @@
       <article class="surface-card section-card dashboard-hero">
         <div>
           <div class="eyebrow">Mode</div>
-          <strong>{{ dashboard.source === "local" ? "Base locale active" : "API connectee" }}</strong>
+          <strong>API admin connectee</strong>
         </div>
         <div class="hero-actions">
           <span class="hero-chip">{{ dashboard.stats[0]?.value ?? 0 }} utilisateurs</span>

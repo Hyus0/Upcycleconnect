@@ -4,7 +4,7 @@
       <div>
         <div class="eyebrow">Prestations</div>
         <h2 class="page-title">Catalogue</h2>
-        <p class="page-description">Edition rapide avec fallback local si l'API ne repond pas.</p>
+        <p class="page-description">Edition rapide et gestion complete via l'API admin.</p>
       </div>
       <div class="toolbar">
         <button class="button button-primary" @click="showCreate = !showCreate">
@@ -41,6 +41,9 @@
         <div class="filters-grid">
           <FormField label="Titre" :error="formErrors.title">
             <input v-model="form.title" />
+          </FormField>
+          <FormField label="Prestataire">
+            <input v-model="form.provider" placeholder="Atelier Renouveau" />
           </FormField>
           <FormField label="Type">
             <BaseSelect v-model="form.type" :options="typeOptions" />
@@ -119,11 +122,12 @@ const editingId = ref("");
 const rowToDelete = ref(null);
 
 const filters = reactive({ search: "", type: "", sortBy: "title", page: 1, pageSize: 7 });
-const form = reactive({ title: "", description: "", type: "service", price: 0, status: "draft" });
+const form = reactive({ title: "", description: "", provider: "", type: "service", price: 0, status: "draft" });
 const formErrors = reactive({ title: "", description: "", price: "" });
 
 const columns = [
   { key: "title", label: "Prestation" },
+  { key: "provider", label: "Prestataire" },
   { key: "type", label: "Type" },
   { key: "price", label: "Prix", align: "right" },
   { key: "status", label: "Statut" }
@@ -157,6 +161,7 @@ function resetForm() {
   editingId.value = "";
   form.title = "";
   form.description = "";
+  form.provider = "";
   form.type = "service";
   form.price = 0;
   form.status = "draft";
@@ -170,6 +175,7 @@ function startEdit(row) {
   editingId.value = row.id;
   form.title = row.title;
   form.description = row.description;
+  form.provider = row.provider;
   form.type = row.type;
   form.price = row.price;
   form.status = row.status;
@@ -178,15 +184,19 @@ function startEdit(row) {
 
 async function submitForm() {
   if (!validateForm()) return;
-  if (editingId.value) {
-    await adminApi.updatePrestation(editingId.value, { ...form });
-    pushToast({ title: "Prestation mise a jour", message: "Modification enregistree.", tone: "green" });
-  } else {
-    await adminApi.createPrestation({ ...form });
-    pushToast({ title: "Prestation creee", message: "Nouvelle ligne ajoutee.", tone: "green" });
+  try {
+    if (editingId.value) {
+      await adminApi.updatePrestation(editingId.value, { ...form });
+      pushToast({ title: "Prestation mise a jour", message: "Modification enregistree.", tone: "green" });
+    } else {
+      await adminApi.createPrestation({ ...form });
+      pushToast({ title: "Prestation creee", message: "Nouvelle ligne ajoutee.", tone: "green" });
+    }
+    resetForm();
+    await loadPrestations();
+  } catch (err) {
+    pushToast({ title: "Echec de l'enregistrement", message: err.message ?? "Operation impossible.", tone: "coral" });
   }
-  resetForm();
-  await loadPrestations();
 }
 
 async function loadPrestations() {
@@ -209,10 +219,14 @@ function confirmDelete(row) {
 
 async function deleteCurrent() {
   if (!rowToDelete.value) return;
-  await adminApi.deletePrestation(rowToDelete.value.id);
-  pushToast({ title: "Prestation supprimee", message: "Suppression locale effectuee.", tone: "coral" });
-  rowToDelete.value = null;
-  await loadPrestations();
+  try {
+    await adminApi.deletePrestation(rowToDelete.value.id);
+    pushToast({ title: "Prestation supprimee", message: "Suppression effectuee.", tone: "coral" });
+    rowToDelete.value = null;
+    await loadPrestations();
+  } catch (err) {
+    pushToast({ title: "Echec de suppression", message: err.message ?? "Operation impossible.", tone: "coral" });
+  }
 }
 
 function changePage(page) {

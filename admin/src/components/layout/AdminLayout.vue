@@ -15,7 +15,7 @@
           :key="item.name"
           :to="item.to"
           class="nav-link"
-          active-class="nav-link-active"
+          :class="{ 'nav-link-active': currentRouteName === item.name }"
           @click="sidebarOpen = false"
         >
           <span class="nav-icon">{{ item.icon }}</span>
@@ -36,21 +36,27 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { RouterLink, RouterView } from "vue-router";
+import { computed, ref } from "vue";
+import { RouterLink, RouterView, useRoute } from "vue-router";
 import TopBar from "./TopBar.vue";
 import ToastHost from "../ToastHost.vue";
 import logoSrc from "../logo.png";
 
 const sidebarOpen = ref(false);
+const route = useRoute();
 
 const adminItems = [
   { name: "dashboard", label: "Dashboard", to: { name: "dashboard" }, icon: "01" },
   { name: "users", label: "Utilisateurs", to: { name: "users" }, icon: "02" },
   { name: "prestations", label: "Prestations", to: { name: "prestations" }, icon: "03" },
   { name: "categories", label: "Categories", to: { name: "categories" }, icon: "04" },
-  { name: "events", label: "Evenements", to: { name: "events" }, icon: "05" }
+  { name: "events", label: "Evenements", to: { name: "events" }, icon: "05" },
+  { name: "moderation", label: "Moderation", to: { name: "moderation" }, icon: "06" },
+  { name: "finance", label: "Finances", to: { name: "finance" }, icon: "07" },
+  { name: "notifications", label: "Notifications", to: { name: "notifications" }, icon: "08" }
 ];
+
+const currentRouteName = computed(() => route.name);
 </script>
 
 <style scoped>
@@ -135,10 +141,18 @@ const adminItems = [
 }
 
 .nav-link-active {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.06));
-  border-color: rgba(75, 171, 115, 0.2);
+  background:
+    linear-gradient(180deg, rgba(54, 141, 92, 0.34), rgba(30, 79, 52, 0.4));
+  border-color: rgba(98, 196, 136, 0.45);
   color: white;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(15, 57, 34, 0.28);
+}
+
+.nav-link-active .nav-icon {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fffb;
 }
 
 .nav-link:hover {

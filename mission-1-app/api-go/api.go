@@ -46,6 +46,16 @@ func main() {
 	http.HandleFunc("POST /api/admin/events", app.AdminCreateEvent)
 	http.HandleFunc("PUT /api/admin/events/{id}", app.AdminUpdateEvent)
 	http.HandleFunc("DELETE /api/admin/events/{id}", app.AdminDeleteEvent)
+	http.HandleFunc("GET /api/admin/moderation/queue", app.AdminModerationQueue)
+	http.HandleFunc("PATCH /api/admin/moderation/prestations/{id}/publish", app.AdminPublishPrestation)
+	http.HandleFunc("PATCH /api/admin/moderation/prestations/{id}/archive", app.AdminArchivePrestation)
+	http.HandleFunc("PATCH /api/admin/moderation/events/{id}/publish", app.AdminPublishEvent)
+	http.HandleFunc("PATCH /api/admin/moderation/events/{id}/archive", app.AdminArchiveEvent)
+	http.HandleFunc("GET /api/admin/finance/overview", app.AdminFinanceOverview)
+	http.HandleFunc("GET /api/admin/notifications", app.AdminListNotifications)
+	http.HandleFunc("POST /api/admin/notifications", app.AdminCreateNotification)
+	http.HandleFunc("PATCH /api/admin/notifications/{id}/status", app.AdminUpdateNotificationStatus)
+	http.HandleFunc("DELETE /api/admin/notifications/{id}", app.AdminDeleteNotification)
 
 	// Legacy routes.
 	http.HandleFunc("GET /api/admin/user/{id}", app.GetUser)

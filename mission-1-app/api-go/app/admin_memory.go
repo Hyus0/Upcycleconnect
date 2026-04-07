@@ -54,15 +54,39 @@ type AdminEvent struct {
 	Description string `json:"description"`
 }
 
+type AdminFinanceRecord struct {
+	ID       string  `json:"id"`
+	Label    string  `json:"label"`
+	Category string  `json:"category"`
+	Amount   float64 `json:"amount"`
+	Status   string  `json:"status"`
+	DueDate  string  `json:"dueDate"`
+	Source   string  `json:"source"`
+}
+
+type AdminNotification struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Channel     string `json:"channel"`
+	Audience    string `json:"audience"`
+	Status      string `json:"status"`
+	ScheduledAt string `json:"scheduledAt"`
+	Message     string `json:"message"`
+}
+
 type adminStoreData struct {
 	Users          []AdminUser       `json:"users"`
 	Prestations    []AdminPrestation `json:"prestations"`
 	Categories     []AdminCategory   `json:"categories"`
 	Events         []AdminEvent      `json:"events"`
+	FinanceRecords []AdminFinanceRecord `json:"financeRecords"`
+	Notifications  []AdminNotification  `json:"notifications"`
 	UserSeq        int               `json:"userSeq"`
 	PrestationSeq  int               `json:"prestationSeq"`
 	CategorySeq    int               `json:"categorySeq"`
 	EventSeq       int               `json:"eventSeq"`
+	FinanceSeq     int               `json:"financeSeq"`
+	NotificationSeq int              `json:"notificationSeq"`
 	LastUpdatedAt  string            `json:"lastUpdatedAt"`
 }
 
@@ -108,13 +132,24 @@ func defaultAdminStoreData() adminStoreData {
 			{ID: "c2", Name: "Chaises", ParentID: "c1", Description: "Assises et tabourets", Status: "active"},
 		},
 		Events: []AdminEvent{
-			{ID: "e1", Title: "Atelier bois", Location: "Paris 11", Date: "2026-03-28", Status: "planned", Capacity: 18, Description: "Session pratique autour de la remise en etat du bois."},
-			{ID: "e2", Title: "Collecte textile", Location: "Lyon 2", Date: "2026-04-02", Status: "published", Capacity: 40, Description: "Journee de collecte et tri textile."},
+			{ID: "e1", Title: "Atelier bois", Location: "Paris 11", Date: "2026-04-20", Status: "planned", Capacity: 18, Description: "Session pratique autour de la remise en etat du bois."},
+			{ID: "e2", Title: "Collecte textile", Location: "Lyon 2", Date: "2026-04-26", Status: "published", Capacity: 40, Description: "Journee de collecte et tri textile."},
+		},
+		FinanceRecords: []AdminFinanceRecord{
+			{ID: "f1", Label: "Abonnement Pro Avril", Category: "subscription", Amount: 89, Status: "paid", DueDate: "2026-04-02", Source: "Stripe"},
+			{ID: "f2", Label: "Atelier bois - session 20/04", Category: "event", Amount: 240, Status: "pending", DueDate: "2026-04-20", Source: "Reservation"},
+			{ID: "f3", Label: "Diagnostic mobilier", Category: "service", Amount: 45, Status: "paid", DueDate: "2026-04-05", Source: "Catalogue"},
+		},
+		Notifications: []AdminNotification{
+			{ID: "n1", Title: "Collecte textile maintenue", Channel: "email", Audience: "all", Status: "scheduled", ScheduledAt: "2026-04-18T10:00", Message: "La collecte textile de Lyon est maintenue ce weekend."},
+			{ID: "n2", Title: "Nouveaux ateliers disponibles", Channel: "push", Audience: "particuliers", Status: "draft", ScheduledAt: "", Message: "Deux nouveaux ateliers viennent d'etre ajoutes au catalogue."},
 		},
 		UserSeq:       3,
 		PrestationSeq: 2,
 		CategorySeq:   2,
 		EventSeq:      2,
+		FinanceSeq:    3,
+		NotificationSeq: 2,
 		LastUpdatedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 }
@@ -169,6 +204,12 @@ func (s *adminStore) ensureDefaultsLocked() {
 	}
 	if s.data.EventSeq < len(s.data.Events) {
 		s.data.EventSeq = len(s.data.Events)
+	}
+	if s.data.FinanceSeq < len(s.data.FinanceRecords) {
+		s.data.FinanceSeq = len(s.data.FinanceRecords)
+	}
+	if s.data.NotificationSeq < len(s.data.Notifications) {
+		s.data.NotificationSeq = len(s.data.Notifications)
 	}
 }
 
@@ -263,6 +304,16 @@ func normalizeEvent(payload AdminEvent) AdminEvent {
 	return payload
 }
 
+func normalizeNotification(payload AdminNotification) AdminNotification {
+	payload.Title = strings.TrimSpace(payload.Title)
+	payload.Channel = defaultString(strings.TrimSpace(payload.Channel), "email")
+	payload.Audience = defaultString(strings.TrimSpace(payload.Audience), "all")
+	payload.Status = defaultString(strings.TrimSpace(payload.Status), "draft")
+	payload.ScheduledAt = strings.TrimSpace(payload.ScheduledAt)
+	payload.Message = strings.TrimSpace(payload.Message)
+	return payload
+}
+
 func validateUser(payload AdminUser) []string {
 	var issues []string
 	if len(payload.FirstName) < 2 {
@@ -303,6 +354,9 @@ func validatePrestation(payload AdminPrestation) []string {
 	if !isAllowedValue(payload.Status, "draft", "published", "archived") {
 		issues = append(issues, "status is invalid")
 	}
+	if payload.Status == "published" && strings.TrimSpace(payload.Provider) == "" {
+		issues = append(issues, "published prestations must have a provider")
+	}
 	if payload.Type == "don" && payload.Price != 0 {
 		issues = append(issues, "don prestations must have a price of 0")
 	}
@@ -341,8 +395,37 @@ func validateEvent(payload AdminEvent) []string {
 	if payload.Capacity < 0 {
 		issues = append(issues, "capacity must be >= 0")
 	}
+	if (payload.Status == "planned" || payload.Status == "published") && strings.TrimSpace(payload.Location) == "" {
+		issues = append(issues, "planned or published events require a location")
+	}
+	if payload.Status == "published" && payload.Capacity <= 0 {
+		issues = append(issues, "published events require a capacity greater than 0")
+	}
 	if !isAllowedValue(payload.Status, "planned", "published", "archived") {
 		issues = append(issues, "status is invalid")
+	}
+	return issues
+}
+
+func validateNotification(payload AdminNotification) []string {
+	var issues []string
+	if len(payload.Title) < 3 {
+		issues = append(issues, "title must be at least 3 characters")
+	}
+	if len(payload.Message) < 10 {
+		issues = append(issues, "message must be at least 10 characters")
+	}
+	if !isAllowedValue(payload.Channel, "email", "push", "sms") {
+		issues = append(issues, "channel is invalid")
+	}
+	if !isAllowedValue(payload.Audience, "all", "particuliers", "prestataires", "admins") {
+		issues = append(issues, "audience is invalid")
+	}
+	if !isAllowedValue(payload.Status, "draft", "scheduled", "sent") {
+		issues = append(issues, "status is invalid")
+	}
+	if payload.Status == "scheduled" && payload.ScheduledAt == "" {
+		issues = append(issues, "scheduled notifications require a scheduledAt value")
 	}
 	return issues
 }
@@ -363,6 +446,37 @@ func categoryExistsLocked(id string) bool {
 		}
 	}
 	return false
+}
+
+func buildModerationQueueLocked() []map[string]string {
+	items := make([]map[string]string, 0)
+	for _, item := range store.data.Prestations {
+		if item.Status != "draft" {
+			continue
+		}
+		items = append(items, map[string]string{
+			"id":          item.ID,
+			"type":        "prestation",
+			"title":       item.Title,
+			"description": item.Description,
+			"owner":       item.Provider,
+			"status":      item.Status,
+		})
+	}
+	for _, item := range store.data.Events {
+		if item.Status != "planned" {
+			continue
+		}
+		items = append(items, map[string]string{
+			"id":          item.ID,
+			"type":        "event",
+			"title":       item.Title,
+			"description": item.Description,
+			"owner":       item.Location,
+			"status":      item.Status,
+		})
+	}
+	return items
 }
 
 func activeAdminCountLocked() int {
@@ -898,4 +1012,233 @@ func AdminDeleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeError(w, http.StatusNotFound, "event_not_found")
+}
+
+func AdminModerationQueue(w http.ResponseWriter, r *http.Request) {
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	writeJSON(w, http.StatusOK, map[string]any{"items": buildModerationQueueLocked()})
+}
+
+func AdminPublishPrestation(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	for index, item := range store.data.Prestations {
+		if item.ID != id {
+			continue
+		}
+		if item.Status == "published" {
+			writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+			return
+		}
+		item.Status = "published"
+		if issues := validatePrestation(item); len(issues) > 0 {
+			writeValidationError(w, issues)
+			return
+		}
+		store.data.Prestations[index] = item
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
+
+	writeError(w, http.StatusNotFound, "prestation_not_found")
+}
+
+func AdminArchivePrestation(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	for index, item := range store.data.Prestations {
+		if item.ID != id {
+			continue
+		}
+		item.Status = "archived"
+		store.data.Prestations[index] = item
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
+
+	writeError(w, http.StatusNotFound, "prestation_not_found")
+}
+
+func AdminPublishEvent(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	for index, item := range store.data.Events {
+		if item.ID != id {
+			continue
+		}
+		item.Status = "published"
+		if issues := validateEvent(item); len(issues) > 0 {
+			writeValidationError(w, issues)
+			return
+		}
+		store.data.Events[index] = item
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
+
+	writeError(w, http.StatusNotFound, "event_not_found")
+}
+
+func AdminArchiveEvent(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	for index, item := range store.data.Events {
+		if item.ID != id {
+			continue
+		}
+		item.Status = "archived"
+		store.data.Events[index] = item
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
+
+	writeError(w, http.StatusNotFound, "event_not_found")
+}
+
+func AdminFinanceOverview(w http.ResponseWriter, r *http.Request) {
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	paidTotal := 0.0
+	pendingTotal := 0.0
+	activeSubscriptions := 0
+	for _, item := range store.data.FinanceRecords {
+		if item.Status == "paid" {
+			paidTotal += item.Amount
+		}
+		if item.Status == "pending" {
+			pendingTotal += item.Amount
+		}
+		if item.Category == "subscription" && item.Status == "paid" {
+			activeSubscriptions += 1
+		}
+	}
+
+	items := make([]AdminFinanceRecord, len(store.data.FinanceRecords))
+	copy(items, store.data.FinanceRecords)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"summary": map[string]any{
+			"paidTotal":          paidTotal,
+			"pendingTotal":       pendingTotal,
+			"activeSubscriptions": activeSubscriptions,
+		},
+		"items": items,
+	})
+}
+
+func AdminListNotifications(w http.ResponseWriter, r *http.Request) {
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	items := make([]AdminNotification, len(store.data.Notifications))
+	copy(items, store.data.Notifications)
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func AdminCreateNotification(w http.ResponseWriter, r *http.Request) {
+	var payload AdminNotification
+	if err := decodeJSON(r, &payload); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	payload = normalizeNotification(payload)
+	if issues := validateNotification(payload); len(issues) > 0 {
+		writeValidationError(w, issues)
+		return
+	}
+
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	payload.ID = nextID("n", &store.data.NotificationSeq)
+	store.data.Notifications = append(store.data.Notifications, payload)
+	if err := store.saveLocked(); err != nil {
+		writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{"created": payload})
+}
+
+func AdminUpdateNotificationStatus(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var payload struct {
+		Status string `json:"status"`
+	}
+	if err := decodeJSON(r, &payload); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	for index, item := range store.data.Notifications {
+		if item.ID != id {
+			continue
+		}
+		item.Status = strings.TrimSpace(payload.Status)
+		item = normalizeNotification(item)
+		if issues := validateNotification(item); len(issues) > 0 {
+			writeValidationError(w, issues)
+			return
+		}
+		store.data.Notifications[index] = item
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
+
+	writeError(w, http.StatusNotFound, "notification_not_found")
+}
+
+func AdminDeleteNotification(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	for index, item := range store.data.Notifications {
+		if item.ID != id {
+			continue
+		}
+		store.data.Notifications = append(store.data.Notifications[:index], store.data.Notifications[index+1:]...)
+		if err := store.saveLocked(); err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"deleted": item.ID})
+		return
+	}
+
+	writeError(w, http.StatusNotFound, "notification_not_found")
 }

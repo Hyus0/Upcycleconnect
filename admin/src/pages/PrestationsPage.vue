@@ -42,7 +42,7 @@
           <FormField label="Titre" :error="formErrors.title">
             <input v-model="form.title" />
           </FormField>
-          <FormField label="Prestataire">
+          <FormField label="Prestataire" :error="formErrors.provider">
             <input v-model="form.provider" placeholder="Atelier Renouveau" />
           </FormField>
           <FormField label="Type">
@@ -123,7 +123,7 @@ const rowToDelete = ref(null);
 
 const filters = reactive({ search: "", type: "", sortBy: "title", page: 1, pageSize: 7 });
 const form = reactive({ title: "", description: "", provider: "", type: "service", price: 0, status: "draft" });
-const formErrors = reactive({ title: "", description: "", price: "" });
+const formErrors = reactive({ title: "", description: "", price: "", provider: "" });
 
 const columns = [
   { key: "title", label: "Prestation" },
@@ -165,13 +165,14 @@ function validateForm() {
   formErrors.title = form.title.trim().length < 3 ? "Titre trop court." : "";
   formErrors.description = form.description.trim().length < 10 ? "Description trop courte." : "";
   formErrors.price = Number(form.price) < 0 ? "Prix invalide." : "";
+  formErrors.provider = form.status === "published" && form.provider.trim().length < 2 ? "Le prestataire est obligatoire pour une publication." : "";
   if (form.type === "don" && Number(form.price) !== 0) {
     formErrors.price = "Un don doit rester a 0 euro.";
   }
   if ((form.type === "service" || form.type === "vente") && form.status === "published" && Number(form.price) <= 0) {
     formErrors.price = "Une prestation publiee doit avoir un prix superieur a 0.";
   }
-  return !formErrors.title && !formErrors.description && !formErrors.price;
+  return !formErrors.title && !formErrors.description && !formErrors.price && !formErrors.provider;
 }
 
 function resetForm() {
@@ -185,6 +186,7 @@ function resetForm() {
   formErrors.title = "";
   formErrors.description = "";
   formErrors.price = "";
+  formErrors.provider = "";
 }
 
 function startEdit(row) {

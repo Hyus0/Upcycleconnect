@@ -19,7 +19,7 @@
         </div>
         <div class="filters-grid">
           <FormField label="Titre" :error="formErrors.title"><input v-model="form.title" /></FormField>
-          <FormField label="Lieu"><input v-model="form.location" /></FormField>
+          <FormField label="Lieu" :error="formErrors.location"><input v-model="form.location" /></FormField>
           <FormField label="Date" :error="formErrors.date" :hint="dateHint"><DatePickerField v-model="form.date" :min="eventDateMin" /></FormField>
           <FormField label="Capacite" :error="formErrors.capacity"><input v-model="form.capacity" type="number" min="0" /></FormField>
           <FormField label="Statut"><BaseSelect v-model="form.status" :options="statusOptions.slice(1)" /></FormField>
@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import BaseSelect from "../components/BaseSelect.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import DataTable from "../components/DataTable.vue";
@@ -100,7 +100,7 @@ const editingId = ref("");
 const rowToDelete = ref(null);
 const filters = reactive({ search: "", date: "", status: "", page: 1, pageSize: 7 });
 const form = reactive({ title: "", location: "", date: "", status: "planned", capacity: 0, description: "" });
-const formErrors = reactive({ title: "", date: "", capacity: "" });
+const formErrors = reactive({ title: "", location: "", date: "", capacity: "" });
 
 const statusOptions = [
   { label: "Tous", value: "" },
@@ -134,6 +134,7 @@ function resetForm() {
   form.capacity = 0;
   form.description = "";
   formErrors.title = "";
+  formErrors.location = "";
   formErrors.date = "";
   formErrors.capacity = "";
 }
@@ -150,12 +151,19 @@ function startEdit(row) {
 
 async function submitForm() {
   formErrors.title = form.title.trim().length < 3 ? "Titre trop court." : "";
+  formErrors.location =
+    (form.status === "planned" || form.status === "published") && form.location.trim().length < 2
+      ? "Le lieu est obligatoire pour un evenement visible."
+      : "";
   formErrors.date = form.date ? "" : "La date est obligatoire.";
   formErrors.capacity = Number(form.capacity) < 0 ? "Capacite invalide." : "";
+  if (form.status === "published" && Number(form.capacity) <= 0) {
+    formErrors.capacity = "Un evenement publie doit avoir une capacite superieure a 0.";
+  }
   if (form.date && form.status !== "archived" && form.date < today) {
     formErrors.date = "Un evenement planifie ou publie ne peut pas etre dans le passe.";
   }
-  if (formErrors.title || formErrors.date || formErrors.capacity) {
+  if (formErrors.title || formErrors.location || formErrors.date || formErrors.capacity) {
     pushToast({ title: "Evenement invalide", message: "Corrige les champs avant enregistrement.", tone: "coral" });
     return;
   }

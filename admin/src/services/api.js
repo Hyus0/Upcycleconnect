@@ -83,6 +83,30 @@ function normalizeEvent(row) {
   };
 }
 
+function normalizeFinanceRecord(row) {
+  return {
+    id: row.id,
+    label: row.label ?? "",
+    category: row.category ?? "",
+    amount: Number(row.amount ?? 0),
+    status: row.status ?? "pending",
+    dueDate: row.dueDate ?? "",
+    source: row.source ?? ""
+  };
+}
+
+function normalizeNotification(row) {
+  return {
+    id: row.id,
+    title: row.title ?? "",
+    channel: row.channel ?? "email",
+    audience: row.audience ?? "all",
+    status: row.status ?? "draft",
+    scheduledAt: row.scheduledAt ?? "",
+    message: row.message ?? ""
+  };
+}
+
 function filterUsers(items, filters = {}) {
   let filtered = items;
   if (filters.role) {
@@ -152,6 +176,51 @@ function filterEvents(items, filters = {}) {
   return filtered.sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function filterModeration(items, filters = {}) {
+  let filtered = items;
+  if (filters.type) {
+    filtered = filtered.filter((item) => item.type === filters.type);
+  }
+  if (filters.status) {
+    filtered = filtered.filter((item) => item.status === filters.status);
+  }
+  if (filters.search) {
+    const needle = filters.search.toLowerCase();
+    filtered = filtered.filter((item) =>
+      [item.title, item.owner, item.description].join(" ").toLowerCase().includes(needle)
+    );
+  }
+  return filtered;
+}
+
+function filterFinance(items, filters = {}) {
+  let filtered = items;
+  if (filters.status) {
+    filtered = filtered.filter((item) => item.status === filters.status);
+  }
+  if (filters.category) {
+    filtered = filtered.filter((item) => item.category === filters.category);
+  }
+  return filtered.sort((a, b) => (b.dueDate ?? "").localeCompare(a.dueDate ?? ""));
+}
+
+function filterNotifications(items, filters = {}) {
+  let filtered = items;
+  if (filters.status) {
+    filtered = filtered.filter((item) => item.status === filters.status);
+  }
+  if (filters.channel) {
+    filtered = filtered.filter((item) => item.channel === filters.channel);
+  }
+  if (filters.search) {
+    const needle = filters.search.toLowerCase();
+    filtered = filtered.filter((item) =>
+      [item.title, item.message, item.audience].join(" ").toLowerCase().includes(needle)
+    );
+  }
+  return filtered;
+}
+
 async function readUsersFromApi() {
   const response = await request(`${GO_API_BASE}/admin/users`);
   return (response.items ?? []).map(normalizeUser);
@@ -172,12 +241,33 @@ async function readEventsFromApi() {
   return (response.items ?? []).map(normalizeEvent);
 }
 
+async function readModerationQueueFromApi() {
+  const response = await request(`${GO_API_BASE}/admin/moderation/queue`);
+  return response.items ?? [];
+}
+
+async function readFinanceFromApi() {
+  const response = await request(`${GO_API_BASE}/admin/finance/overview`);
+  return {
+    summary: response.summary ?? {},
+    items: (response.items ?? []).map(normalizeFinanceRecord)
+  };
+}
+
+async function readNotificationsFromApi() {
+  const response = await request(`${GO_API_BASE}/admin/notifications`);
+  return (response.items ?? []).map(normalizeNotification);
+}
+
 export const capabilities = {
   dashboard: { metrics: true, localFallback: false },
   users: { list: true, detail: true, create: true, update: true, toggle: true, delete: true },
   prestations: { list: true, detail: true, create: true, update: true, delete: true },
   categories: { list: true, detail: true, create: true, update: true, delete: true },
-  events: { list: true, detail: true, create: true, update: true, delete: true }
+  events: { list: true, detail: true, create: true, update: true, delete: true },
+  moderation: { queue: true, publish: true, archive: true },
+  finance: { overview: true },
+  notifications: { list: true, create: true, update: true, delete: true }
 };
 
 export const adminApi = {
@@ -336,6 +426,58 @@ export const adminApi = {
 
   async getEvent(id) {
     return request(`${GO_API_BASE}/admin/events/${id}`);
+  },
+
+  async listModerationQueue(filters = {}) {
+    const items = await readModerationQueueFromApi();
+    return paginate(filterModeration(items, filters), filters.page, filters.pageSize);
+  },
+
+  async publishModerationItem(type, id) {
+    const response = await request(`${GO_API_BASE}/admin/moderation/${type}/${id}/publish`, {
+      method: "PATCH"
+    });
+    return response.updated ?? response;
+  },
+
+  async archiveModerationItem(type, id) {
+    const response = await request(`${GO_API_BASE}/admin/moderation/${type}/${id}/archive`, {
+      method: "PATCH"
+    });
+    return response.updated ?? response;
+  },
+
+  async getFinanceOverview(filters = {}) {
+    const response = await readFinanceFromApi();
+    return {
+      summary: response.summary,
+      ...paginate(filterFinance(response.items, filters), filters.page, filters.pageSize)
+    };
+  },
+
+  async listNotifications(filters = {}) {
+    const items = await readNotificationsFromApi();
+    return paginate(filterNotifications(items, filters), filters.page, filters.pageSize);
+  },
+
+  async createNotification(payload) {
+    const response = await request(`${GO_API_BASE}/admin/notifications`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    return response.created ?? response;
+  },
+
+  async updateNotificationStatus(id, status) {
+    const response = await request(`${GO_API_BASE}/admin/notifications/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    });
+    return response.updated ?? response;
+  },
+
+  async deleteNotification(id) {
+    return request(`${GO_API_BASE}/admin/notifications/${id}`, { method: "DELETE" });
   },
 
   getCapabilities() {

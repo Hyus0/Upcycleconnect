@@ -92,9 +92,60 @@
       "description": "Journee de collecte et tri textile."
     }
   ],
+  "financeRecords": [
+    {
+      "id": "f1",
+      "label": "Abonnement Pro Avril",
+      "category": "subscription",
+      "amount": 89,
+      "status": "paid",
+      "dueDate": "2026-04-02",
+      "source": "Stripe"
+    },
+    {
+      "id": "f2",
+      "label": "Atelier bois - session 20/04",
+      "category": "event",
+      "amount": 240,
+      "status": "pending",
+      "dueDate": "2026-04-20",
+      "source": "Reservation"
+    },
+    {
+      "id": "f3",
+      "label": "Diagnostic mobilier",
+      "category": "service",
+      "amount": 45,
+      "status": "paid",
+      "dueDate": "2026-04-05",
+      "source": "Catalogue"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "n1",
+      "title": "Collecte textile maintenue",
+      "channel": "email",
+      "audience": "all",
+      "status": "scheduled",
+      "scheduledAt": "2026-04-18T10:00",
+      "message": "La collecte textile de Lyon est maintenue ce weekend."
+    },
+    {
+      "id": "n2",
+      "title": "Nouveaux ateliers disponibles",
+      "channel": "push",
+      "audience": "particuliers",
+      "status": "draft",
+      "scheduledAt": "",
+      "message": "Deux nouveaux ateliers viennent d'etre ajoutes au catalogue."
+    }
+  ],
   "userSeq": 3,
   "prestationSeq": 2,
   "categorySeq": 2,
   "eventSeq": 2,
-  "lastUpdatedAt": "2026-04-07T12:00:00Z"
+  "financeSeq": 3,
+  "notificationSeq": 3,
+  "lastUpdatedAt": "2026-04-07T12:32:26Z"
 }

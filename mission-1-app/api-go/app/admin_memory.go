@@ -211,6 +211,15 @@ func isAllowedValue(value string, allowed ...string) bool {
 	return false
 }
 
+func parseISODate(value string) (time.Time, error) {
+	return time.Parse("2006-01-02", strings.TrimSpace(value))
+}
+
+func todayDate() time.Time {
+	now := time.Now().UTC()
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+}
+
 func normalizeUser(payload AdminUser) AdminUser {
 	payload.FirstName = strings.TrimSpace(payload.FirstName)
 	payload.LastName = strings.TrimSpace(payload.LastName)
@@ -294,6 +303,12 @@ func validatePrestation(payload AdminPrestation) []string {
 	if !isAllowedValue(payload.Status, "draft", "published", "archived") {
 		issues = append(issues, "status is invalid")
 	}
+	if payload.Type == "don" && payload.Price != 0 {
+		issues = append(issues, "don prestations must have a price of 0")
+	}
+	if (payload.Type == "service" || payload.Type == "vente") && payload.Status == "published" && payload.Price <= 0 {
+		issues = append(issues, "published prestations must have a price greater than 0")
+	}
 	return issues
 }
 
@@ -315,6 +330,13 @@ func validateEvent(payload AdminEvent) []string {
 	}
 	if strings.TrimSpace(payload.Date) == "" {
 		issues = append(issues, "date is required")
+	} else {
+		eventDate, err := parseISODate(payload.Date)
+		if err != nil {
+			issues = append(issues, "date format is invalid")
+		} else if (payload.Status == "planned" || payload.Status == "published") && eventDate.Before(todayDate()) {
+			issues = append(issues, "planned or published events cannot be dated in the past")
+		}
 	}
 	if payload.Capacity < 0 {
 		issues = append(issues, "capacity must be >= 0")
@@ -341,6 +363,16 @@ func categoryExistsLocked(id string) bool {
 		}
 	}
 	return false
+}
+
+func activeAdminCountLocked() int {
+	count := 0
+	for _, item := range store.data.Users {
+		if item.Role == "Admin" && item.Status == "active" {
+			count += 1
+		}
+	}
+	return count
 }
 
 func writeValidationError(w http.ResponseWriter, issues []string) {
@@ -445,6 +477,10 @@ func AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 			writeValidationError(w, []string{"email must be unique"})
 			return
 		}
+		if item.Role == "Admin" && item.Status == "active" && (payload.Role != "Admin" || payload.Status != "active") && activeAdminCountLocked() <= 1 {
+			writeValidationError(w, []string{"at least one active admin must remain available"})
+			return
+		}
 		store.data.Users[index] = payload
 		if err := store.saveLocked(); err != nil {
 			writeError(w, http.StatusInternalServerError, "cannot_persist_admin_store")
@@ -468,6 +504,10 @@ func AdminToggleUserStatus(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if item.Status == "active" {
+			if item.Role == "Admin" && activeAdminCountLocked() <= 1 {
+				writeValidationError(w, []string{"the last active admin cannot be deactivated"})
+				return
+			}
 			store.data.Users[index].Status = "inactive"
 		} else {
 			store.data.Users[index].Status = "active"
@@ -492,6 +532,10 @@ func AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 	for index, item := range store.data.Users {
 		if item.ID != id {
 			continue
+		}
+		if item.Role == "Admin" && item.Status == "active" && activeAdminCountLocked() <= 1 {
+			writeValidationError(w, []string{"the last active admin cannot be deleted"})
+			return
 		}
 		store.data.Users = append(store.data.Users[:index], store.data.Users[index+1:]...)
 		if err := store.saveLocked(); err != nil {

@@ -20,7 +20,7 @@
         <div class="filters-grid">
           <FormField label="Titre" :error="formErrors.title"><input v-model="form.title" /></FormField>
           <FormField label="Lieu"><input v-model="form.location" /></FormField>
-          <FormField label="Date" :error="formErrors.date"><DatePickerField v-model="form.date" /></FormField>
+          <FormField label="Date" :error="formErrors.date" :hint="dateHint"><DatePickerField v-model="form.date" :min="eventDateMin" /></FormField>
           <FormField label="Capacite" :error="formErrors.capacity"><input v-model="form.capacity" type="number" min="0" /></FormField>
           <FormField label="Statut"><BaseSelect v-model="form.status" :options="statusOptions.slice(1)" /></FormField>
         </div>
@@ -116,6 +116,15 @@ const columns = [
   { key: "capacity", label: "Places", align: "right" }
 ];
 
+const today = new Date().toISOString().slice(0, 10);
+
+const eventDateMin = computed(() => (form.status === "archived" ? "" : today));
+const dateHint = computed(() =>
+  form.status === "archived"
+    ? "Un evenement archive peut conserver une date passee."
+    : "Les evenements planifies ou publies doivent etre dates a partir d'aujourd'hui."
+);
+
 function resetForm() {
   editingId.value = "";
   form.title = "";
@@ -143,6 +152,9 @@ async function submitForm() {
   formErrors.title = form.title.trim().length < 3 ? "Titre trop court." : "";
   formErrors.date = form.date ? "" : "La date est obligatoire.";
   formErrors.capacity = Number(form.capacity) < 0 ? "Capacite invalide." : "";
+  if (form.date && form.status !== "archived" && form.date < today) {
+    formErrors.date = "Un evenement planifie ou publie ne peut pas etre dans le passe.";
+  }
   if (formErrors.title || formErrors.date || formErrors.capacity) {
     pushToast({ title: "Evenement invalide", message: "Corrige les champs avant enregistrement.", tone: "coral" });
     return;

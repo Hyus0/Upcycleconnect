@@ -48,7 +48,7 @@
           <FormField label="Type">
             <BaseSelect v-model="form.type" :options="typeOptions" />
           </FormField>
-          <FormField label="Prix" :error="formErrors.price">
+          <FormField label="Prix" :error="formErrors.price" :hint="priceHint">
             <input v-model="form.price" type="number" min="0" step="0.01" />
           </FormField>
           <FormField label="Statut">
@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import BaseSelect from "../components/BaseSelect.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import DataTable from "../components/DataTable.vue";
@@ -147,13 +147,30 @@ const sortOptions = [
 const statusOptions = [
   { label: "Tous", value: "" },
   { label: "Brouillon", value: "draft" },
-  { label: "Publie", value: "published" }
+  { label: "Publie", value: "published" },
+  { label: "Archive", value: "archived" }
 ];
+
+const priceHint = computed(() => {
+  if (form.type === "don") {
+    return "Un don doit rester a 0 euro.";
+  }
+  if (form.status === "published") {
+    return "Une prestation publiee doit avoir un prix superieur a 0.";
+  }
+  return "";
+});
 
 function validateForm() {
   formErrors.title = form.title.trim().length < 3 ? "Titre trop court." : "";
   formErrors.description = form.description.trim().length < 10 ? "Description trop courte." : "";
   formErrors.price = Number(form.price) < 0 ? "Prix invalide." : "";
+  if (form.type === "don" && Number(form.price) !== 0) {
+    formErrors.price = "Un don doit rester a 0 euro.";
+  }
+  if ((form.type === "service" || form.type === "vente") && form.status === "published" && Number(form.price) <= 0) {
+    formErrors.price = "Une prestation publiee doit avoir un prix superieur a 0.";
+  }
   return !formErrors.title && !formErrors.description && !formErrors.price;
 }
 

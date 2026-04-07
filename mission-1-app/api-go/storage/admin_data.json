@@ -1,5 +1,39 @@
 {
-  "users": [],
+  "users": [
+    {
+      "id": "u1",
+      "firstName": "Alice",
+      "lastName": "Martin",
+      "email": "alice@upcycleconnect.local",
+      "city": "Paris",
+      "postalCode": "75011",
+      "role": "Particulier",
+      "status": "active",
+      "createdAt": "2026-03-01"
+    },
+    {
+      "id": "u2",
+      "firstName": "Karim",
+      "lastName": "Benali",
+      "email": "karim@atelier.local",
+      "city": "Lyon",
+      "postalCode": "69002",
+      "role": "Prestataire",
+      "status": "active",
+      "createdAt": "2026-02-18"
+    },
+    {
+      "id": "u3",
+      "firstName": "Nina",
+      "lastName": "Roux",
+      "email": "nina.admin@upcycleconnect.local",
+      "city": "Lille",
+      "postalCode": "59000",
+      "role": "Admin",
+      "status": "active",
+      "createdAt": "2026-01-14"
+    }
+  ],
   "prestations": [
     {
       "id": "p1",
@@ -10,13 +44,57 @@
       "status": "published",
       "provider": "Atelier Renouveau",
       "createdAt": "2026-03-04"
+    },
+    {
+      "id": "p2",
+      "title": "Lot textile recycle",
+      "description": "Selection textile revalorisee pour ateliers creatifs.",
+      "type": "vente",
+      "price": 120,
+      "status": "draft",
+      "provider": "ReTex",
+      "createdAt": "2026-03-08"
     }
   ],
-  "categories": [],
-  "events": [],
-  "userSeq": 4,
-  "prestationSeq": 3,
-  "categorySeq": 4,
-  "eventSeq": 4,
-  "lastUpdatedAt": "2026-04-07T12:06:26Z"
+  "categories": [
+    {
+      "id": "c1",
+      "name": "Mobilier",
+      "parentId": "",
+      "description": "Meubles et accessoires",
+      "status": "active"
+    },
+    {
+      "id": "c2",
+      "name": "Chaises",
+      "parentId": "c1",
+      "description": "Assises et tabourets",
+      "status": "active"
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "title": "Atelier bois",
+      "location": "Paris 11",
+      "date": "2026-04-20",
+      "status": "planned",
+      "capacity": 18,
+      "description": "Session pratique autour de la remise en etat du bois."
+    },
+    {
+      "id": "e2",
+      "title": "Collecte textile",
+      "location": "Lyon 2",
+      "date": "2026-04-26",
+      "status": "published",
+      "capacity": 40,
+      "description": "Journee de collecte et tri textile."
+    }
+  ],
+  "userSeq": 3,
+  "prestationSeq": 2,
+  "categorySeq": 2,
+  "eventSeq": 2,
+  "lastUpdatedAt": "2026-04-07T12:00:00Z"
 }

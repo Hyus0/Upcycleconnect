@@ -8,26 +8,30 @@ import (
 
 func GetAllFormations() ([]models.GetFormation, error) {
 	if Conn == nil {
-		return nil, fmt.Errorf("connexion DB non initialisée")
+		return nil, fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
 		SELECT
-			id,
-			id_formateur,
-			type,
-			titre,
-			description,
-			capacite_max,
-			nb_inscrit,
-			date_debut,
-			date_fin,
-			statut,
-			prix_unitaire,
-			adresse,
-			ville,
-			code_postal
-		FROM formation
+			f.id,
+			f.id_formateur,
+			f.type,
+			f.titre,
+			f.description,
+			f.capacite_max,
+			COUNT(fi.id_utilisateur) AS nb_inscrit,
+			f.date_debut,
+			f.date_fin,
+			f.statut,
+			f.prix_unitaire,
+			f.adresse,
+			f.ville,
+			f.code_postal
+		FROM FORMATION f
+		LEFT JOIN FORMATION_INSCRIPTION fi ON fi.id_formation = f.id
+		GROUP BY
+			f.id, f.id_formateur, f.type, f.titre, f.description, f.capacite_max,
+			f.date_debut, f.date_fin, f.statut, f.prix_unitaire, f.adresse, f.ville, f.code_postal
 	`
 
 	rows, err := Conn.Query(query)
@@ -37,7 +41,6 @@ func GetAllFormations() ([]models.GetFormation, error) {
 	defer rows.Close()
 
 	formations := []models.GetFormation{}
-
 	for rows.Next() {
 		var f models.GetFormation
 		err := rows.Scan(
@@ -71,26 +74,31 @@ func GetAllFormations() ([]models.GetFormation, error) {
 
 func GetFormation(id int) (*models.GetFormation, error) {
 	if Conn == nil {
-		return nil, fmt.Errorf("connexion DB non initialisée")
+		return nil, fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
 		SELECT
-			id,
-			id_formateur,
-			type,
-			titre,
-			description,
-			capacite_max,
-			nb_inscrit,
-			date_debut,
-			date_fin,
-			statut,
-			prix_unitaire,
-			adresse,
-			ville,
-			code_postal
-		FROM formation WHERE id = ?
+			f.id,
+			f.id_formateur,
+			f.type,
+			f.titre,
+			f.description,
+			f.capacite_max,
+			COUNT(fi.id_utilisateur) AS nb_inscrit,
+			f.date_debut,
+			f.date_fin,
+			f.statut,
+			f.prix_unitaire,
+			f.adresse,
+			f.ville,
+			f.code_postal
+		FROM FORMATION f
+		LEFT JOIN FORMATION_INSCRIPTION fi ON fi.id_formation = f.id
+		WHERE f.id = ?
+		GROUP BY
+			f.id, f.id_formateur, f.type, f.titre, f.description, f.capacite_max,
+			f.date_debut, f.date_fin, f.statut, f.prix_unitaire, f.adresse, f.ville, f.code_postal
 	`
 
 	row := Conn.QueryRow(query, id)
@@ -123,6 +131,10 @@ func GetFormation(id int) (*models.GetFormation, error) {
 }
 
 func CreateFormation(formation models.Formation) error {
+	if Conn == nil {
+		return fmt.Errorf("connexion DB non initialisee")
+	}
+
 	query := `INSERT INTO FORMATION (
 		id_formateur,
 		type,
@@ -135,15 +147,24 @@ func CreateFormation(formation models.Formation) error {
 		prix_unitaire,
 		adresse,
 		ville,
-		code_postal)
-	    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		code_postal
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := Conn.Exec(query,
-		formation.ID_formateur, formation.Type, formation.Titre, formation.Description,
-		formation.Capacite_max, formation.Date_debut, formation.Date_fin, formation.Statut, formation.Prix_unitaire,
-		formation.Adresse, formation.Ville, formation.Code_postal,
+	_, err := Conn.Exec(
+		query,
+		formation.ID_formateur,
+		formation.Type,
+		formation.Titre,
+		formation.Description,
+		formation.Capacite_max,
+		formation.Date_debut,
+		formation.Date_fin,
+		formation.Statut,
+		formation.Prix_unitaire,
+		formation.Adresse,
+		formation.Ville,
+		formation.Code_postal,
 	)
-
 	if err != nil {
 		return fmt.Errorf("CreateFormation: %v", err)
 	}
@@ -152,23 +173,23 @@ func CreateFormation(formation models.Formation) error {
 
 func ModifyFormation(id int, f models.Formation) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
-		UPDATE formation SET
-			id_formateur  = ?,
-			type          = ?,
-			titre         = ?,
-			description   = ?,
-			capacite_max  = ?,
-			date_debut    = ?,
-			date_fin      = ?,
-			statut        = ?,
+		UPDATE FORMATION SET
+			id_formateur = ?,
+			type = ?,
+			titre = ?,
+			description = ?,
+			capacite_max = ?,
+			date_debut = ?,
+			date_fin = ?,
+			statut = ?,
 			prix_unitaire = ?,
-			adresse       = ?,
-			ville         = ?,
-			code_postal   = ?
+			adresse = ?,
+			ville = ?,
+			code_postal = ?
 		WHERE id = ?
 	`
 
@@ -197,17 +218,17 @@ func ModifyFormation(id int, f models.Formation) error {
 		return fmt.Errorf("ModifyFormation RowsAffected: %v", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("aucune formation trouvée avec l'ID %d", id)
+		return fmt.Errorf("aucune formation trouvee avec l'ID %d", id)
 	}
 	return nil
 }
 
 func DeleteFormation(id int) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
-	result, err := Conn.Exec("DELETE FROM formation WHERE id = ?", id)
+	result, err := Conn.Exec("DELETE FROM FORMATION WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("DeleteFormation: %v", err)
 	}
@@ -217,31 +238,40 @@ func DeleteFormation(id int) error {
 		return fmt.Errorf("DeleteFormation RowsAffected: %v", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("aucune formation trouvée avec l'ID %d", id)
+		return fmt.Errorf("aucune formation trouvee avec l'ID %d", id)
 	}
 	return nil
 }
 
 func JoinFormation(userID int, formationID int) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
+	}
+
+	var capaciteMax int
+	var nbInscrits int
+	queryCheck := `
+		SELECT f.capacite_max, COUNT(fi.id_utilisateur)
+		FROM FORMATION f
+		LEFT JOIN FORMATION_INSCRIPTION fi ON fi.id_formation = f.id
+		WHERE f.id = ?
+		GROUP BY f.id, f.capacite_max
+	`
+	err := Conn.QueryRow(queryCheck, formationID).Scan(&capaciteMax, &nbInscrits)
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("formation introuvable")
+	}
+	if err != nil {
+		return fmt.Errorf("verification capacite formation: %v", err)
+	}
+
+	if nbInscrits >= capaciteMax {
+		return fmt.Errorf("formation complete")
 	}
 
 	queryInsert := "INSERT INTO FORMATION_INSCRIPTION (id_utilisateur, id_formation) VALUES (?, ?)"
-	_, err := Conn.Exec(queryInsert, userID, formationID)
-	if err != nil {
-		return fmt.Errorf("échec de l'insertion dans FORMATION_INSCRIPTION : %v", err)
-	}
-
-	queryUpdate := "UPDATE formation SET nb_inscrit = nb_inscrit + 1 WHERE id = ? AND nb_inscrit < capacite_max"
-	result, err := Conn.Exec(queryUpdate, formationID)
-	if err != nil {
-		return fmt.Errorf("échec de l'incrémentation : %v", err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return fmt.Errorf("impossible d'incrémenter : formation complète ou introuvable")
+	if _, err := Conn.Exec(queryInsert, userID, formationID); err != nil {
+		return fmt.Errorf("insertion FORMATION_INSCRIPTION: %v", err)
 	}
 
 	return nil

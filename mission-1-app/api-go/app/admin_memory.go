@@ -494,6 +494,39 @@ func writeValidationError(w http.ResponseWriter, issues []string) {
 }
 
 func AdminMetrics(w http.ResponseWriter, r *http.Request) {
+	if adminDBEnabled() {
+		users, err := listAdminUsersFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_users")
+			return
+		}
+		prestations, err := listAdminPrestationsFromDB("")
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_prestations")
+			return
+		}
+		categories, err := listAdminCategoriesFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_categories")
+			return
+		}
+		events, err := listAdminEventsFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_events")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"source": "database",
+			"metrics": map[string]int{
+				"users":      len(users),
+				"annonces":   len(prestations),
+				"categories": len(categories),
+				"events":     len(events),
+			},
+		})
+		return
+	}
+
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -510,6 +543,16 @@ func AdminMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminListUsers(w http.ResponseWriter, r *http.Request) {
+	if adminDBEnabled() {
+		items, err := listAdminUsersFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_users")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+		return
+	}
+
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -519,6 +562,20 @@ func AdminListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminGetUser(w http.ResponseWriter, r *http.Request) {
+	if adminDBEnabled() {
+		item, err := getAdminUserFromDB(r.PathValue("id"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_user_id")
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "user_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, item)
+		return
+	}
+
 	id := r.PathValue("id")
 
 	store.mu.RLock()
@@ -547,6 +604,16 @@ func AdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if adminDBEnabled() {
+		item, err := createAdminUserInDB(payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"created": item})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -570,6 +637,20 @@ func AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	var payload AdminUser
 	if err := decodeJSON(r, &payload); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	if adminDBEnabled() {
+		item, err := updateAdminUserInDB(id, payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "user_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
 		return
 	}
 
@@ -610,6 +691,20 @@ func AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 func AdminToggleUserStatus(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
+	if adminDBEnabled() {
+		item, err := toggleAdminUserStatusInDB(id)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "user_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -640,6 +735,15 @@ func AdminToggleUserStatus(w http.ResponseWriter, r *http.Request) {
 func AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
+	if adminDBEnabled() {
+		if err := deleteAdminUserInDB(id); err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"deleted": id})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -666,6 +770,16 @@ func AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 func AdminListPrestations(w http.ResponseWriter, r *http.Request) {
 	filterType := strings.TrimSpace(r.URL.Query().Get("type"))
 
+	if adminDBEnabled() {
+		items, err := listAdminPrestationsFromDB(filterType)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_prestations")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+		return
+	}
+
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -682,6 +796,20 @@ func AdminListPrestations(w http.ResponseWriter, r *http.Request) {
 
 func AdminGetPrestation(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+
+	if adminDBEnabled() {
+		item, err := getAdminPrestationFromDB(id)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_prestation_id")
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "prestation_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, item)
+		return
+	}
 
 	store.mu.RLock()
 	defer store.mu.RUnlock()
@@ -709,6 +837,16 @@ func AdminCreatePrestation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if adminDBEnabled() {
+		item, err := createAdminPrestationInDB(payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"created": item})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -727,6 +865,20 @@ func AdminUpdatePrestation(w http.ResponseWriter, r *http.Request) {
 	var payload AdminPrestation
 	if err := decodeJSON(r, &payload); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	if adminDBEnabled() {
+		item, err := updateAdminPrestationInDB(id, payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "prestation_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
 		return
 	}
 
@@ -759,6 +911,15 @@ func AdminUpdatePrestation(w http.ResponseWriter, r *http.Request) {
 func AdminDeletePrestation(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
+	if adminDBEnabled() {
+		if err := deleteAdminPrestationInDB(id); err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"deleted": id})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -779,6 +940,15 @@ func AdminDeletePrestation(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminListCategories(w http.ResponseWriter, r *http.Request) {
+	if adminDBEnabled() {
+		items, err := listAdminCategoriesFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_categories")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+		return
+	}
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -789,6 +959,20 @@ func AdminListCategories(w http.ResponseWriter, r *http.Request) {
 
 func AdminGetCategory(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+
+	if adminDBEnabled() {
+		item, err := getAdminCategoryFromDB(id)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_category_id")
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "category_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, item)
+		return
+	}
 
 	store.mu.RLock()
 	defer store.mu.RUnlock()
@@ -816,6 +1000,16 @@ func AdminCreateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if adminDBEnabled() {
+		item, err := createAdminCategoryInDB(payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"created": item})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -839,6 +1033,20 @@ func AdminUpdateCategory(w http.ResponseWriter, r *http.Request) {
 	var payload AdminCategory
 	if err := decodeJSON(r, &payload); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	if adminDBEnabled() {
+		item, err := updateAdminCategoryInDB(id, payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "category_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
 		return
 	}
 
@@ -881,6 +1089,15 @@ func AdminUpdateCategory(w http.ResponseWriter, r *http.Request) {
 func AdminDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
+	if adminDBEnabled() {
+		if err := deleteAdminCategoryInDB(id); err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"deleted": id})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -908,6 +1125,15 @@ func AdminDeleteCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminListEvents(w http.ResponseWriter, r *http.Request) {
+	if adminDBEnabled() {
+		items, err := listAdminEventsFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_events")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+		return
+	}
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -918,6 +1144,20 @@ func AdminListEvents(w http.ResponseWriter, r *http.Request) {
 
 func AdminGetEvent(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+
+	if adminDBEnabled() {
+		item, err := getAdminEventFromDB(id)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_event_id")
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "event_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, item)
+		return
+	}
 
 	store.mu.RLock()
 	defer store.mu.RUnlock()
@@ -945,6 +1185,16 @@ func AdminCreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if adminDBEnabled() {
+		item, err := createAdminEventInDB(payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"created": item})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -963,6 +1213,20 @@ func AdminUpdateEvent(w http.ResponseWriter, r *http.Request) {
 	var payload AdminEvent
 	if err := decodeJSON(r, &payload); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	if adminDBEnabled() {
+		item, err := updateAdminEventInDB(id, payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "event_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
 		return
 	}
 
@@ -995,6 +1259,15 @@ func AdminUpdateEvent(w http.ResponseWriter, r *http.Request) {
 func AdminDeleteEvent(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
+	if adminDBEnabled() {
+		if err := deleteAdminEventInDB(id); err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"deleted": id})
+		return
+	}
+
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -1015,6 +1288,15 @@ func AdminDeleteEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminModerationQueue(w http.ResponseWriter, r *http.Request) {
+	if adminDBEnabled() {
+		items, err := moderationQueueFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_moderation")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+		return
+	}
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -1023,6 +1305,19 @@ func AdminModerationQueue(w http.ResponseWriter, r *http.Request) {
 
 func AdminPublishPrestation(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if adminDBEnabled() {
+		item, err := publishAdminPrestationInDB(id)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "prestation_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -1053,6 +1348,19 @@ func AdminPublishPrestation(w http.ResponseWriter, r *http.Request) {
 
 func AdminArchivePrestation(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if adminDBEnabled() {
+		item, err := archiveAdminPrestationInDB(id)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "prestation_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -1075,6 +1383,19 @@ func AdminArchivePrestation(w http.ResponseWriter, r *http.Request) {
 
 func AdminPublishEvent(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if adminDBEnabled() {
+		item, err := publishAdminEventInDB(id)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "event_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -1101,6 +1422,19 @@ func AdminPublishEvent(w http.ResponseWriter, r *http.Request) {
 
 func AdminArchiveEvent(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if adminDBEnabled() {
+		item, err := archiveAdminEventInDB(id)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "event_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
+		return
+	}
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
@@ -1122,6 +1456,15 @@ func AdminArchiveEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminFinanceOverview(w http.ResponseWriter, r *http.Request) {
+	if adminDBEnabled() {
+		summary, items, err := financeOverviewFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_finance")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"summary": summary, "items": items})
+		return
+	}
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -1153,6 +1496,15 @@ func AdminFinanceOverview(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminListNotifications(w http.ResponseWriter, r *http.Request) {
+	if adminDBEnabled() {
+		items, err := listAdminNotificationsFromDB()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "cannot_read_notifications")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+		return
+	}
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -1171,6 +1523,16 @@ func AdminCreateNotification(w http.ResponseWriter, r *http.Request) {
 	payload = normalizeNotification(payload)
 	if issues := validateNotification(payload); len(issues) > 0 {
 		writeValidationError(w, issues)
+		return
+	}
+
+	if adminDBEnabled() {
+		item, err := createAdminNotificationInDB(payload)
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"created": item})
 		return
 	}
 
@@ -1194,6 +1556,20 @@ func AdminUpdateNotificationStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := decodeJSON(r, &payload); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+
+	if adminDBEnabled() {
+		item, err := updateAdminNotificationStatusInDB(id, strings.TrimSpace(payload.Status))
+		if err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		if item == nil {
+			writeError(w, http.StatusNotFound, "notification_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"updated": item})
 		return
 	}
 
@@ -1224,6 +1600,14 @@ func AdminUpdateNotificationStatus(w http.ResponseWriter, r *http.Request) {
 
 func AdminDeleteNotification(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if adminDBEnabled() {
+		if err := deleteAdminNotificationInDB(id); err != nil {
+			writeValidationError(w, []string{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"deleted": id})
+		return
+	}
 	store.mu.Lock()
 	defer store.mu.Unlock()
 

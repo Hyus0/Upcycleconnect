@@ -1,4 +1,13 @@
 services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: upcycletest
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../mysql/init:/docker-entrypoint-initdb.d:ro
+
   gateway:
     image: nginx:1.27-alpine
     ports:
@@ -11,6 +20,16 @@ services:
       - backoffice
       - api-go
 
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    ports:
+      - "8089:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    depends_on:
+      - mysql
+
   backoffice:
     build:
       context: ../../mission-1-app/backoffice
@@ -22,5 +41,16 @@ services:
     build:
       context: ../../mission-1-app/api-go
       dockerfile: Dockerfile
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_NAME: upcycletest
     volumes:
       - ../../mission-1-app/api-go/storage:/app/storage
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-data:

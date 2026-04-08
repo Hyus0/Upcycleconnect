@@ -8,7 +8,7 @@ import (
 
 func GetAllEvenements() ([]models.Evenement, error) {
 	if Conn == nil {
-		return nil, fmt.Errorf("connexion DB non initialisée")
+		return nil, fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
@@ -22,7 +22,7 @@ func GetAllEvenements() ([]models.Evenement, error) {
 			date_creation,
 			date_evenement,
 			type
-		FROM evenement
+		FROM EVENEMENT
 	`
 
 	rows, err := Conn.Query(query)
@@ -32,7 +32,6 @@ func GetAllEvenements() ([]models.Evenement, error) {
 	defer rows.Close()
 
 	evenements := []models.Evenement{}
-
 	for rows.Next() {
 		var e models.Evenement
 		err := rows.Scan(
@@ -61,7 +60,7 @@ func GetAllEvenements() ([]models.Evenement, error) {
 
 func GetEvenement(id int) (*models.Evenement, error) {
 	if Conn == nil {
-		return nil, fmt.Errorf("connexion DB non initialisée")
+		return nil, fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
@@ -75,7 +74,7 @@ func GetEvenement(id int) (*models.Evenement, error) {
 			date_creation,
 			date_evenement,
 			type
-		FROM evenement
+		FROM EVENEMENT
 		WHERE id = ?
 	`
 
@@ -105,11 +104,11 @@ func GetEvenement(id int) (*models.Evenement, error) {
 
 func CreateEvenement(e models.Evenement) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
-		INSERT INTO evenement (
+		INSERT INTO EVENEMENT (
 			titre,
 			description,
 			adresse,
@@ -138,18 +137,18 @@ func CreateEvenement(e models.Evenement) error {
 
 func ModifyEvenement(id int, e models.Evenement) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
-		UPDATE evenement SET
-			titre          = ?,
-			description    = ?,
-			adresse        = ?,
-			ville          = ?,
-			code_postal    = ?,
+		UPDATE EVENEMENT SET
+			titre = ?,
+			description = ?,
+			adresse = ?,
+			ville = ?,
+			code_postal = ?,
 			date_evenement = ?,
-			type           = ?
+			type = ?
 		WHERE id = ?
 	`
 
@@ -173,17 +172,17 @@ func ModifyEvenement(id int, e models.Evenement) error {
 		return fmt.Errorf("ModifyEvenement RowsAffected: %v", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("aucun evenement trouvé avec l'ID %d", id)
+		return fmt.Errorf("aucun evenement trouve avec l'ID %d", id)
 	}
 	return nil
 }
 
 func DeleteEvenement(id int) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
-	result, err := Conn.Exec("DELETE FROM evenement WHERE id = ?", id)
+	result, err := Conn.Exec("DELETE FROM EVENEMENT WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("DeleteEvenement: %v", err)
 	}
@@ -193,7 +192,7 @@ func DeleteEvenement(id int) error {
 		return fmt.Errorf("DeleteEvenement RowsAffected: %v", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("aucun evenement trouvé avec l'ID %d", id)
+		return fmt.Errorf("aucun evenement trouve avec l'ID %d", id)
 	}
 	return nil
 }

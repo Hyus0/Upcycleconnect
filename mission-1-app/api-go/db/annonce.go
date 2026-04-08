@@ -8,11 +8,11 @@ import (
 
 func CreateAnnonce(a models.Annonce) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
-		INSERT INTO annonce (
+		INSERT INTO ANNONCE (
 			id_vendeur,
 			id_acheteur,
 			titre,
@@ -55,7 +55,7 @@ func CreateAnnonce(a models.Annonce) error {
 
 func GetAllAnnonces() ([]models.Annonce, error) {
 	if Conn == nil {
-		return nil, fmt.Errorf("connexion DB non initialisée")
+		return nil, fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
@@ -74,7 +74,7 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 			code_postal,
 			date_creation,
 			type
-		FROM annonce
+		FROM ANNONCE
 	`
 
 	rows, err := Conn.Query(query)
@@ -84,7 +84,6 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 	defer rows.Close()
 
 	annonces := []models.Annonce{}
-
 	for rows.Next() {
 		var a models.Annonce
 		var idAcheteur sql.NullInt64
@@ -109,12 +108,9 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 			return nil, err
 		}
 
-		// CORRECTION : assignation de IdAcheteur après le scan
 		if idAcheteur.Valid {
 			v := int(idAcheteur.Int64)
 			a.IdAcheteur = &v
-		} else {
-			a.IdAcheteur = nil
 		}
 
 		annonces = append(annonces, a)
@@ -129,7 +125,7 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 
 func GetAnnonce(id int) (*models.Annonce, error) {
 	if Conn == nil {
-		return nil, fmt.Errorf("connexion DB non initialisée")
+		return nil, fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
@@ -148,7 +144,7 @@ func GetAnnonce(id int) (*models.Annonce, error) {
 			code_postal,
 			date_creation,
 			type
-		FROM annonce
+		FROM ANNONCE
 		WHERE id = ?
 	`
 
@@ -156,7 +152,6 @@ func GetAnnonce(id int) (*models.Annonce, error) {
 
 	var a models.Annonce
 	var idAcheteur sql.NullInt64
-
 	err := row.Scan(
 		&a.ID,
 		&a.IdVendeur,
@@ -183,8 +178,6 @@ func GetAnnonce(id int) (*models.Annonce, error) {
 	if idAcheteur.Valid {
 		v := int(idAcheteur.Int64)
 		a.IdAcheteur = &v
-	} else {
-		a.IdAcheteur = nil
 	}
 
 	return &a, nil
@@ -192,23 +185,23 @@ func GetAnnonce(id int) (*models.Annonce, error) {
 
 func ModifyAnnonce(id int, a models.Annonce) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
 	query := `
-		UPDATE annonce SET
-			id_vendeur   = ?,
-			id_acheteur  = ?,
-			titre        = ?,
-			description  = ?,
-			statut       = ?,
-			est_valide   = ?,
-			prix         = ?,
-			etat_objet   = ?,
-			adresse      = ?,
-			ville        = ?,
-			code_postal  = ?,
-			type         = ?
+		UPDATE ANNONCE SET
+			id_vendeur = ?,
+			id_acheteur = ?,
+			titre = ?,
+			description = ?,
+			statut = ?,
+			est_valide = ?,
+			prix = ?,
+			etat_objet = ?,
+			adresse = ?,
+			ville = ?,
+			code_postal = ?,
+			type = ?
 		WHERE id = ?
 	`
 
@@ -237,17 +230,17 @@ func ModifyAnnonce(id int, a models.Annonce) error {
 		return fmt.Errorf("ModifyAnnonce RowsAffected: %v", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("aucune annonce trouvée avec l'ID %d", id)
+		return fmt.Errorf("aucune annonce trouvee avec l'ID %d", id)
 	}
 	return nil
 }
 
 func DeleteAnnonce(id int) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
-	result, err := Conn.Exec("DELETE FROM annonce WHERE id = ?", id)
+	result, err := Conn.Exec("DELETE FROM ANNONCE WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("DeleteAnnonce: %v", err)
 	}
@@ -257,17 +250,17 @@ func DeleteAnnonce(id int) error {
 		return fmt.Errorf("DeleteAnnonce RowsAffected: %v", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("aucune annonce trouvée avec l'ID %d", id)
+		return fmt.Errorf("aucune annonce trouvee avec l'ID %d", id)
 	}
 	return nil
 }
 
 func ValidAnnonce(id int) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisée")
+		return fmt.Errorf("connexion DB non initialisee")
 	}
 
-	result, err := Conn.Exec("UPDATE ANNONCE SET est_valide = 'Validé' WHERE id = ?", id)
+	result, err := Conn.Exec("UPDATE ANNONCE SET est_valide = 'Valide' WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("ValidAnnonce: %v", err)
 	}
@@ -276,10 +269,9 @@ func ValidAnnonce(id int) error {
 	if err != nil {
 		return fmt.Errorf("ValidAnnonce RowsAffected: %v", err)
 	}
-	
 	if rows == 0 {
-		return fmt.Errorf("aucune annonce trouvée avec l'ID %d ou déjà validée", id)
+		return fmt.Errorf("aucune annonce trouvee avec l'ID %d ou deja validee", id)
 	}
-	
+
 	return nil
 }

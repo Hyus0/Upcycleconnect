@@ -34,7 +34,7 @@
 
                     <div class="navbar__actions">
                         <button class="btn btn--outline">Se connecter</button>
-                        <button class="btn btn--primary">
+                        <button class="btn btn--primary" @click="$router.push('/inscription')">
                             Rejoindre gratuitement →
                         </button>
                     </div>
@@ -60,10 +60,10 @@
                     </p>
 
                     <div class="hero-buttons">
-                        <button class="btn btn--primary">
+                        <button class="btn btn--primary" @click="$router.push('/inscription')">
                             ♻ Commencer gratuitement
                         </button>
-                        <button class="btn btn--outline">
+                        <button class="btn btn--outline" @click="$router.push('/inscription')">
                             Je suis professionnel →
                         </button>
                     </div>

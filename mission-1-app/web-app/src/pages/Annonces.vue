@@ -1,5 +1,7 @@
 <template>
   <div class="page-shell">
+    <SiteNavbar :is-authenticated="isLoggedIn" :user-name="userName" variant="public" />
+
     <header class="hero">
       <div class="hero-copy">
         <div class="eyebrow">Mission 1</div>
@@ -120,12 +122,15 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
-import { fetchAnnonces, fallbackAnnonces } from "../services/annoncesApi";
+import SiteNavbar from "../components/SiteNavbar.vue";
+import { fetchAnnonces } from "../services/annoncesApi";
 
 const loading = ref(true);
 const error = ref(false);
 const source = ref("api");
 const annonces = ref([]);
+const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
+const userName = ref("Marie Lambert");
 
 const filters = reactive({
   search: "",
@@ -193,7 +198,7 @@ onMounted(async () => {
     annonces.value = await fetchAnnonces();
     source.value = "api";
   } catch {
-    annonces.value = fallbackAnnonces;
+    annonces.value = [];
     source.value = "fallback";
     error.value = false;
   } finally {

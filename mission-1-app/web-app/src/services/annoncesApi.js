@@ -28,7 +28,7 @@ export const fallbackAnnonces = [
 ];
 
 export async function fetchAnnonces() {
-  const response = await fetch("/annonces");
+  const response = await fetch("/go/annonces");
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }

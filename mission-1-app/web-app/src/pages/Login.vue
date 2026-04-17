@@ -1,4 +1,9 @@
 <template>
+    <SiteNavbar
+        :is-authenticated="isLoggedIn"
+        :user-name="userName"
+        variant="public"
+    />
     <div class="login-page">
         <div class="login-left">
             <div class="login-left__content">
@@ -86,7 +91,7 @@
                     <div class="login-field">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label>Mot de passe</label>
-                            <a href="#" class="login-right__link" style="font-size: 0.8rem">Oublié ?</a>
+                            <router-link to="/communaute" class="login-right__link" style="font-size: 0.8rem">Oublié ?</router-link>
                         </div>
                         <input
                             type="password"
@@ -121,12 +126,16 @@
 <script setup>
 import { ref, computed } from "vue";
 import {useRouter} from "vue-router";
+import SiteNavbar from "../components/SiteNavbar.vue";
 
 const router = useRouter();
 
 const email = ref("");
 const motDePasse = ref("");
 const rememberMe = ref(false);
+const errorMessages = ref([]);
+const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
+const userName = ref("Marie Lambert");
 
 const isEmailInvalid = computed(() => {
     return email.value.length > 0 && !email.value.includes("@");
@@ -159,7 +168,7 @@ async function handleLogin() {
             }
             
             alert("Connecté avec succès ! 🎉");
-            router.push("/home");
+            router.push("/profil");
             return;
         } else {
             const data = await response.json();
@@ -185,7 +194,7 @@ async function handleLogin() {
 <style scoped>
 .login-page {
     display: flex;
-    min-height: 100vh;
+    min-height: calc(100vh - 86px);
 }
 
 .login-left {

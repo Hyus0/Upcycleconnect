@@ -118,6 +118,9 @@ button {
   border: 1px solid rgba(101, 140, 116, 0.22);
   font-weight: 700;
   font-family: "DM Sans", sans-serif;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .site-navbar__button--ghost {
@@ -141,6 +144,7 @@ button {
   color: white;
   font-size: 0.82rem;
   font-weight: 700;
+  text-decoration: none;
 }
 
 .dashboard-shell {

@@ -59,6 +59,11 @@
         </div>
     </section>
     <section class="main-content">
+        <SiteNavbar
+            :is-authenticated="isLoggedIn"
+            :user-name="userName"
+            variant="app"
+        />
         <router-view />
     </section>
 </template>
@@ -66,10 +71,13 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import SiteNavbar from "../components/SiteNavbar.vue";
 
 const router = useRouter();
 
 const link = ref("TABLEAU DE BORD");
+const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
+const userName = ref("Marie Lambert");
 
 const handleLogout = () => {
   sessionStorage.removeItem("userToken");

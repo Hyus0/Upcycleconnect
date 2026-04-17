@@ -1,4 +1,9 @@
 <template>
+    <SiteNavbar
+        :is-authenticated="isLoggedIn"
+        :user-name="userName"
+        variant="public"
+    />
     <div class="register-page">
         <div class="register-left">
             <div class="register-left__content">
@@ -159,9 +164,9 @@
                     <input type="checkbox" id="cgu" v-model="cguAccepte" />
                     <label for="cgu">
                         J'accepte les
-                        <a href="#" class="register-right__link">CGU</a> et la
-                        <a href="#" class="register-right__link"
-                            >politique de confidentialité</a
+                        <router-link to="/communaute" class="register-right__link">CGU</router-link> et la
+                        <router-link to="/communaute" class="register-right__link"
+                            >politique de confidentialité</router-link
                         >
                     </label>
                 </div>
@@ -183,9 +188,12 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import SiteNavbar from "../components/SiteNavbar.vue";
 
 const router = useRouter();
 const accountType = ref("particulier");
+const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
+const userName = ref("Marie Lambert");
 
 const errorMessages = ref([]);
 const successMessage = ref('');
@@ -262,7 +270,7 @@ async function handleSubmit() {
 <style scoped>
 .register-page {
     display: flex;
-    min-height: 100vh;
+    min-height: calc(100vh - 86px);
 }
 
 .register-left {

@@ -1,7 +1,7 @@
 <template>
     <div class="app-container">
         <main>
-            <siteNavbar
+            <SiteNavbar
                 :isAuthenticated="isLoggedIn"
                 :userName="userName"
                 variant="public"
@@ -226,10 +226,16 @@
                     </p>
 
                     <div class="hero-buttons">
-                        <button class="btn btn--primary">
+                        <button
+                            class="btn btn--primary"
+                            @click="$router.push('/inscription')"
+                        >
                             Créer mon compte gratuit
                         </button>
-                        <button class="btn btn--outline">
+                        <button
+                            class="btn btn--outline"
+                            @click="$router.push('/annonces')"
+                        >
                             Voir les annonces
                         </button>
                     </div>
@@ -255,28 +261,28 @@
                     <div class="footer-column">
                         <h4>PLATEFORME</h4>
                         <ul>
-                            <li><a href="#">Comment ça marche</a></li>
-                            <li><a href="#">Annonces</a></li>
-                            <li><a href="#">Formations</a></li>
-                            <li><a href="#">Communauté</a></li>
+                            <li><router-link to="/#processus">Comment ça marche</router-link></li>
+                            <li><router-link to="/annonces">Annonces</router-link></li>
+                            <li><router-link to="/formations">Formations</router-link></li>
+                            <li><router-link to="/communaute">Communauté</router-link></li>
                         </ul>
                     </div>
                     <div class="footer-column">
                         <h4>PROFESSIONNELS</h4>
                         <ul>
-                            <li><a href="#">Offres d'abonnement</a></li>
-                            <li><a href="#">Conteneurs</a></li>
-                            <li><a href="#">Projets upcycling</a></li>
-                            <li><a href="#">Publicité</a></li>
+                            <li><router-link to="/inscription">Offres d'abonnement</router-link></li>
+                            <li><router-link to="/profil/depots">Conteneurs</router-link></li>
+                            <li><router-link to="/communaute">Projets upcycling</router-link></li>
+                            <li><router-link to="/inscription">Publicité</router-link></li>
                         </ul>
                     </div>
                     <div class="footer-column">
                         <h4>ENTREPRISE</h4>
                         <ul>
-                            <li><a href="#">À propos</a></li>
-                            <li><a href="#">Nos sites</a></li>
-                            <li><a href="#">Blog</a></li>
-                            <li><a href="#">Contact</a></li>
+                            <li><router-link to="/communaute">À propos</router-link></li>
+                            <li><router-link to="/communaute">Nos sites</router-link></li>
+                            <li><router-link to="/communaute">Blog</router-link></li>
+                            <li><router-link to="/communaute">Contact</router-link></li>
                         </ul>
                     </div>
                 </div>
@@ -287,9 +293,9 @@
             <div class="footer-bottom">
                 <p>© 2026 UpcycleConnect — AlterNext · ESGI 2A</p>
                 <div class="footer-legal">
-                    <a href="#">Mentions légales</a>
-                    <a href="#">CGU</a>
-                    <a href="#">RGPD</a>
+                    <router-link to="/communaute">Mentions légales</router-link>
+                    <router-link to="/communaute">CGU</router-link>
+                    <router-link to="/communaute">RGPD</router-link>
                 </div>
             </div>
         </div>
@@ -297,18 +303,11 @@
 </template>
 
 <script>
-import siteNavbar from "../components/siteNavbar.vue";
-
-const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-    }
-};
+import SiteNavbar from "../components/SiteNavbar.vue";
 
 export default {
     components: {
-        siteNavbar,
+        SiteNavbar,
     },
     data() {
         return {

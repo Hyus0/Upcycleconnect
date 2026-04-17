@@ -120,7 +120,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
-import { fetchAnnonces, fallbackAnnonces } from "./services/annoncesApi";
+import { fetchAnnonces, fallbackAnnonces } from "../services/annoncesApi";
 
 const loading = ref(true);
 const error = ref(false);
@@ -201,3 +201,7 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style>
+
+</style>

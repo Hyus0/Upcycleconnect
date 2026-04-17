@@ -15,8 +15,22 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", string(res))
 }
 
-func main() {
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5174")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func main() {
 	db.Conn = db.NewDB()
 
 	http.HandleFunc("GET /", healthCheck)
@@ -59,7 +73,14 @@ func main() {
 
 	// Legacy routes.
 	http.HandleFunc("GET /api/admin/user/{id}", app.GetUser)
-	
+
+	//Utilisateur
+	http.HandleFunc("GET /users", app.GetAllUsers)
+	http.HandleFunc("POST /users", app.CreateUser)
+	http.HandleFunc("GET /users/{id}", app.GetUser)
+	http.HandleFunc("PUT /users/{id}", app.ModifyUser)
+	http.HandleFunc("DELETE /users/{id}", app.DeleteUser)
+
 	//Annonce
 	http.HandleFunc("GET /annonces", app.GetAllAnnonces)
 	http.HandleFunc("POST /annonces", app.CreateAnnonce)
@@ -67,14 +88,14 @@ func main() {
 	http.HandleFunc("PUT /annonces/{id}", app.ModifyAnnonce)
 	http.HandleFunc("DELETE /annonces/{id}", app.DeleteAnnonce)
 	http.HandleFunc("PATCH /annonces/{id}", app.ValidAnnonce)
-	
+
 	//Evenement
 	http.HandleFunc("GET /evenements", app.GetAllEvenements)
 	http.HandleFunc("GET /evenements/{id}", app.GetEvenement)
 	http.HandleFunc("POST /evenements", app.CreateEvenement)
 	http.HandleFunc("PUT /evenements/{id}", app.ModifyEvenement)
 	http.HandleFunc("DELETE /evenements/{id}", app.DeleteEvenement)
-	
+
 	//Categorie
 	http.HandleFunc("GET /categories", app.GetAllCategories)
 	http.HandleFunc("GET /category/{id}", app.GetCategory)
@@ -91,5 +112,5 @@ func main() {
 	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormation)
 
 	fmt.Println("Listening at http://localhost:8081")
-	http.ListenAndServe(":8081", nil)
+	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))
 }

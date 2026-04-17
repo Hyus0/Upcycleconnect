@@ -38,7 +38,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		fmt.Println("Erreur DB GetUser:", err.Error())
-		http.Error(w, "Erreur serveur lors de la récupération du jeu", http.StatusInternalServerError)
+		http.Error(w, "Erreur serveur lors de la récupération de l'utilisateur", http.StatusInternalServerError)
 		return
 	}
 
@@ -103,21 +103,7 @@ func ValidateUser(userDto models.User) []string {
 		errsMsg = append(errsMsg, "Password must contain at least one special character")
 	}
 
-	if len(userDto.Adresse) < 5 {
-		errsMsg = append(errsMsg, "Adresse length must be at least 5")
-	}
-	if len(userDto.Adresse) > 100 {
-		errsMsg = append(errsMsg, "Adresse length must not be longer than 100")
-	}
-
-	if len(userDto.Ville) < 2 {
-		errsMsg = append(errsMsg, "Ville length must be at least 2")
-	}
-	if len(userDto.Ville) > 50 {
-		errsMsg = append(errsMsg, "Ville length must not be longer than 50")
-	}
-
-	if len(userDto.Code_postal) != 5 {
+	if len(userDto.CodePostal) != 5 {
 		errsMsg = append(errsMsg, "Code postal must be exactly 5 numbers")
 	}
 
@@ -136,28 +122,45 @@ func ValidateUser(userDto models.User) []string {
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	var userDto models.User
+	w.Header().Set("Content-Type", "application/json")
 
+	var userDto models.User
 	err := json.NewDecoder(r.Body).Decode(&userDto)
 	if err != nil {
-		http.Error(w, "Incorrect body format", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Incorrect body format"})
 		return
 	}
 
 	errsMsg := ValidateUser(userDto)
 
+	exists, err := db.EmailExists(userDto.Mail)
+	if err != nil {
+		fmt.Println("❌ ERREUR TECHNIQUE EmailExists :", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Erreur lors de la vérification du mail"})
+		return
+	}
+	if exists {
+		errsMsg = append(errsMsg, "Cet email est déjà utilisé par un autre compte.")
+	}
+
 	if len(errsMsg) > 0 {
-		encoded, _ := json.Marshal(errsMsg)
-		http.Error(w, string(encoded), http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errsMsg) 
 		return
 	}
 
 	err = db.CreateUser(userDto)
-	if err != nil {
-		http.Error(w, "pb d'insertion", http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
+    if err != nil {
+        fmt.Println("Erreur(s) :", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Problème d'insertion"})
+        return
+    }
+
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]string{"message": "Utilisateur créé avec succès !"})
 }
 
 func ModifyUser(w http.ResponseWriter, r *http.Request) {
@@ -470,7 +473,7 @@ func ValidAnnonce(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Annonce non trouvée avec l'ID %d", id), http.StatusNotFound)
 			return
 		}
-		
+
 		fmt.Println("Erreur DB ValidAnnonce:", err.Error())
 		http.Error(w, "Erreur serveur lors de la validation de l'annonce", http.StatusInternalServerError)
 		return

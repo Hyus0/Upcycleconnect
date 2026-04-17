@@ -8,7 +8,11 @@ import (
 
 func GetAllUsers() ([]models.GetUser, error) {
 	users := []models.GetUser{}
-	query := "SELECT id, prenom, nom, mail, adresse, ville, code_postal, date_naissance, date_inscription, role, id_langue FROM UTILISATEUR"
+	query := `SELECT id, prenom, nom, mail, adresse, ville, code_postal, 
+		          COALESCE(date_naissance, ''), 
+		          COALESCE(date_inscription, ''), 
+		          role, id_langue 
+		          FROM UTILISATEUR`
 	rows, err := Conn.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("GetAllUsers query: %v", err)
@@ -17,7 +21,7 @@ func GetAllUsers() ([]models.GetUser, error) {
 
 	for rows.Next() {
 		var u models.GetUser
-		err := rows.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.Code_postal, &u.Date_naissance, &u.Date_inscription, &u.Role, &u.Id_langue)
+		err := rows.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal, &u.DateNaissance, &u.DateInscription, &u.Role, &u.IdLangue)
 		if err != nil {
 			return nil, fmt.Errorf("GetAllUsers scan: %v", err)
 		}
@@ -28,10 +32,14 @@ func GetAllUsers() ([]models.GetUser, error) {
 
 func GetUser(userId int) (*models.GetUser, error) {
 	var u models.GetUser
-	query := "SELECT id, prenom, nom, mail, adresse, ville, code_postal, date_naissance, date_inscription, role, id_langue FROM UTILISATEUR WHERE id = ?"
+	query := `SELECT id, prenom, nom, mail, adresse, ville, code_postal, 
+		          COALESCE(date_naissance, ''), 
+		          COALESCE(date_inscription, ''), 
+		          role, id_langue 
+		          FROM UTILISATEUR WHERE id = ?`
 	row := Conn.QueryRow(query, userId)
 
-	err := row.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.Code_postal, &u.Date_naissance, &u.Date_inscription, &u.Role, &u.Id_langue)
+	err := row.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal, &u.DateNaissance, &u.DateInscription, &u.Role, &u.IdLangue)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -43,75 +51,64 @@ func GetUser(userId int) (*models.GetUser, error) {
 	return &u, nil
 }
 
+func EmailExists(email string) (bool, error) {
+    var count int
+    query := "SELECT COUNT(*) FROM UTILISATEUR WHERE mail = ?"
+    
+    err := Conn.QueryRow(query, email).Scan(&count)
+    if err != nil {
+        return false, err
+    }
+    return count > 0, nil
+}
+
 func CreateUser(user models.User) error {
-	query := `INSERT INTO UTILISATEUR (prenom, nom, password, mail, adresse, ville, code_postal, date_naissance, role, id_langue, date_inscription)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`
+	if user.Role == "" {
+		user.Role = "Particulier"
+	}
+	if user.IdLangue <= 0 {
+		user.IdLangue = 1
+	}
+
+	query := `INSERT INTO UTILISATEUR (prenom, nom, password, mail, adresse, ville, code_postal, date_naissance, role, id_langue)
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+	var dateN interface{} = user.DateNaissance
+	if user.DateNaissance == "" {
+		dateN = nil
+	}
 
 	_, err := Conn.Exec(query,
-		user.Prenom, user.Nom, user.Password, user.Mail,
-		user.Adresse, user.Ville, user.Code_postal,
-		user.Date_naissance, user.Role, user.Id_langue,
+		user.Prenom, 
+		user.Nom, 
+		user.Password, 
+		user.Mail,
+		user.Adresse, 
+		user.Ville, 
+		user.CodePostal,
+		dateN, 
+		user.Role, 
+		user.IdLangue,
 	)
 
-	if err != nil {
-		return fmt.Errorf("CreateUser: %v", err)
-	}
-	return nil
+	return err
 }
 
 func ModifyUser(userId int, user models.User) error {
-	query := `UPDATE UTILISATEUR SET
-				prenom = ?,
-				nom = ?,
-				mail = ?,
-				adresse = ?,
-				ville = ?,
-				code_postal = ?,
-				role = ?,
-				id_langue = ?
-			  WHERE id = ?`
-	result, err := Conn.Exec(query,
-		user.Prenom,
-		user.Nom,
-		user.Mail,
-		user.Adresse,
-		user.Ville,
-		user.Code_postal,
-		user.Role,
-		user.Id_langue,
-		userId,
+	query := `UPDATE UTILISATEUR SET prenom=?, nom=?, mail=?, adresse=?, ville=?, code_postal=?, role=?, id_langue=? WHERE id=?`
+	
+	_, err := Conn.Exec(query,
+		user.Prenom, user.Nom, user.Mail, user.Adresse,
+		user.Ville, user.CodePostal, user.Role, user.IdLangue, userId,
 	)
-
-	if err != nil {
-		return fmt.Errorf("package db ModifyUser : %v", err.Error())
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("package db ModifyUser (RowsAffected) : %v", err.Error())
-	}
-
-	if rowsAffected == 0 {
-		fmt.Printf("Note: Utilisateur %d non modifié (données identiques ou ID inexistant)\n", userId)
-	}
-
-	return nil
+	return err
 }
 
 func DeleteUser(id int) error {
-	if id <= 0 {
-		return fmt.Errorf("package db DeleteUser : L'ID doit être un entier positif")
-	}
 	result, err := Conn.Exec("DELETE FROM UTILISATEUR WHERE id = ?", id)
-	if err != nil {
-		return fmt.Errorf("package db DeleteUser : échec de la suppression : %v", err.Error())
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("package db DeleteUser : erreur de RowsAffected : %v", err.Error())
-	}
-	if rowsAffected == 0 {
-		return fmt.Errorf("package db DeleteUser : aucun utilisateur trouvé avec l'ID %d", id)
-	}
+	if err != nil { return err }
+	
+	count, _ := result.RowsAffected()
+	if count == 0 { return fmt.Errorf("aucun utilisateur trouvé") }
 	return nil
 }

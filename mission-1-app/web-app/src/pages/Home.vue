@@ -1,47 +1,11 @@
 <template>
     <div class="app-container">
-        <header class="navbar">
-            <div class="navbar__container">
-                <div class="navbar__logo">
-                    <img
-                        src="../components/logo.png"
-                        class="navbar__logo-img"
-                    />
-
-                    <div class="logo-text">
-                        Upcycle<span class="navbar__logo--accent">Connect</span>
-                    </div>
-                </div>
-                <div class="navbar__right-side">
-                    <nav class="navbar__menu">
-                        <ul class="navbar__list">
-                            <li>
-                                <a href="#" class="navbar__link"
-                                    >Comment ça marche</a
-                                >
-                            </li>
-                            <li>
-                                <a href="#" class="navbar__link">Annonces</a>
-                            </li>
-                            <li>
-                                <a href="#" class="navbar__link">Formations</a>
-                            </li>
-                            <li>
-                                <a href="#" class="navbar__link">Communauté</a>
-                            </li>
-                        </ul>
-                    </nav>
-
-                    <div class="navbar__actions">
-                        <button class="btn btn--outline">Se connecter</button>
-                        <button class="btn btn--primary" @click="$router.push('/inscription')">
-                            Rejoindre gratuitement →
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </header>
         <main>
+            <siteNavbar
+                :isAuthenticated="isLoggedIn"
+                :userName="userName"
+                variant="public"
+            />
             <section class="page-background">
                 <div class="hero-content">
                     <button class="active-plateform">
@@ -60,10 +24,16 @@
                     </p>
 
                     <div class="hero-buttons">
-                        <button class="btn btn--primary" @click="$router.push('/inscription')">
+                        <button
+                            class="btn btn--primary"
+                            @click="$router.push('/inscription')"
+                        >
                             ♻ Commencer gratuitement
                         </button>
-                        <button class="btn btn--outline" @click="$router.push('/inscription')">
+                        <button
+                            class="btn btn--outline"
+                            @click="$router.push('/profil')"
+                        >
                             Je suis professionnel →
                         </button>
                     </div>
@@ -196,7 +166,7 @@
                 </div>
             </section>
 
-            <section class="processus-part">
+            <section id="processus" class="processus-part">
                 <div class="processus-container">
                     <p class="subtitle">PROCESSUS</p>
                     <h1>Comment ça marche ?</h1>
@@ -327,7 +297,19 @@
 </template>
 
 <script>
+import siteNavbar from "../components/siteNavbar.vue";
+
+const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+    }
+};
+
 export default {
+    components: {
+        siteNavbar,
+    },
     data() {
         return {
             objets_evites: 2.4,
@@ -336,6 +318,8 @@ export default {
             artisans_partenaire: 340,
             sites: 7,
             plateform_user: 12400,
+            isLoggedIn: !!sessionStorage.getItem("userToken"),
+            userName: "Marie Lambert",
         };
     },
 };
@@ -349,39 +333,6 @@ html {
     font-family: "Syne", sans-serif;
 }
 
-.navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 2000;
-    padding: 1.25rem 0;
-    background-color: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
-}
-
-.navbar__container {
-    max-width: 1500px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.navbar__right-side {
-    display: flex;
-    align-items: center;
-    gap: 3rem;
-}
-
-.navbar__logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-}
-
 .logo-text {
     display: inline-block;
     white-space: nowrap;
@@ -393,37 +344,6 @@ html {
 
 .navbar__logo--accent {
     color: #4ade80;
-}
-
-.navbar__logo-img {
-    height: 35px;
-    width: auto;
-    object-fit: contain;
-}
-
-.navbar__list {
-    display: flex;
-    gap: 2.5rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.navbar__link {
-    color: rgba(255, 255, 255, 0.6);
-    text-decoration: none;
-    font-size: 0.95rem;
-    font-weight: 500;
-    transition: 0.3s ease;
-}
-
-.navbar__link:hover {
-    color: #ffffff;
-}
-
-.navbar__actions {
-    display: flex;
-    gap: 1rem;
 }
 
 .btn {
@@ -464,7 +384,7 @@ html {
     display: flex;
     align-items: center;
     padding-left: 10px;
-    padding-top: 30px;
+    margin-top: -108px;
 }
 
 .active-plateform {

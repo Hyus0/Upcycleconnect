@@ -263,8 +263,8 @@
                         <ul>
                             <li><router-link to="/#processus">Comment ça marche</router-link></li>
                             <li><router-link to="/annonces">Annonces</router-link></li>
-                            <li><router-link to="/formations">Formations</router-link></li>
-                            <li><router-link to="/communaute">Communauté</router-link></li>
+                            <li><router-link to="/profil">Tableau de bord</router-link></li>
+                            <li><router-link to="/profil/annonces">Mes annonces</router-link></li>
                         </ul>
                     </div>
                     <div class="footer-column">
@@ -272,17 +272,17 @@
                         <ul>
                             <li><router-link to="/inscription">Offres d'abonnement</router-link></li>
                             <li><router-link to="/profil/depots">Conteneurs</router-link></li>
-                            <li><router-link to="/communaute">Projets upcycling</router-link></li>
+                            <li><router-link to="/profil/annonces">Projets upcycling</router-link></li>
                             <li><router-link to="/inscription">Publicité</router-link></li>
                         </ul>
                     </div>
                     <div class="footer-column">
                         <h4>ENTREPRISE</h4>
                         <ul>
-                            <li><router-link to="/communaute">À propos</router-link></li>
-                            <li><router-link to="/communaute">Nos sites</router-link></li>
-                            <li><router-link to="/communaute">Blog</router-link></li>
-                            <li><router-link to="/communaute">Contact</router-link></li>
+                            <li><router-link to="/">À propos</router-link></li>
+                            <li><router-link to="/">Nos sites</router-link></li>
+                            <li><router-link to="/">Blog</router-link></li>
+                            <li><router-link to="/connexion">Contact</router-link></li>
                         </ul>
                     </div>
                 </div>
@@ -293,9 +293,9 @@
             <div class="footer-bottom">
                 <p>© 2026 UpcycleConnect — AlterNext · ESGI 2A</p>
                 <div class="footer-legal">
-                    <router-link to="/communaute">Mentions légales</router-link>
-                    <router-link to="/communaute">CGU</router-link>
-                    <router-link to="/communaute">RGPD</router-link>
+                    <router-link to="/">Mentions légales</router-link>
+                    <router-link to="/">CGU</router-link>
+                    <router-link to="/">RGPD</router-link>
                 </div>
             </div>
         </div>

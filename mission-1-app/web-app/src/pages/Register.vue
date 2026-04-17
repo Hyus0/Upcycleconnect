@@ -164,8 +164,8 @@
                     <input type="checkbox" id="cgu" v-model="cguAccepte" />
                     <label for="cgu">
                         J'accepte les
-                        <router-link to="/communaute" class="register-right__link">CGU</router-link> et la
-                        <router-link to="/communaute" class="register-right__link"
+                        <router-link to="/" class="register-right__link">CGU</router-link> et la
+                        <router-link to="/" class="register-right__link"
                             >politique de confidentialité</router-link
                         >
                     </label>

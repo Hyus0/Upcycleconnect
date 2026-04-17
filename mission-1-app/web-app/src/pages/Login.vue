@@ -91,7 +91,7 @@
                     <div class="login-field">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label>Mot de passe</label>
-                            <router-link to="/communaute" class="login-right__link" style="font-size: 0.8rem">Oublié ?</router-link>
+                            <router-link to="/connexion" class="login-right__link" style="font-size: 0.8rem">Oublié ?</router-link>
                         </div>
                         <input
                             type="password"

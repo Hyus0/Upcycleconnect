@@ -1,28 +1,80 @@
 <template>
-  <header class="site-navbar" :class="`site-navbar--${variant}`">
+  <header class="site-navbar">
     <div class="site-navbar__inner">
-      <RouterLink class="site-navbar__brand" to="/" aria-label="Accueil UpcycleConnect">
-        <img :src="logoSrc" alt="UpcycleConnect" class="site-navbar__logo" />
-      </RouterLink>
+      <div class="site-navbar__left">
+        <RouterLink class="site-navbar__brand" to="/" aria-label="Accueil UpcycleConnect">
+          <img :src="logoSrc" alt="UpcycleConnect" class="site-navbar__logo" />
+        </RouterLink>
+
+        <div v-if="isAuthenticated" class="site-navbar__account nav-menu">
+          <button class="site-navbar__account-button" type="button" aria-haspopup="true">
+            <span class="site-navbar__avatar">{{ userInitials }}</span>
+            <span class="site-navbar__account-text">
+              <strong>{{ userName }}</strong>
+              <small>{{ userRole }} · Score {{ userScore }} pts</small>
+            </span>
+          </button>
+          <div class="nav-menu__panel nav-menu__panel--account">
+            <RouterLink to="/profil/informations" class="nav-menu__item">
+              <span>Compte</span>
+              <small>Informations personnelles</small>
+            </RouterLink>
+            <RouterLink to="/profil" class="nav-menu__item">
+              <span>Activite</span>
+              <small>Score, planning et resume</small>
+            </RouterLink>
+            <button class="nav-menu__item nav-menu__item--danger" type="button" @click="handleLogout">
+              <span>Se deconnecter</span>
+              <small>Fermer la session locale</small>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <nav class="site-navbar__links" aria-label="Navigation principale">
-        <RouterLink
-          v-for="item in items"
-          :key="item.label"
-          :to="item.to"
-          class="site-navbar__link"
-          :class="{ 'is-active': isActive(item) }"
+        <div
+          v-for="group in navGroups"
+          :key="group.label"
+          class="nav-menu"
+          :class="{ 'is-active': isGroupActive(group) }"
         >
-          {{ item.label }}
-        </RouterLink>
+          <RouterLink
+            v-if="group.to"
+            :to="group.to"
+            class="site-navbar__link"
+            :class="{ 'is-active': isGroupActive(group) }"
+          >
+            {{ group.label }}
+          </RouterLink>
+          <button
+            v-else
+            class="site-navbar__link site-navbar__link--button"
+            :class="{ 'is-active': isGroupActive(group) }"
+            type="button"
+            aria-haspopup="true"
+          >
+            {{ group.label }}
+            <span class="site-navbar__chevron">⌄</span>
+          </button>
+
+          <div v-if="group.children?.length" class="nav-menu__panel">
+            <RouterLink
+              v-for="item in group.children"
+              :key="item.label"
+              :to="item.to"
+              class="nav-menu__item"
+              :class="{ 'is-active': isActive(item) }"
+            >
+              <span>{{ item.label }}</span>
+              <small>{{ item.description }}</small>
+            </RouterLink>
+          </div>
+        </div>
       </nav>
 
       <div class="site-navbar__actions" v-if="isAuthenticated">
         <RouterLink class="site-navbar__button site-navbar__button--primary" to="/profil/annonces">
           + Deposer
-        </RouterLink>
-        <RouterLink class="site-navbar__avatar" to="/profil" aria-label="Profil utilisateur">
-          {{ userInitials }}
         </RouterLink>
       </div>
 
@@ -40,10 +92,11 @@
 
 <script setup>
 import { computed } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import logoSrc from "./logo_texte.png";
 
 const route = useRoute();
+const router = useRouter();
 
 const props = defineProps({
   variant: {
@@ -54,27 +107,98 @@ const props = defineProps({
     type: String,
     default: "Marie Lambert"
   },
+  userRole: {
+    type: String,
+    default: "Particulier"
+  },
+  userScore: {
+    type: [String, Number],
+    default: 847
+  },
   isAuthenticated: {
     type: Boolean,
     default: false
   }
 });
 
-const publicItems = [
-  { label: "Comment ca marche", to: { path: "/", hash: "#processus" } },
-  { label: "Annonces", to: "/annonces" },
-  { label: "Formations", to: "/formations" },
-  { label: "Communaute", to: "/communaute" }
+const dashboardChildren = [
+  {
+    label: "Vue d'ensemble",
+    to: "/profil",
+    description: "Score, planning et activite"
+  },
+  {
+    label: "Mes annonces",
+    to: "/profil/annonces",
+    description: "Objets publies et brouillons"
+  },
+  {
+    label: "Mes depots conteneurs",
+    to: "/profil/depots",
+    description: "Suivi des depots et collectes"
+  },
+  {
+    label: "Informations",
+    to: "/profil/informations",
+    description: "Profil, adresse et preferences"
+  }
 ];
 
-const appItems = [
-  { label: "Tableau de bord", to: "/profil" },
-  { label: "Annonces", to: "/profil/annonces" },
-  { label: "Formations", to: "/formations" },
-  { label: "Communaute", to: "/communaute" }
+const serviceChildren = [
+  {
+    label: "Upcycling Score",
+    to: "/profil",
+    description: "Impact et points utilisateur"
+  },
+  {
+    label: "Formations & Ateliers",
+    to: "/profil",
+    description: "Sessions et apprentissage"
+  },
+  {
+    label: "Mon planning",
+    to: "/profil",
+    description: "Evenements et rendez-vous"
+  },
+  {
+    label: "Espace Conseils",
+    to: "/profil",
+    description: "Guides et astuces"
+  }
 ];
 
-const items = computed(() => (props.variant === "public" ? publicItems : appItems));
+const communityChildren = [
+  {
+    label: "Catalogue offres",
+    to: "/annonces",
+    description: "Toutes les annonces publiques"
+  },
+  {
+    label: "Forums",
+    to: "/profil",
+    description: "Discussions communaute"
+  },
+  {
+    label: "Formations & Ateliers",
+    to: "/profil",
+    description: "Ressources communaute"
+  }
+];
+
+const navGroups = [
+  {
+    label: "Tableau de bord",
+    children: dashboardChildren
+  },
+  {
+    label: "Services",
+    children: serviceChildren
+  },
+  {
+    label: "Communaute",
+    children: communityChildren
+  }
+];
 
 const userInitials = computed(() =>
   props.userName
@@ -86,17 +210,32 @@ const userInitials = computed(() =>
 );
 
 function itemPath(item) {
-  return typeof item.to === "string" ? item.to : item.to.path;
+  return typeof item.to === "string" ? item.to : item.to?.path;
 }
 
 function isActive(item) {
   const path = itemPath(item);
-  if (path === "/" && item.to.hash) {
+  if (!path) return false;
+  if (path === "/" && item.to?.hash) {
     return route.path === "/" && route.hash === item.to.hash;
   }
   if (path === "/profil") {
     return route.path === "/profil";
   }
   return route.path === path || route.path.startsWith(`${path}/`);
+}
+
+function isGroupActive(group) {
+  if (group.children?.length) {
+    return group.children.some((item) => isActive(item));
+  }
+  return isActive(group);
+}
+
+function handleLogout() {
+  sessionStorage.removeItem("userToken");
+  sessionStorage.removeItem("userId");
+  localStorage.removeItem("userToken");
+  router.push("/connexion");
 }
 </script>

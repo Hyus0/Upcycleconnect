@@ -6,16 +6,12 @@ import Profil from "./pages/Profil.vue";
 
 import Home from "./pages/Home.vue";
 import Annonces from "./pages/Annonces.vue";
-import Formations from "./pages/Formations.vue";
-import Communaute from "./pages/Communaute.vue";
 
 const routes = [
   { path: "/", component: Home },
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
   { path: "/annonces", component: Annonces },
-  { path: "/formations", component: Formations },
-  { path: "/communaute", component: Communaute },
   {
     path: "/profil",
     component: Profil,

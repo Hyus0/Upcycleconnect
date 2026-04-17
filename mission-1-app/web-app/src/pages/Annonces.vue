@@ -1,132 +1,131 @@
 <template>
-  <div class="page-shell">
+  <main class="public-dashboard">
     <SiteNavbar :is-authenticated="isLoggedIn" :user-name="userName" variant="public" />
 
-    <header class="hero">
-      <div class="hero-copy">
-        <div class="eyebrow">Mission 1</div>
-        <h1>Annonces disponibles</h1>
-        <p>
-          Consulte les objets proposes sur UpcycleConnect, filtre par type et trouve rapidement ce
-          qui est reutilisable.
+    <header class="content-header annonces-header">
+      <div class="header-left">
+        <p class="sidebar__category2">ACCUEIL > CATALOGUE</p>
+        <h1 class="hero-title1">Annonces disponibles</h1>
+        <p class="classic-text">
+          Consulte les objets proposes sur UpcycleConnect, filtre par type et trouve rapidement ce qui est reutilisable.
         </p>
       </div>
-
-      <aside class="hero-panel">
-        <span class="hero-chip">Catalogue public</span>
-        <strong>{{ filteredAnnonces.length }} annonce{{ filteredAnnonces.length > 1 ? "s" : "" }}</strong>
-        <small>{{ sourceLabel }}</small>
-      </aside>
+      <RouterLink class="btn-main-action" to="/profil/annonces">+ Deposer une annonce</RouterLink>
     </header>
 
-    <section class="toolbar-card">
-      <label class="search-field">
-        <span>Recherche</span>
-        <input v-model="filters.search" type="search" placeholder="Titre, ville, description..." />
-      </label>
-
-      <label class="select-field">
-        <span>Type</span>
-        <select v-model="filters.type">
-          <option value="">Tous</option>
-          <option value="don">Don</option>
-          <option value="vente">Vente</option>
-        </select>
-      </label>
-
-      <label class="select-field">
-        <span>Statut</span>
-        <select v-model="filters.status">
-          <option value="">Tous</option>
-          <option value="en ligne">En ligne</option>
-          <option value="reserve">Reserve</option>
-          <option value="vendu">Vendu</option>
-        </select>
-      </label>
-    </section>
-
-    <section class="content-grid">
-      <aside class="summary-card">
-        <div class="summary-head">
-          <h2>Vue rapide</h2>
-          <span class="source-badge" :class="{ fallback: source !== 'api' }">{{ sourceBadge }}</span>
-        </div>
-
-        <div class="summary-stats">
-          <article>
-            <span>Total</span>
-            <strong>{{ filteredAnnonces.length }}</strong>
-          </article>
-          <article>
-            <span>Dons</span>
-            <strong>{{ donationsCount }}</strong>
-          </article>
-          <article>
-            <span>Ventes</span>
-            <strong>{{ salesCount }}</strong>
-          </article>
-        </div>
-
-        <div class="summary-block">
-          <h3>Conseil</h3>
-          <p>Affiche d'abord un type d'annonce puis affine avec une ville ou un mot-clé.</p>
-        </div>
-      </aside>
-
-      <main class="list-card">
-        <div class="list-head">
-          <div>
-            <h2>Catalogue</h2>
-            <p>
-              {{ loading ? "Chargement..." : `${filteredAnnonces.length} resultat${filteredAnnonces.length > 1 ? "s" : ""}` }}
-            </p>
+    <div class="stats-grid annonces-stats">
+      <div class="card card--score">
+        <p class="tag-score">CATALOGUE PUBLIC</p>
+        <div class="score-value">{{ filteredAnnonces.length }} <span>annonces</span></div>
+        <p class="score-level">{{ sourceLabel }}</p>
+        <div class="score-footer">
+          <div class="mini-stat">
+            <strong>{{ donationsCount }}</strong><br />Dons
+          </div>
+          <div class="mini-stat">
+            <strong>{{ salesCount }}</strong><br />Ventes
+          </div>
+          <div class="mini-stat">
+            <strong>{{ availableCount }}</strong><br />Disponibles
           </div>
         </div>
+      </div>
+      <div class="card card--white">
+        <div class="card-num">{{ donationsCount }}</div>
+        <p class="text-dm">Objets gratuits</p>
+        <span class="badge badge--green">DON</span>
+      </div>
+      <div class="card card--white">
+        <div class="card-num2">{{ salesCount }}</div>
+        <p class="text-dm">Objets en vente</p>
+        <span class="badge badge--orange">VENTE</span>
+      </div>
+    </div>
 
-        <div v-if="loading" class="state-card">Chargement des annonces...</div>
-        <div v-else-if="error" class="state-card state-error">Impossible de charger les annonces.</div>
-        <div v-else-if="filteredAnnonces.length === 0" class="state-card">
-          Aucune annonce ne correspond a ces filtres.
+    <section class="section-container">
+      <div class="section-header">
+        <div>
+          <h2>Catalogue des annonces</h2>
+          <p class="classic-text">{{ loading ? "Chargement..." : `${filteredAnnonces.length} resultat${filteredAnnonces.length > 1 ? "s" : ""}` }}</p>
         </div>
+        <div class="header-actions">
+          <input
+            v-model="filters.search"
+            type="search"
+            placeholder="Rechercher..."
+            class="search-input"
+          />
+          <select v-model="filters.type" class="btn-secondary">
+            <option value="">Tous types</option>
+            <option value="don">Don</option>
+            <option value="vente">Vente</option>
+          </select>
+          <select v-model="filters.status" class="btn-secondary">
+            <option value="">Tous statuts</option>
+            <option value="en ligne">En ligne</option>
+            <option value="reserve">Reserve</option>
+            <option value="vendu">Vendu</option>
+          </select>
+        </div>
+      </div>
 
-        <section v-else class="annonces-grid">
-          <article v-for="annonce in filteredAnnonces" :key="annonce.id" class="annonce-card">
-            <div class="card-top">
-              <div>
-                <h3>{{ annonce.titre }}</h3>
-              </div>
-              <span class="type-badge" :class="annonce.type">{{ annonce.type || "annonce" }}</span>
-            </div>
+      <div v-if="loading" class="state-card">Chargement des annonces...</div>
+      <div v-else-if="filteredAnnonces.length === 0" class="state-card">
+        Aucune annonce ne correspond a ces filtres.
+      </div>
 
-            <div class="card-meta">
-              <span>{{ annonce.ville || "Ville non renseignee" }}</span>
-              <span>{{ annonce.etat_objet || "Etat non renseigne" }}</span>
-              <span>{{ formatDate(annonce.date_creation) }}</span>
-            </div>
-
-            <p class="card-description">{{ annonce.description || "Aucune description disponible." }}</p>
-
-            <div class="card-foot">
-              <div>
-                <strong class="price">{{ formatPrice(annonce.prix, annonce.type) }}</strong>
-                <span>{{ annonce.statut || "en ligne" }}</span>
-              </div>
-              <span>{{ annonce.code_postal || "" }}</span>
-            </div>
-          </article>
-        </section>
-      </main>
+      <table v-else class="data-table annonces-table">
+        <thead>
+          <tr>
+            <th>Objet</th>
+            <th>Localisation</th>
+            <th>Type</th>
+            <th>Statut</th>
+            <th>Prix</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="annonce in filteredAnnonces" :key="annonce.id">
+            <td>
+              <strong>{{ displayValue(annonce.titre) }}</strong>
+              <span class="table-subtext">{{ displayValue(annonce.description) }}</span>
+            </td>
+            <td>
+              {{ displayValue(annonce.ville) }}
+              <span class="table-subtext">{{ displayValue(annonce.code_postal) }}</span>
+            </td>
+            <td>
+              <span :class="annonce.type === 'vente' ? 'tag-vente' : 'tag-don'">
+                {{ displayValue(annonce.type).toUpperCase() }}
+              </span>
+            </td>
+            <td>
+              <span :class="statusClass(annonce.statut)">
+                {{ displayValue(annonce.statut || 'en ligne').toUpperCase() }}
+              </span>
+            </td>
+            <td>{{ formatPrice(annonce.prix, annonce.type) }}</td>
+            <td>{{ formatDate(annonce.date_creation) }}</td>
+            <td class="actions-cell">
+              <button class="btn-view" type="button">Voir</button>
+              <RouterLink class="btn-modify" to="/profil/annonces">Contacter</RouterLink>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </section>
-  </div>
+  </main>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
+import { RouterLink } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import { fetchAnnonces } from "../services/annoncesApi";
 
 const loading = ref(true);
-const error = ref(false);
 const source = ref("api");
 const annonces = ref([]);
 const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
@@ -164,15 +163,27 @@ const filteredAnnonces = computed(() => {
 
 const donationsCount = computed(() => filteredAnnonces.value.filter((item) => item.type === "don").length);
 const salesCount = computed(() => filteredAnnonces.value.filter((item) => item.type === "vente").length);
-const sourceBadge = computed(() => (source.value === "api" ? "API" : "Mode local"));
+const availableCount = computed(() =>
+  filteredAnnonces.value.filter((item) => ["", "en ligne", "validee"].includes((item.statut || "en ligne").toLowerCase())).length
+);
 const sourceLabel = computed(() =>
-  source.value === "api" ? "Mise a jour depuis l'API annonces" : "Affichage avec donnees locales"
+  source.value === "api" ? "Donnees issues de l'API annonces" : "Aucune donnee disponible pour le moment"
 );
 
+function displayValue(value) {
+  return value === null || value === undefined || value === "" ? "NULL" : value;
+}
+
+function statusClass(value) {
+  const status = (value || "en ligne").toLowerCase();
+  return status === "reserve" || status === "en attente" ? "status-pending" : "status-valid";
+}
+
 function formatDate(value) {
+  if (!value) return "NULL";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "-";
+    return "NULL";
   }
   return new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
@@ -182,6 +193,7 @@ function formatDate(value) {
 }
 
 function formatPrice(value, type) {
+  if (value === null || value === undefined || value === "") return "NULL";
   if (type === "don" || Number(value) === 0) {
     return "Gratuit";
   }
@@ -193,20 +205,65 @@ function formatPrice(value, type) {
 
 onMounted(async () => {
   loading.value = true;
-  error.value = false;
   try {
     annonces.value = await fetchAnnonces();
     source.value = "api";
   } catch {
     annonces.value = [];
-    source.value = "fallback";
-    error.value = false;
+    source.value = "empty";
   } finally {
     loading.value = false;
   }
 });
 </script>
 
-<style>
+<style scoped>
+.public-dashboard {
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--bg-light, #f7f9f7);
+}
 
+.annonces-header .btn-main-action {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.annonces-stats {
+  grid-template-columns: 1.4fr 0.8fr 0.8fr;
+}
+
+.score-value span {
+  font-size: 1.2rem;
+}
+
+.table-subtext {
+  display: block;
+  margin-top: 4px;
+  max-width: 360px;
+  overflow: hidden;
+  color: var(--text-grey);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annonces-table .btn-modify {
+  text-decoration: none;
+}
+
+.state-card {
+  border: 1px dashed #cfe0d4;
+  border-radius: 14px;
+  padding: 26px;
+  color: var(--text-grey);
+  background: #fbfdfb;
+}
+
+@media (max-width: 920px) {
+  .annonces-stats {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

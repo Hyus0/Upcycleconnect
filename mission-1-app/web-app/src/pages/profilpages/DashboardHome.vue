@@ -13,17 +13,27 @@
     <div class="stats-grid">
         <div class="card card--score">
             <p class="tag-score">♻ UPCYCLING SCORE</p>
-            <div class="score-value">847 <span>pts</span></div>
-            <p class="score-level">Niveau : Éco-Héros 🌿</p>
+            
+            <div class="score-value">
+                {{ stats.total_points }} <span>pts</span>
+            </div>
+            
+            <p class="score-level">Niveau : {{ stats.niveau }}</p>
+            
             <div class="score-footer">
                 <div class="mini-stat">
-                    <strong>23 kg</strong><br />CO2 évité
+                    <strong>{{ stats.co2_total_evite_kg }} kg</strong><br />
+                    CO2 évité
                 </div>
+                
                 <div class="mini-stat">
-                    <strong>14</strong><br />Objets recyclés
+                    <strong>{{ stats.nb_objets_recycles }}</strong><br />
+                    Objets recyclés
                 </div>
+                
                 <div class="mini-stat">
-                    <strong>€ 340</strong><br/>Économisé
+                    <strong>€ {{ stats.ressources_economisees }}</strong><br/>
+                    Économisé
                 </div>
             </div>
         </div>
@@ -140,8 +150,41 @@
 </template>
 
 <script setup>
-
-import {ref} from "vue";
+import { ref, onMounted } from "vue";
 
 const prenom = ref(localStorage.getItem("userPrenom") || 'Invité');
+
+const stats = ref({
+    total_points: 0,
+    niveau: "Chargement...",
+    co2_total_evite_kg: 0,
+    nb_objets_recycles: 0,
+    ressources_economisees: 0
+});
+
+onMounted(async () => {
+    const id = localStorage.getItem("userId");
+    const token = localStorage.getItem("userToken");
+
+    if (!id || !token) return;
+
+    try {
+        const response = await fetch(`http://localhost:8081/users/${id}/stats`, {
+            method: "GET",
+            headers: {
+                "Authorization": token,
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            stats.value = data;
+        } else {
+            console.error("Erreur lors de la récupération des statistiques");
+        }
+    } catch (error) {
+        console.error("Le serveur de stats est injoignable :", error);
+    }
+});
 </script>

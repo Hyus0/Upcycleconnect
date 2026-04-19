@@ -83,7 +83,7 @@ func main() {
 	http.HandleFunc("POST /login", app.UserLogin)
 	http.HandleFunc("GET /check-session", app.CheckSession)
 	http.HandleFunc("PUT /users/{id}/password", app.ModifyUserPassword)
-
+	http.HandleFunc("GET /users/{id}/stats", app.GetUserStatsHandler)
 	//Annonce
 	http.HandleFunc("GET /annonces", app.GetAllAnnonces)
 	http.HandleFunc("POST /annonces", app.CreateAnnonce)

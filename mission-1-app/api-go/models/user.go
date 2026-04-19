@@ -32,3 +32,11 @@ type GetUser struct {
 	Statut           string `json:"statut"`
 	IdLangue         int    `json:"id_langue"`
 }
+
+type UserStats struct {
+	Points           int     `json:"total_points"`
+	Niveau           string  `json:"niveau"`
+	Co2Evite         float64 `json:"co2_total_evite_kg"`
+	ObjetsRecycles   int     `json:"nb_objets_recycles"`
+	ArgentEconomise  float64 `json:"ressources_economisees"`
+}

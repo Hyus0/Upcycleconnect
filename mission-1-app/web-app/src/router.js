@@ -15,6 +15,7 @@ const routes = [
   {
     path: "/profil",
     component: Profil,
+    meta: { requiresAuth: true },
     children: [
       {
         path: "",
@@ -40,16 +41,47 @@ const routes = [
   },
 ];
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (to.hash) {
-      return {
-        el: to.hash,
-        behavior: "smooth",
-      };
+      return { el: to.hash, behavior: "smooth" };
     }
     return { top: 0 };
   },
 });
+
+router.beforeEach(async (to, from, next) => {
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
+    const id = localStorage.getItem("userId");
+    const token = localStorage.getItem("userToken");
+
+    if (!id || !token) {
+      return next("/connexion");
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:8081/check-session?id=${id}`,
+        {
+          headers: { Authorization: token },
+        },
+      );
+      const data = await response.json();
+
+      if (data.isValid) {
+        next();
+      } else {
+        localStorage.clear();
+        next("/connexion");
+      }
+    } catch (error) {
+      next("/");
+    }
+  } else {
+    next();
+  }
+});
+
+export default router;

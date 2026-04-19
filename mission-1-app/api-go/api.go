@@ -80,6 +80,8 @@ func main() {
 	http.HandleFunc("GET /users/{id}", app.GetUser)
 	http.HandleFunc("PUT /users/{id}", app.ModifyUser)
 	http.HandleFunc("DELETE /users/{id}", app.DeleteUser)
+	http.HandleFunc("POST /login", app.UserLogin)
+	http.HandleFunc("GET /check-session", app.CheckSession)
 
 	//Annonce
 	http.HandleFunc("GET /annonces", app.GetAllAnnonces)

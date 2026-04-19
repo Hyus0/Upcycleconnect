@@ -77,7 +77,7 @@
                     </router-link>
                 </p>
 
-                <form @submit.prevent="handleLogin"> 
+                <form @submit.prevent="handleLogin">
                     <div class="login-field">
                         <label>Adresse e-mail</label>
                         <input
@@ -87,9 +87,15 @@
                             :class="{ 'input--error': isEmailInvalid }"
                         />
                     </div>
-                
+
                     <div class="login-field">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div
+                            style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                            "
+                        >
                             <label>Mot de passe</label>
                             <router-link to="/connexion" class="login-right__link" style="font-size: 0.8rem">Oublié ?</router-link>
                         </div>
@@ -97,21 +103,44 @@
                             type="password"
                             placeholder="••••••••••"
                             v-model="motDePasse"
-                            autocomplete="current-password" 
+                            autocomplete="current-password"
                         />
                     </div>
-                
+
                     <div class="login-cgu">
-                        <input type="checkbox" id="remember" v-model="rememberMe" />
+                        <input
+                            type="checkbox"
+                            id="remember"
+                            v-model="rememberMe"
+                        />
                         <label for="remember">Se souvenir de moi</label>
                     </div>
-                
+
+                    <div
+                        v-if="errorMessages.length > 0"
+                        style="
+                            color: #e74c3c;
+                            background: #fdeaea;
+                            padding: 10px;
+                            border-radius: 4px;
+                            margin-bottom: 15px;
+                            font-size: 0.9rem;
+                        "
+                    >
+                        <ul style="margin: 0; padding-left: 20px">
+                            <li
+                                v-for="(error, index) in errorMessages"
+                                :key="index"
+                            >
+                                {{ error }}
+                            </li>
+                        </ul>
+                    </div>
+
                     <button type="submit" class="login-submit">
                         Se connecter →
                     </button>
                 </form>
-
-                
 
                 <div class="login-separator">
                     <span>ou continuer avec</span>
@@ -141,8 +170,8 @@ const isEmailInvalid = computed(() => {
     return email.value.length > 0 && !email.value.includes("@");
 });
 
-async function handleLogin() { 
-    errorMessages.value = []; 
+async function handleLogin() {
+    errorMessages.value = [];
 
     if (!email.value.trim() || !motDePasse.value.trim()) {
         errorMessages.value = ["Veuillez remplir tous les champs."];
@@ -150,51 +179,45 @@ async function handleLogin() {
     }
 
     const userData = {
-        mail: email.value,       
-        password: motDePasse.value
+        email: email.value,
+        password: motDePasse.value,
     };
-    
+
     try {
-        const response = await fetch("http://localhost:8081/login", { 
+        const response = await fetch("http://localhost:8081/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData),
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-            const data = await response.json();
             if (data.token) {
                 localStorage.setItem("userToken", data.token);
             }
+            localStorage.setItem("userId", data.userId);
+            localStorage.setItem("userPrenom", data.prenom);
+            localStorage.setItem("userNom", data.nom);
             
             alert("Connecté avec succès ! 🎉");
             router.push("/profil");
             return;
         } else {
-            const data = await response.json();
-            if (Array.isArray(data)) {
-                errorMessages.value = data;
-            } else {
-                errorMessages.value = [data.message || "Email ou mot de passe incorrect."];
-            }
+            errorMessages.value = Array.isArray(data) ? data : [data.message || "Erreur de connexion"];
         }
-
     } catch (error) {
         console.error("Détail :", error);
-        if (error instanceof SyntaxError) {
-            errorMessages.value = ["Réponse du serveur illisible."];
-        } else {
-            errorMessages.value = ["Le serveur est injoignable."];
-        }
+        errorMessages.value = ["Le serveur est injoignable."];
     }
 }
-
 </script>
 
 <style scoped>
 .login-page {
     display: flex;
     min-height: calc(100vh - 86px);
+    margin-top: -108px;
 }
 
 .login-left {

@@ -1,8 +1,8 @@
 <template>
     <header class="content-header">
         <div class="header-left">
-            <p class="sidebar__category2">ACCUEIL > {{ link }}</p>
-            <h1 class="hero-title1">Bonjour Marie 👋</h1>
+            <p class="sidebar__category2">ACCUEIL > TABLEAU DE BORD</p>
+            <h1 class="hero-title1">Bonjour {{prenom}} 👋</h1>
             <p class="classic-text">
                 Voici un résumé de votre activité sur UpcycleConnect
             </p>
@@ -138,3 +138,10 @@
         </div>
     </div>
 </template>
+
+<script setup>
+
+import {ref} from "vue";
+
+const prenom = ref(localStorage.getItem("userPrenom") || 'Invité');
+</script>

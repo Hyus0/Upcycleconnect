@@ -69,16 +69,11 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-const link = ref("TABLEAU DE BORD");
-
 const handleLogout = () => {
-  sessionStorage.removeItem("userToken");
-  sessionStorage.removeItem("userId");
-  
-  router.push("/connexion").then(() => {
-    window.location.reload();
-  });
+    localStorage.clear();
+    router.push("/connexion"); 
 };
+
 </script>
 
 <style>

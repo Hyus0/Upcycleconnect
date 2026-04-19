@@ -216,6 +216,11 @@ async function handleSubmit() {
         errorMessages.value = ["Il manque des informations."];
         return;
     }
+    
+    if (!cguAccepte.value) {
+        errorMessages.value = ["Veuillez accepter les CGU pour continuer."];
+        return;
+    }
 
     const userData = {
         prenom: prenom.value,
@@ -235,7 +240,7 @@ async function handleSubmit() {
         });
 
         if (response.ok) {
-            alert("Compte créé avec succès ! 🎉");
+            alert("Compte créé avec succès");
             router.push("/connexion");
             return;
         } else {

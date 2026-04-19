@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"crypto/rand"
 	"upcycleconnect/api-go/db"
 	"upcycleconnect/api-go/models"
 )
@@ -227,6 +228,64 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func UserLogin(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+
+    var loginData struct {
+        Email    string `json:"email"`
+        Password string `json:"password"`
+    }
+
+    if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Format JSON invalide"})
+        return
+    }
+
+    user, err := db.GetUserByEmail(loginData.Email)
+    if err != nil || user.Password != loginData.Password {
+        w.WriteHeader(http.StatusUnauthorized)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Email ou mot de passe incorrect"})
+        return
+    }
+
+    b := make([]byte, 16)
+    rand.Read(b)
+    randomToken := fmt.Sprintf("%x", b) 
+
+    err = db.UpdateUserToken(user.Id, randomToken) 
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Erreur lors de la création de session"})
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "message": "Bienvenue !",
+        "token":   randomToken,
+        "userId":  user.Id, 
+        "prenom":  user.Prenom,
+        "nom":  user.Nom,
+    })
+}
+
+func CheckSession(w http.ResponseWriter, r *http.Request) {
+    id_Str := r.URL.Query().Get("id")
+    token := r.Header.Get("Authorization")
+
+    id_Int, err := strconv.Atoi(id_Str)
+    if err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        return
+    }
+
+    isValid := db.VerifyUserByToken(id_Int, token)
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]bool{"isValid": isValid})
 }
 
 func GetAllAnnonces(w http.ResponseWriter, r *http.Request) {

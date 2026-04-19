@@ -28,7 +28,7 @@
                 >
                     + Deposer
                 </button>
-                <div class="site-navbar__avatar">{{ userInitials }}</div>
+                <router-link to="/profil" class="site-navbar__avatar">{{ userInitials }}</router-link>
             </div>
 
             <div class="site-navbar__actions" v-else>
@@ -53,6 +53,16 @@ import logoSrc from "./logo_texte.png";
 
 const router = useRouter();
 
+const isAuthenticated = computed(() => {
+    return !!localStorage.getItem("userToken");
+});
+
+const currentUserName = computed(() => {
+    const p = localStorage.getItem("userPrenom") || "";
+    const n = localStorage.getItem("userNom") || "";
+    return `${p} ${n}`.trim() || "Marie Lambert"; 
+});
+
 const handleNavClick = (item) => {
     if (item.label === "Comment ca marche") {
         const el = document.getElementById("processus");
@@ -66,38 +76,33 @@ const props = defineProps({
     variant: {
         type: String,
         default: "public",
-    },
-    userName: {
-        type: String,
-        default: "Marie Lambert",
-    },
-    isAuthenticated: {
-        type: Boolean,
-        default: false,
-    },
+    }
 });
 
 const items = computed(() =>
-    props.variant === "public"
+    isAuthenticated.value 
         ? [
+              { label: "Tableau de bord", to: "/home", active: true },
+              { label: "Annonces", to: "/annonces", active: false },
+              { label: "Formations", active: false },
+              { label: "Communaute", active: false },
+          ]
+        : [
               { label: "Comment ca marche", active: false },
               { label: "Annonces", to: "/annonces", active: true },
               { label: "Formations", active: false },
               { label: "Communaute", active: false },
           ]
-        : [
-              { label: "Tableau de bord", active: true },
-              { label: "Annonces", active: false },
-              { label: "Formations", active: false },
-          ],
 );
 
 const userInitials = computed(() =>
-    props.userName
+    currentUserName.value
         .split(" ")
         .filter(Boolean)
         .slice(0, 2)
         .map((part) => part[0]?.toUpperCase() ?? "")
         .join(""),
 );
+
+console.log(localStorage.getItem("userNom"))
 </script>

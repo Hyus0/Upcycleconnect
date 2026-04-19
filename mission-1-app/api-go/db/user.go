@@ -112,3 +112,41 @@ func DeleteUser(id int) error {
 	if count == 0 { return fmt.Errorf("aucun utilisateur trouvé") }
 	return nil
 }
+
+func GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	query := `SELECT id, prenom, nom, mail, password, role FROM UTILISATEUR WHERE mail = ?`
+
+	err := Conn.QueryRow(query, email).Scan(
+		&user.Id, 
+		&user.Prenom, 
+		&user.Nom, 
+		&user.Mail, 
+		&user.Password, 
+		&user.Role,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func UpdateUserToken(userId int, token string) error {
+    query := "UPDATE UTILISATEUR SET token = ? WHERE id = ?"
+    _, err := Conn.Exec(query, token, userId)
+    return err
+}
+
+func VerifyUserByToken(userId int, token string) bool {
+    var dbToken string
+    query := "SELECT token FROM UTILISATEUR WHERE id = ?"
+        
+    err := Conn.QueryRow(query, userId).Scan(&dbToken)
+
+    if err != nil || dbToken != token || token == "" {
+        return false
+    }
+
+    return true
+}

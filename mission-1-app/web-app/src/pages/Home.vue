@@ -2,9 +2,10 @@
     <div class="app-container">
         <main>
             <SiteNavbar
-                :isAuthenticated="isLoggedIn"
-                :userName="userName"
-                variant="public"
+              :is-authenticated="isLoggedIn"
+              :user-name="userName"
+              user-role="Particulier"
+              :user-score="847"
             />
             <section class="page-background">
                 <div class="hero-content">
@@ -302,26 +303,27 @@
     </footer>
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
 
-export default {
-    components: {
-        SiteNavbar,
-    },
-    data() {
-        return {
-            objets_evites: 2.4,
-            objet_grandeur: "t",
-            objets_upcycle: 8,
-            artisans_partenaire: 340,
-            sites: 7,
-            plateform_user: 12400,
-            isLoggedIn: !!sessionStorage.getItem("userToken"),
-            userName: "Marie Lambert",
-        };
-    },
-};
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem("userToken");
+});
+
+const userName = computed(() => {
+  const prenom = localStorage.getItem("userPrenom") || "";
+  const nom = localStorage.getItem("userNom") || "";
+  
+  return (prenom || nom) ? `${prenom} ${nom}`.trim() : "Utilisateur";
+});
+
+const objets_evites = 2.4;
+const objet_grandeur= "t";
+const objets_upcycle= 8;
+const artisans_partenaire= 340;
+const sites= 7;
+const plateform_user= 12400;
 </script>
 
 <style>

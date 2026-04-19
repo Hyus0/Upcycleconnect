@@ -2,6 +2,7 @@ package db
 
 import (
 	"upcycleconnect/api-go/models"
+	"upcycleconnect/api-go/passwordHashing"
 	"database/sql"
 	"fmt"
 )
@@ -34,12 +35,13 @@ func GetUser(userId int) (*models.GetUser, error) {
 	var u models.GetUser
 	query := `SELECT id, prenom, nom, mail, adresse, ville, code_postal, 
 		          COALESCE(date_naissance, ''), 
-		          COALESCE(date_inscription, ''), 
+		          COALESCE(date_inscription, ''),
+					COALESCE(date_update_password, ''),
 		          role, id_langue 
 		          FROM UTILISATEUR WHERE id = ?`
 	row := Conn.QueryRow(query, userId)
 
-	err := row.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal, &u.DateNaissance, &u.DateInscription, &u.Role, &u.IdLangue)
+	err := row.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal, &u.DateNaissance, &u.DateInscription, &u.DateUpdatePassword, &u.Role, &u.IdLangue)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -69,7 +71,13 @@ func CreateUser(user models.User) error {
 	if user.IdLangue <= 0 {
 		user.IdLangue = 1
 	}
-
+	
+	hashed, err := passwordHashing.HashPassword(user.Password)
+    if err != nil {
+        return err
+    }
+    user.Password = hashed
+    
 	query := `INSERT INTO UTILISATEUR (prenom, nom, password, mail, adresse, ville, code_postal, date_naissance, role, id_langue)
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -78,7 +86,7 @@ func CreateUser(user models.User) error {
 		dateN = nil
 	}
 
-	_, err := Conn.Exec(query,
+	_, err = Conn.Exec(query,
 		user.Prenom, 
 		user.Nom, 
 		user.Password, 
@@ -90,8 +98,7 @@ func CreateUser(user models.User) error {
 		user.Role, 
 		user.IdLangue,
 	)
-
-	return err
+	return nil
 }
 
 func ModifyUser(userId int, user models.User) error {
@@ -104,12 +111,33 @@ func ModifyUser(userId int, user models.User) error {
 	return err
 }
 
+func ModifyUserPassword(userId int, user models.User) error {
+	query := `UPDATE UTILISATEUR SET password=?, date_update_password=NOW() WHERE id=?`
+	
+	_, err := Conn.Exec(query,
+		user.Password,
+		userId,
+	)
+	return err
+}
+
+func GetPasswordHashed(userId int) (string, error) {
+    var hash string
+    query := `SELECT password FROM UTILISATEUR WHERE id = ?`
+    err := Conn.QueryRow(query, userId).Scan(&hash)
+    if err != nil {
+        return "", err
+    }
+    return hash, nil
+}
+
 func DeleteUser(id int) error {
 	result, err := Conn.Exec("DELETE FROM UTILISATEUR WHERE id = ?", id)
 	if err != nil { return err }
 	
 	count, _ := result.RowsAffected()
-	if count == 0 { return fmt.Errorf("aucun utilisateur trouvé") }
+	if count == 0 { 
+		return fmt.Errorf("aucun utilisateur trouvé") }
 	return nil
 }
 

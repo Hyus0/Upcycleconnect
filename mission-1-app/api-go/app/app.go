@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"time"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"crypto/rand"
 	"upcycleconnect/api-go/db"
 	"upcycleconnect/api-go/models"
+	"upcycleconnect/api-go/passwordHashing"
 )
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +60,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", string(res))
 }
 
-func ValidateUser(userDto models.User) []string {
+func ValidateUserInscription(userDto models.User) []string {
 	var errsMsg []string
 
 	if len(userDto.Prenom) < 2 {
@@ -122,6 +124,91 @@ func ValidateUser(userDto models.User) []string {
 	return errsMsg
 }
 
+func ValidateUserModify(userDto models.User) []string {
+	var errsMsg []string
+
+	if len(userDto.Prenom) < 2 || len(userDto.Prenom) > 50 {
+		errsMsg = append(errsMsg, "Le prénom doit faire entre 2 et 50 caractères")
+	}
+	if len(userDto.Nom) < 2 || len(userDto.Nom) > 50 {
+		errsMsg = append(errsMsg, "Le nom doit faire entre 2 et 50 caractères")
+	}
+
+	if len(userDto.Adresse) > 0 {
+	    if len(userDto.Adresse) < 5 || len(userDto.Adresse) > 100 {
+	        errsMsg = append(errsMsg, "L'adresse doit faire entre 5 et 100 caractères")
+	    }
+	}
+	
+	if len(userDto.Ville) > 0 {
+	    if len(userDto.Ville) < 2 || len(userDto.Ville) > 50 {
+	        errsMsg = append(errsMsg, "La ville doit faire entre 2 et 50 caractères")
+	    }
+	}
+
+	if len(userDto.CodePostal) != 5 {
+		errsMsg = append(errsMsg, "Le code postal doit contenir exactement 5 chiffres")
+	}
+
+	if userDto.DateNaissance != "" {
+		birthDate, err := time.Parse("2006-01-02", userDto.DateNaissance)
+		if err != nil {
+			errsMsg = append(errsMsg, "Format de date de naissance invalide (attendu: AAAA-MM-JJ)")
+		} else if !birthDate.Before(time.Now()) {
+			errsMsg = append(errsMsg, "La date de naissance doit être dans le passé")
+		}
+	}
+
+	validRoles := map[string]bool{"Particulier": true, "Prestataire": true, "Admin": true}
+	if !validRoles[userDto.Role] {
+		errsMsg = append(errsMsg, "Rôle invalide")
+	}
+
+	forbiddenChars := "$<>[{}]*%"
+	fields := map[string]string{
+		"Le prénom": userDto.Prenom,
+		"Le nom":    userDto.Nom,
+		"L'adresse": userDto.Adresse,
+		"La ville":  userDto.Ville,
+	}
+
+	for label, value := range fields {
+		if strings.ContainsAny(value, forbiddenChars) {
+			errsMsg = append(errsMsg, fmt.Sprintf("%s contient des caractères interdits ($ < > [ ] { } * %%)", label))
+		}
+	}
+
+	return errsMsg
+}
+
+func ValidateUserPassword(userDto models.User) []string {
+	var errsMsg []string
+
+	if len(userDto.Password) < 8 {
+		errsMsg = append(errsMsg, "Password must be at least 8 characters")
+	}
+
+	hasUpper := false
+	hasSpecial := false
+	for _, char := range userDto.Password {
+		if char >= 'A' && char <= 'Z' {
+			hasUpper = true
+		}
+	}
+	if strings.ContainsAny(userDto.Password, "!@#$%^&*()-_=+[]{}|;:,.<>?") {
+		hasSpecial = true
+	}
+
+	if !hasUpper {
+		errsMsg = append(errsMsg, "Password must contain at least one uppercase letter")
+	}
+	if !hasSpecial {
+		errsMsg = append(errsMsg, "Password must contain at least one special character")
+	}
+	
+	return errsMsg
+}
+
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -133,7 +220,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errsMsg := ValidateUser(userDto)
+	errsMsg := ValidateUserInscription(userDto)
 
 	exists, err := db.EmailExists(userDto.Mail)
 	if err != nil {
@@ -166,6 +253,8 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 func ModifyUser(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.PathValue("id")
+	token := r.Header.Get("Authorization")
+
 	var userDto models.User
 
 	err := json.NewDecoder(r.Body).Decode(&userDto)
@@ -179,10 +268,15 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ID de jeu invalide dans l'URI", http.StatusBadRequest)
 		return
 	}
+	
+	if !db.VerifyUserByToken(userId, token) {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
 
 	userDto.Id = userId
 
-	errsMsg := ValidateUser(userDto)
+	errsMsg := ValidateUserModify(userDto)
 
 	if len(errsMsg) > 0 {
 		encoded, _ := json.Marshal(errsMsg)
@@ -203,6 +297,65 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func ModifyUserPassword(w http.ResponseWriter, r *http.Request) {
+    userIDStr := r.PathValue("id")
+    token := r.Header.Get("Authorization")
+
+    var input struct {
+        OldPassword string `json:"old_password"`
+        NewPassword string `json:"password"`
+    }
+    
+    if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+        http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+        return
+    }
+
+    userId, _ := strconv.Atoi(userIDStr)
+
+    if !db.VerifyUserByToken(userId, token) {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
+
+    currentHash, err := db.GetPasswordHashed(userId)
+    if err != nil {
+        http.Error(w, "Erreur lors de la récupération du compte", http.StatusInternalServerError)
+        return
+    }
+
+    if !passwordHashing.VerifyPassword(input.OldPassword, currentHash) {
+        w.WriteHeader(http.StatusUnauthorized)
+        json.NewEncoder(w).Encode([]string{"L'ancien mot de passe est incorrect"})
+        return
+    }
+
+    var userDto models.User
+    userDto.Password = input.NewPassword
+    
+    errsMsg := ValidateUserPassword(userDto)
+    if len(errsMsg) > 0 {
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(errsMsg)
+        return
+    }
+
+    newHashed, err := passwordHashing.HashPassword(input.NewPassword)
+    if err != nil {
+        http.Error(w, "Erreur de sécurité lors du hashage", http.StatusInternalServerError)
+        return
+    }
+    userDto.Password = newHashed
+
+    err = db.ModifyUserPassword(userId, userDto)
+    if err != nil {
+        http.Error(w, "Erreur serveur lors de la mise à jour", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusNoContent)
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -245,7 +398,13 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
     }
 
     user, err := db.GetUserByEmail(loginData.Email)
-    if err != nil || user.Password != loginData.Password {
+    if err != nil {
+        w.WriteHeader(http.StatusUnauthorized)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Email ou mot de passe incorrect"})
+        return
+    }
+
+    if !passwordHashing.VerifyPassword(loginData.Password, user.Password) {
         w.WriteHeader(http.StatusUnauthorized)
         json.NewEncoder(w).Encode(map[string]string{"message": "Email ou mot de passe incorrect"})
         return
@@ -268,7 +427,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
         "token":   randomToken,
         "userId":  user.Id, 
         "prenom":  user.Prenom,
-        "nom":  user.Nom,
+        "nom":     user.Nom,
     })
 }
 

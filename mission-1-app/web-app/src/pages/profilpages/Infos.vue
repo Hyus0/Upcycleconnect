@@ -10,6 +10,20 @@
                     Gérez vos informations personnelles et les détails de votre
                     compte utilisateur.
                 </p>
+                <div v-if="errors.length > 0" 
+                style="background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; 
+                padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li v-for="(err, index) in errors" :key="index">
+                            {{ err }}
+                        </li>
+                    </ul>
+                </div>
+                <div v-if="successMsg" class="success-box"
+                style="background-color: #E2FEE3; border: 1px solid #44EF44; color: #158F3C; 
+                padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                    {{ successMsg }}
+                </div>
             </div>
             <button class="btn-main-action" @click="updateProfile">
                 Mettre à jour le profil
@@ -92,7 +106,7 @@
 
                 <section class="info-section danger-zone">
                     <h2 class="section-title">Sécurité</h2>
-                    <button class="btn-outline">Changer le mot de passe</button>
+                    <button class="btn-outline" @click="router.push('/profil/password')">Changer le mot de passe</button>
                     <p class="warning-text">
                         Le mot de passe doit être modifié régulièrement.
                     </p>
@@ -103,23 +117,56 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const form = ref({
-    prenom: "Marie",
-    nom: "Lambert",
-    mail: "marie.lambert@example.com",
-    adresse: "45 Boulevard Hausmann",
-    ville: "Paris",
-    code_postal: "75009",
-    date_naissance: "1992-05-20",
-    date_inscription: "2026-01-15 10:00:00",
-    role: "Particulier",
-    statut: "Actif",
+    prenom: "",
+    nom: "",
+    mail: "",
+    adresse: "",
+    ville: "",
+    code_postal: "",
+    date_naissance: "",
+    date_inscription: "",
+    role: "",
+    statut: "",
     id_langue: 1,
 });
 
+const errors = ref([]);
+const successMsg = ref("");
+
+onMounted(async () => {
+    const id = localStorage.getItem("userId");
+    const token = localStorage.getItem("userToken");
+
+    if (!id || !token) return;
+
+    try {
+        const response = await fetch(`http://localhost:8081/users/${id}`, {
+            method: "GET",
+            headers: {
+                Authorization: token,
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            form.value = data;
+        } else {
+            console.error("Erreur lors de la récupération du profil");
+        }
+    } catch (error) {
+        console.error("Erreur réseau :", error);
+    }
+});
+
 const formatDate = (dateString) => {
+    if (!dateString) return "...";
     const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", {
         day: "numeric",
@@ -128,9 +175,34 @@ const formatDate = (dateString) => {
     });
 };
 
-const updateProfile = () => {
-    console.log("Données envoyées à l'API Go:", form.value);
-    alert("Profil mis à jour !");
+const updateProfile = async () => {
+    const userId = localStorage.getItem("userId");
+    const token = localStorage.getItem("userToken");
+
+    errors.value = [];
+    successMsg.value = "";
+
+    if (!userId || !token) return;
+
+    try {
+        const response = await fetch(`http://localhost:8081/users/${userId}`, {
+            method: "PUT",
+            headers: {
+                Authorization: token,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(form.value),
+        });
+
+        if (response.ok) {
+            successMsg.value = "Profil mis à jour avec succès!";
+        } else {
+          const data = await response.json();
+          errors.value = Array.isArray(data) ? data : [data.message || "Une erreur est survenue"];
+        }
+    } catch (error) {
+        errors.value = ["Le serveur est injoignable pour le moment."];
+    }
 };
 </script>
 

@@ -82,6 +82,7 @@ func main() {
 	http.HandleFunc("DELETE /users/{id}", app.DeleteUser)
 	http.HandleFunc("POST /login", app.UserLogin)
 	http.HandleFunc("GET /check-session", app.CheckSession)
+	http.HandleFunc("PUT /users/{id}/password", app.ModifyUserPassword)
 
 	//Annonce
 	http.HandleFunc("GET /annonces", app.GetAllAnnonces)

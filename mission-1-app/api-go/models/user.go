@@ -11,6 +11,7 @@ type User struct {
 	CodePostal       string `json:"code_postal"`
 	DateNaissance    string `json:"date_naissance"`  
 	DateInscription  string `json:"date_inscription"` 
+	DateUpdatePassword string `json:"date_update_password"`
 	Role             string `json:"role"`
 	Statut           string `json:"statut"`
 	IdLangue         int    `json:"id_langue"`
@@ -26,6 +27,7 @@ type GetUser struct {
 	CodePostal       string `json:"code_postal"`
 	DateNaissance    string `json:"date_naissance"`  
 	DateInscription  string `json:"date_inscription"`
+	DateUpdatePassword string `json:"date_update_password"`
 	Role             string `json:"role"`
 	Statut           string `json:"statut"`
 	IdLangue         int    `json:"id_langue"`

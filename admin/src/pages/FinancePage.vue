@@ -9,22 +9,41 @@
       <button class="button button-secondary" @click="loadFinance">Actualiser</button>
     </header>
 
-    <div class="stats-grid">
-      <article class="surface-card section-card stack" v-for="item in financeStats" :key="item.label">
+    <div class="stats-grid finance-grid">
+      <article class="surface-card section-card stack finance-stat" v-for="item in financeStats" :key="item.label">
         <div class="eyebrow">{{ item.label }}</div>
         <strong class="stat-value">{{ item.value }}</strong>
       </article>
     </div>
 
-    <article class="surface-card section-card stack">
-      <div class="filters-grid">
+    <article class="surface-card section-card stack command-panel">
+      <div class="panel-head panel-head--compact">
+        <div>
+          <span class="panel-kicker">Flux</span>
+          <h3>Transactions</h3>
+        </div>
+        <span class="mini-note">{{ pagination?.total ?? 0 }} lignes</span>
+      </div>
+      <div class="quick-chips">
+        <button
+          v-for="option in statusOptions"
+          :key="option.value || 'all'"
+          class="quick-chip"
+          :class="{ active: filters.status === option.value }"
+          type="button"
+          @click="filters.status = option.value"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+      <div class="filters-grid command-filters">
         <FormField label="Categorie">
           <BaseSelect v-model="filters.category" :options="categoryOptions" />
         </FormField>
-        <FormField label="Statut">
-          <BaseSelect v-model="filters.status" :options="statusOptions" />
-        </FormField>
       </div>
+      <button class="button button-secondary filters-reset" type="button" @click="resetFilters">
+        Reinitialiser
+      </button>
     </article>
 
     <LoadingState v-if="loading" />
@@ -105,6 +124,12 @@ function changePage(page) {
   filters.page = page;
 }
 
+function resetFilters() {
+  filters.category = "";
+  filters.status = "";
+  filters.page = 1;
+}
+
 watch(() => [filters.category, filters.status, filters.page], loadFinance);
 onMounted(loadFinance);
 </script>
@@ -113,5 +138,15 @@ onMounted(loadFinance);
 .stat-value {
   font-size: 1.8rem;
   font-family: "Syne", sans-serif;
+}
+
+.finance-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.finance-stat {
+  background:
+    radial-gradient(circle at 88% 0%, rgba(98, 196, 136, 0.18), transparent 36%),
+    rgba(18, 28, 24, 0.86);
 }
 </style>

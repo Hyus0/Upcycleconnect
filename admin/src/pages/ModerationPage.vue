@@ -11,18 +11,54 @@
       </div>
     </header>
 
-    <article class="surface-card section-card stack">
-      <div class="filters-grid">
+    <article class="surface-card section-card stack command-panel">
+      <div class="panel-head panel-head--compact">
+        <div>
+          <span class="panel-kicker">Controle</span>
+          <h3>File de moderation</h3>
+        </div>
+        <span class="mini-note">{{ pagination?.total ?? 0 }} contenus</span>
+      </div>
+
+      <div class="admin-stats">
+        <div class="admin-stat">
+          <strong>{{ pagination?.total ?? rows.length }}</strong>
+          <span>A traiter</span>
+        </div>
+        <div class="admin-stat">
+          <strong>{{ prestationCount }}</strong>
+          <span>Prestations</span>
+        </div>
+        <div class="admin-stat">
+          <strong>{{ eventCount }}</strong>
+          <span>Evenements</span>
+        </div>
+      </div>
+
+      <div class="quick-chips">
+        <button
+          v-for="option in typeOptions"
+          :key="option.value || 'all'"
+          class="quick-chip"
+          :class="{ active: filters.type === option.value }"
+          type="button"
+          @click="filters.type = option.value"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+
+      <div class="filters-grid command-filters">
         <FormField label="Recherche">
           <input v-model="filters.search" placeholder="Titre, source ou description" />
-        </FormField>
-        <FormField label="Type">
-          <BaseSelect v-model="filters.type" :options="typeOptions" />
         </FormField>
         <FormField label="Statut">
           <BaseSelect v-model="filters.status" :options="statusOptions" />
         </FormField>
       </div>
+      <button class="button button-secondary filters-reset" type="button" @click="resetFilters">
+        Reinitialiser
+      </button>
     </article>
 
     <LoadingState v-if="loading" />
@@ -56,7 +92,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import BaseSelect from "../components/BaseSelect.vue";
 import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
@@ -93,6 +129,9 @@ const statusOptions = [
   { label: "Brouillon", value: "draft" },
   { label: "Planifie", value: "planned" }
 ];
+
+const prestationCount = computed(() => rows.value.filter((row) => row.type === "prestation").length);
+const eventCount = computed(() => rows.value.filter((row) => row.type === "event").length);
 
 async function loadQueue() {
   loading.value = true;
@@ -132,6 +171,13 @@ function changePage(page) {
   filters.page = page;
 }
 
+function resetFilters() {
+  filters.search = "";
+  filters.type = "";
+  filters.status = "";
+  filters.page = 1;
+}
+
 watch(() => [filters.search, filters.type, filters.status, filters.page], loadQueue);
 onMounted(loadQueue);
 </script>
@@ -144,6 +190,12 @@ onMounted(loadQueue);
 
 .identity span {
   color: var(--text-secondary);
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .actions {

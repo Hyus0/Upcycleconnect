@@ -11,11 +11,18 @@
       </div>
     </header>
 
-    <div class="split-grid">
-      <article class="surface-card section-card stack">
+    <div class="split-grid admin-workspace">
+      <article class="surface-card section-card stack admin-panel admin-panel--form">
         <div class="panel-head">
-          <h3>{{ editingId ? "Modifier" : "Nouvelle categorie" }}</h3>
+          <div>
+            <span class="panel-kicker">{{ editingId ? "Edition" : "Creation" }}</span>
+            <h3>{{ editingId ? "Modifier" : "Nouvelle categorie" }}</h3>
+          </div>
           <button class="button button-ghost" @click="resetForm">Vider</button>
+        </div>
+        <div class="mode-note">
+          <strong>Taxonomie catalogue</strong>
+          <span>Organise les annonces, prestations et futures recherches publiques.</span>
         </div>
         <FormField label="Nom" :error="formError">
           <input v-model="form.name" />
@@ -36,14 +43,34 @@
         </div>
       </article>
 
-      <article class="surface-card section-card stack">
-        <div class="panel-head">
-          <h3>Recherche</h3>
+      <article class="surface-card section-card stack admin-panel admin-panel--filters">
+        <div class="panel-head panel-head--compact">
+          <div>
+            <span class="panel-kicker">Catalogue</span>
+            <h3>Recherche</h3>
+          </div>
           <span class="mini-note">{{ pagination?.total ?? 0 }} categories</span>
+        </div>
+        <div class="admin-stats">
+          <div class="admin-stat">
+            <strong>{{ pagination?.total ?? rows.length }}</strong>
+            <span>Total</span>
+          </div>
+          <div class="admin-stat">
+            <strong>{{ activeCount }}</strong>
+            <span>Actives</span>
+          </div>
+          <div class="admin-stat">
+            <strong>{{ rootCount }}</strong>
+            <span>Racines</span>
+          </div>
         </div>
         <FormField label="Filtre">
           <input v-model="filters.search" placeholder="Nom ou description" />
         </FormField>
+        <button class="button button-secondary filters-reset" type="button" @click="resetFilters">
+          Reinitialiser
+        </button>
       </article>
     </div>
 
@@ -122,6 +149,8 @@ const parentOptions = computed(() => [
   { label: "Aucune", value: "" },
   ...rows.value.map((item) => ({ label: item.name, value: item.id }))
 ]);
+const activeCount = computed(() => rows.value.filter((item) => item.status === "active").length);
+const rootCount = computed(() => rows.value.filter((item) => !item.parentId).length);
 
 function resolveParent(parentId) {
   if (!parentId) return "Racine";
@@ -199,6 +228,11 @@ async function deleteCurrent() {
 
 function changePage(page) {
   filters.page = page;
+}
+
+function resetFilters() {
+  filters.search = "";
+  filters.page = 1;
 }
 
 watch(() => [filters.search, filters.page], loadCategories);

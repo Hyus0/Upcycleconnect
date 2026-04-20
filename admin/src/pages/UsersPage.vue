@@ -12,31 +12,70 @@
       </div>
     </header>
 
-    <div class="split-grid">
-      <article class="surface-card section-card stack">
-        <div class="panel-head">
-          <h3>Filtres</h3>
+    <div class="split-grid admin-workspace">
+      <article class="surface-card section-card stack admin-panel admin-panel--filters">
+        <div class="panel-head panel-head--compact">
+          <div>
+            <span class="panel-kicker">Comptes</span>
+            <h3>Pilotage utilisateurs</h3>
+          </div>
           <span class="mini-note">{{ pagination?.total ?? 0 }} comptes</span>
         </div>
-        <div class="filters-grid">
+
+        <div class="admin-stats">
+          <div class="admin-stat">
+            <strong>{{ pagination?.total ?? rows.length }}</strong>
+            <span>Total</span>
+          </div>
+          <div class="admin-stat">
+            <strong>{{ activeCount }}</strong>
+            <span>Actifs</span>
+          </div>
+          <div class="admin-stat">
+            <strong>{{ adminCount }}</strong>
+            <span>Admins</span>
+          </div>
+        </div>
+
+        <div class="quick-chips">
+          <button
+            v-for="option in roleOptions"
+            :key="option.value || 'all'"
+            class="quick-chip"
+            :class="{ active: filters.role === option.value }"
+            type="button"
+            @click="filters.role = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+
+        <div class="filters-compact">
           <FormField label="Recherche">
             <input v-model="filters.search" placeholder="Nom, email, ville" />
-          </FormField>
-          <FormField label="Role">
-            <BaseSelect v-model="filters.role" :options="roleOptions" />
           </FormField>
           <FormField label="Statut">
             <BaseSelect v-model="filters.status" :options="statusOptions" />
           </FormField>
         </div>
+        <button class="button button-secondary filters-reset" type="button" @click="resetFilters">
+          Reinitialiser
+        </button>
       </article>
 
-      <article class="surface-card section-card stack">
+      <article class="surface-card section-card stack admin-panel admin-panel--form">
         <div class="panel-head">
-          <h3>{{ editingId ? "Modifier" : "Nouveau compte" }}</h3>
+          <div>
+            <span class="panel-kicker">{{ editingId ? "Edition" : "Creation" }}</span>
+            <h3>{{ editingId ? "Modifier" : "Nouveau compte" }}</h3>
+          </div>
           <button class="button button-ghost" @click="resetForm">Vider</button>
         </div>
-        <div class="filters-grid">
+        <div class="mode-note">
+          <strong>{{ editingId ? "Compte existant" : "Compte admin" }}</strong>
+          <span>Les champs essentiels sont controles avant enregistrement dans l'API.</span>
+        </div>
+        <div class="filters-grid form-grid">
           <FormField label="Prenom" :error="formErrors.firstName">
             <input v-model="form.firstName" placeholder="Alice" />
           </FormField>
@@ -102,7 +141,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import BaseSelect from "../components/BaseSelect.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import DataTable from "../components/DataTable.vue";
@@ -154,6 +193,9 @@ const statusOptions = [
   { label: "Actif", value: "active" },
   { label: "Inactif", value: "inactive" }
 ];
+
+const activeCount = computed(() => rows.value.filter((row) => row.status === "active").length);
+const adminCount = computed(() => rows.value.filter((row) => row.role?.toLowerCase().includes("admin")).length);
 
 function roleTone(role) {
   const key = role.toLowerCase();
@@ -260,6 +302,13 @@ async function deleteCurrent() {
 
 function changePage(page) {
   filters.page = page;
+}
+
+function resetFilters() {
+  filters.search = "";
+  filters.role = "";
+  filters.status = "";
+  filters.page = 1;
 }
 
 watch(() => [filters.search, filters.role, filters.status, filters.page], loadUsers);

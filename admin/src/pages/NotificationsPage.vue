@@ -9,11 +9,18 @@
       <button class="button button-secondary" @click="loadNotifications">Actualiser</button>
     </header>
 
-    <div class="split-grid">
-      <article class="surface-card section-card stack">
+    <div class="split-grid admin-workspace">
+      <article class="surface-card section-card stack admin-panel admin-panel--form">
         <div class="panel-head">
-          <h3>Nouvelle notification</h3>
+          <div>
+            <span class="panel-kicker">Campagne</span>
+            <h3>Nouvelle notification</h3>
+          </div>
           <button class="button button-ghost" @click="resetForm">Vider</button>
+        </div>
+        <div class="mode-note">
+          <strong>Communication ciblee</strong>
+          <span>Prepare un message, choisis l'audience puis programme ou envoie depuis la file.</span>
         </div>
         <FormField label="Titre">
           <input v-model="form.title" placeholder="Nouveau depot recupere" />
@@ -40,22 +47,51 @@
         </div>
       </article>
 
-      <article class="surface-card section-card stack">
-        <div class="panel-head">
-          <h3>Filtres</h3>
+      <article class="surface-card section-card stack admin-panel admin-panel--filters">
+        <div class="panel-head panel-head--compact">
+          <div>
+            <span class="panel-kicker">Suivi</span>
+            <h3>Messages</h3>
+          </div>
           <span class="mini-note">{{ pagination?.total ?? 0 }} notifications</span>
         </div>
-        <div class="filters-grid">
+        <div class="admin-stats">
+          <div class="admin-stat">
+            <strong>{{ pagination?.total ?? rows.length }}</strong>
+            <span>Total</span>
+          </div>
+          <div class="admin-stat">
+            <strong>{{ scheduledCount }}</strong>
+            <span>Programmees</span>
+          </div>
+          <div class="admin-stat">
+            <strong>{{ sentCount }}</strong>
+            <span>Envoyees</span>
+          </div>
+        </div>
+        <div class="quick-chips">
+          <button
+            v-for="option in statusOptions"
+            :key="option.value || 'all'"
+            class="quick-chip"
+            :class="{ active: filters.status === option.value }"
+            type="button"
+            @click="filters.status = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+        <div class="filters-compact">
           <FormField label="Recherche">
             <input v-model="filters.search" placeholder="Titre ou message" />
           </FormField>
           <FormField label="Canal">
             <BaseSelect v-model="filters.channel" :options="filterChannelOptions" />
           </FormField>
-          <FormField label="Statut">
-            <BaseSelect v-model="filters.status" :options="statusOptions" />
-          </FormField>
         </div>
+        <button class="button button-secondary filters-reset" type="button" @click="resetFilters">
+          Reinitialiser
+        </button>
       </article>
     </div>
 
@@ -133,6 +169,8 @@ const statusOptions = [
   { label: "Programmee", value: "scheduled" },
   { label: "Envoyee", value: "sent" }
 ];
+const scheduledCount = computed(() => rows.value.filter((row) => row.status === "scheduled").length);
+const sentCount = computed(() => rows.value.filter((row) => row.status === "sent").length);
 
 function resetForm() {
   form.title = "";
@@ -190,6 +228,13 @@ async function remove(id) {
 
 function changePage(page) {
   filters.page = page;
+}
+
+function resetFilters() {
+  filters.search = "";
+  filters.channel = "";
+  filters.status = "";
+  filters.page = 1;
 }
 
 watch(() => [filters.search, filters.channel, filters.status, filters.page], loadNotifications);

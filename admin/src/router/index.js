@@ -37,7 +37,7 @@ const routes = [
         path: "prestations",
         name: "prestations",
         component: PrestationsPage,
-        meta: { title: "Prestations", subtitle: "Catalogue, prix et publication" }
+        meta: { title: "Annonces / Prestations", subtitle: "Catalogue, objets, prix et publication" }
       },
       {
         path: "categories",

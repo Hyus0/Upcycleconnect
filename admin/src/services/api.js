@@ -83,6 +83,25 @@ function normalizeEvent(row) {
   };
 }
 
+function normalizeAnnonce(row) {
+  return {
+    id: row.id,
+    sellerId: Number(row.id_vendeur ?? row.sellerId ?? 1),
+    buyerId: row.id_acheteur ?? row.buyerId ?? null,
+    title: row.titre ?? row.title ?? "",
+    description: row.description ?? "",
+    status: row.statut ?? row.status ?? "Disponible",
+    validation: row.est_valide ?? row.validation ?? "En attente",
+    price: Number(row.prix ?? row.price ?? 0),
+    condition: row.etat_objet ?? row.condition ?? "",
+    address: row.adresse ?? row.address ?? "",
+    city: row.ville ?? row.city ?? "",
+    postalCode: row.code_postal ?? row.postalCode ?? "",
+    createdAt: row.date_creation ?? row.createdAt ?? "",
+    type: (row.type ?? "Don").toString()
+  };
+}
+
 function normalizeFinanceRecord(row) {
   return {
     id: row.id,
@@ -176,6 +195,23 @@ function filterEvents(items, filters = {}) {
   return filtered.sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function filterAnnonces(items, filters = {}) {
+  let filtered = items;
+  if (filters.type) {
+    filtered = filtered.filter((item) => item.type.toLowerCase() === filters.type.toLowerCase());
+  }
+  if (filters.validation) {
+    filtered = filtered.filter((item) => item.validation.toLowerCase() === filters.validation.toLowerCase());
+  }
+  if (filters.search) {
+    const needle = filters.search.toLowerCase();
+    filtered = filtered.filter((item) =>
+      [item.title, item.description, item.city, item.postalCode].join(" ").toLowerCase().includes(needle)
+    );
+  }
+  return filtered.slice().sort((a, b) => Number(b.id) - Number(a.id));
+}
+
 function filterModeration(items, filters = {}) {
   let filtered = items;
   if (filters.type) {
@@ -231,6 +267,11 @@ async function readPrestationsFromApi(filters = {}) {
   return (response.items ?? []).map(normalizePrestation);
 }
 
+async function readAnnoncesFromApi() {
+  const response = await request("/go/annonces");
+  return (Array.isArray(response) ? response : []).map(normalizeAnnonce);
+}
+
 async function readCategoriesFromApi() {
   const response = await request(`${GO_API_BASE}/admin/categories`);
   return (response.items ?? []).map(normalizeCategory);
@@ -263,6 +304,7 @@ export const capabilities = {
   dashboard: { metrics: true, localFallback: false },
   users: { list: true, detail: true, create: true, update: true, toggle: true, delete: true },
   prestations: { list: true, detail: true, create: true, update: true, delete: true },
+  annonces: { list: true, create: true },
   categories: { list: true, detail: true, create: true, update: true, delete: true },
   events: { list: true, detail: true, create: true, update: true, delete: true },
   moderation: { queue: true, publish: true, archive: true },
@@ -368,6 +410,34 @@ export const adminApi = {
 
   async getPrestation(id) {
     return request(`${GO_API_BASE}/admin/prestations/${id}`);
+  },
+
+  async listAnnonces(filters = {}) {
+    const items = await readAnnoncesFromApi();
+    return paginate(filterAnnonces(items, filters), filters.page, filters.pageSize);
+  },
+
+  async createAnnonce(payload) {
+    const requestPayload = {
+      id_vendeur: Number(payload.sellerId ?? 1),
+      id_acheteur: null,
+      titre: payload.title,
+      description: payload.description,
+      statut: payload.status,
+      est_valide: payload.validation,
+      prix: Number(payload.price ?? 0),
+      etat_objet: payload.condition,
+      adresse: payload.address,
+      ville: payload.city,
+      code_postal: payload.postalCode,
+      type: payload.type
+    };
+
+    const response = await request("/go/annonces", {
+      method: "POST",
+      body: JSON.stringify(requestPayload)
+    });
+    return response.created ?? response;
   },
 
   async listCategories(filters = {}) {

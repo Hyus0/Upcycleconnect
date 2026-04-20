@@ -11,18 +11,6 @@
       </RouterLink>
     </div>
 
-    <nav class="topbar-nav">
-      <RouterLink
-        v-for="item in navItems"
-        :key="item.name"
-        :to="item.to"
-        class="topbar-link"
-        :class="{ 'topbar-link-active': route.name === item.name }"
-      >
-        {{ item.label }}
-      </RouterLink>
-    </nav>
-
     <div class="topbar-actions">
       <span class="page-chip">{{ pageTitle }}</span>
       <div class="admin-avatar">AD</div>
@@ -39,12 +27,6 @@ defineEmits(["toggle-menu"]);
 
 const route = useRoute();
 const pageTitle = computed(() => route.meta.title ?? "Admin");
-const navItems = [
-  { name: "dashboard", label: "Tableau de bord", to: { name: "dashboard" } },
-  { name: "prestations", label: "Annonces", to: { name: "prestations" } },
-  { name: "events", label: "Evenements", to: { name: "events" } },
-  { name: "notifications", label: "Notifications", to: { name: "notifications" } }
-];
 </script>
 
 <style scoped>
@@ -96,34 +78,11 @@ const navItems = [
   object-fit: contain;
 }
 
-.topbar-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.topbar-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 14px;
-  color: rgba(235, 243, 238, 0.72);
-  text-decoration: none;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.topbar-link:hover,
-.topbar-link-active {
-  background: rgba(56, 124, 81, 0.26);
-  color: #eef9f2;
-}
-
 .topbar-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-left: auto;
 }
 
 .page-chip {
@@ -159,12 +118,6 @@ const navItems = [
     display: inline-flex;
   }
 
-  .topbar-nav {
-    order: 3;
-    width: 100%;
-    overflow-x: auto;
-    margin-left: 0;
-  }
 }
 
 @media (max-width: 700px) {

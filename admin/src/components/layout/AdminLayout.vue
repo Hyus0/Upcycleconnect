@@ -48,7 +48,7 @@ const route = useRoute();
 const adminItems = [
   { name: "dashboard", label: "Dashboard", to: { name: "dashboard" }, icon: "01" },
   { name: "users", label: "Utilisateurs", to: { name: "users" }, icon: "02" },
-  { name: "prestations", label: "Prestations", to: { name: "prestations" }, icon: "03" },
+  { name: "prestations", label: "Annonces / Prestations", to: { name: "prestations" }, icon: "03" },
   { name: "categories", label: "Categories", to: { name: "categories" }, icon: "04" },
   { name: "events", label: "Evenements", to: { name: "events" }, icon: "05" },
   { name: "moderation", label: "Moderation", to: { name: "moderation" }, icon: "06" },

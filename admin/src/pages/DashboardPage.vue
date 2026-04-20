@@ -12,10 +12,11 @@
     <ErrorState v-else-if="error" :message="error" retry-label="Recharger" @retry="loadDashboard" />
 
     <template v-else>
-      <article class="surface-card section-card dashboard-hero">
+      <article class="surface-card section-card dashboard-hero command-panel">
         <div>
-          <div class="eyebrow">Mode</div>
+          <span class="panel-kicker">Mode</span>
           <strong>API admin connectee</strong>
+          <p>Vue de controle globale pour suivre les comptes, ressources et alertes de gestion.</p>
         </div>
         <div class="hero-actions">
           <span class="hero-chip">{{ dashboard.stats[0]?.value ?? 0 }} utilisateurs</span>
@@ -39,7 +40,7 @@
         <SimpleBarChart title="Ressources" subtitle="Vue globale" :items="dashboard.charts.resources" />
       </div>
 
-      <div class="split-grid">
+      <div class="split-grid admin-workspace">
         <ResourceNotice
           title="Statut"
           message="Points a surveiller."
@@ -48,8 +49,14 @@
           badge="surveille"
         />
 
-        <article class="surface-card section-card">
-          <h3>Activites</h3>
+        <article class="surface-card section-card admin-panel admin-panel--filters">
+          <div class="panel-head panel-head--compact">
+            <div>
+              <span class="panel-kicker">Journal</span>
+              <h3>Activites</h3>
+            </div>
+            <span class="mini-note">{{ dashboard.recentActivity.length }} lignes</span>
+          </div>
           <ul class="activity-list">
             <li v-for="item in dashboard.recentActivity" :key="item.id">
               <strong>{{ item.title }}</strong>
@@ -111,6 +118,12 @@ onMounted(loadDashboard);
   font-size: 1.2rem;
 }
 
+.dashboard-hero p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  max-width: 58ch;
+}
+
 .hero-actions {
   display: flex;
   gap: 10px;
@@ -120,8 +133,8 @@ onMounted(loadDashboard);
 .hero-chip {
   padding: 10px 12px;
   border-radius: 999px;
-  background: rgba(45, 122, 79, 0.08);
-  color: var(--brand-green);
+  background: rgba(98, 196, 136, 0.13);
+  color: var(--brand-green-light);
   font-weight: 700;
 }
 

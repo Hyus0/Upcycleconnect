@@ -11,13 +11,20 @@
       </div>
     </header>
 
-    <div class="split-grid">
-      <article class="surface-card section-card stack">
+    <div class="split-grid admin-workspace">
+      <article class="surface-card section-card stack admin-panel admin-panel--form">
         <div class="panel-head">
-          <h3>{{ editingId ? "Modifier" : "Nouvel evenement" }}</h3>
+          <div>
+            <span class="panel-kicker">{{ editingId ? "Edition" : "Creation" }}</span>
+            <h3>{{ editingId ? "Modifier" : "Nouvel evenement" }}</h3>
+          </div>
           <button class="button button-ghost" @click="resetForm">Vider</button>
         </div>
-        <div class="filters-grid">
+        <div class="mode-note">
+          <strong>Regle metier</strong>
+          <span>Un evenement planifie ou publie ne peut pas etre date dans le passe.</span>
+        </div>
+        <div class="filters-grid form-grid">
           <FormField label="Titre" :error="formErrors.title"><input v-model="form.title" /></FormField>
           <FormField label="Lieu" :error="formErrors.location"><input v-model="form.location" /></FormField>
           <FormField label="Date" :error="formErrors.date" :hint="dateHint"><DatePickerField v-model="form.date" :min="eventDateMin" /></FormField>
@@ -32,16 +39,47 @@
         </div>
       </article>
 
-      <article class="surface-card section-card stack">
-        <div class="panel-head">
-          <h3>Filtres</h3>
+      <article class="surface-card section-card stack admin-panel admin-panel--filters">
+        <div class="panel-head panel-head--compact">
+          <div>
+            <span class="panel-kicker">Planning</span>
+            <h3>Evenements actifs</h3>
+          </div>
           <span class="mini-note">{{ pagination?.total ?? 0 }} evenements</span>
         </div>
-        <div class="filters-grid">
+        <div class="admin-stats">
+          <div class="admin-stat">
+            <strong>{{ pagination?.total ?? rows.length }}</strong>
+            <span>Total</span>
+          </div>
+          <div class="admin-stat">
+            <strong>{{ publishedCount }}</strong>
+            <span>Publies</span>
+          </div>
+          <div class="admin-stat">
+            <strong>{{ plannedCount }}</strong>
+            <span>Planifies</span>
+          </div>
+        </div>
+        <div class="quick-chips">
+          <button
+            v-for="option in statusOptions"
+            :key="option.value || 'all'"
+            class="quick-chip"
+            :class="{ active: filters.status === option.value }"
+            type="button"
+            @click="filters.status = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+        <div class="filters-compact">
           <FormField label="Recherche"><input v-model="filters.search" placeholder="Titre ou lieu" /></FormField>
           <FormField label="Date"><DatePickerField v-model="filters.date" /></FormField>
-          <FormField label="Statut"><BaseSelect v-model="filters.status" :options="statusOptions" /></FormField>
         </div>
+        <button class="button button-secondary filters-reset" type="button" @click="resetFilters">
+          Reinitialiser
+        </button>
       </article>
     </div>
 
@@ -124,6 +162,8 @@ const dateHint = computed(() =>
     ? "Un evenement archive peut conserver une date passee."
     : "Les evenements planifies ou publies doivent etre dates a partir d'aujourd'hui."
 );
+const publishedCount = computed(() => rows.value.filter((row) => row.status === "published").length);
+const plannedCount = computed(() => rows.value.filter((row) => row.status === "planned").length);
 
 function resetForm() {
   editingId.value = "";
@@ -216,6 +256,13 @@ async function deleteCurrent() {
 
 function changePage(page) {
   filters.page = page;
+}
+
+function resetFilters() {
+  filters.search = "";
+  filters.date = "";
+  filters.status = "";
+  filters.page = 1;
 }
 
 watch(() => [filters.search, filters.date, filters.status, filters.page], loadEvents);

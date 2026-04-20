@@ -5,6 +5,7 @@ COPY api.go ./
 COPY app/ ./app/
 COPY db/ ./db/
 COPY models/ ./models/
+COPY passwordHashing/ ./passwordHashing/
 RUN go build -o api-go .
 
 FROM alpine:3.21

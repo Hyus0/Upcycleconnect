@@ -578,6 +578,31 @@ func DeleteAnnonce(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func GetUserAnnoncesHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	userId, err := strconv.Atoi(idStr)
+	
+	if err != nil || userId <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	annonces, err := db.GetAnnoncesByUser(userId)
+	if err != nil {
+		println("Erreur DB GetAnnoncesByUser:", err.Error())
+		http.Error(w, "Erreur lors de la récupération des annonces", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if annonces == nil {
+		w.Write([]byte("[]"))
+		return
+	}
+	
+	json.NewEncoder(w).Encode(annonces)
+}
+
 func GetAllEvenements(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -692,28 +717,6 @@ func DeleteEvenement(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func ValidAnnonce(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil || id <= 0 {
-		http.Error(w, "ID d'annonce invalide dans l'URI (doit être un entier positif)", http.StatusBadRequest)
-		return
-	}
-
-	if err := db.ValidAnnonce(id); err != nil {
-		if strings.Contains(err.Error(), "aucune annonce trouvée") {
-			http.Error(w, fmt.Sprintf("Annonce non trouvée avec l'ID %d", id), http.StatusNotFound)
-			return
-		}
-
-		fmt.Println("Erreur DB ValidAnnonce:", err.Error())
-		http.Error(w, "Erreur serveur lors de la validation de l'annonce", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Annonce validée avec succès"))
 }
 
 func GetAllCategories(w http.ResponseWriter, r *http.Request) {

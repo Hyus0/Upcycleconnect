@@ -42,6 +42,11 @@ const routes = [
         name: "modification-password",
         component: () => import("./pages/profilpages/ChangePassword.vue"),
       },
+      {
+        path: "modifyAnnonce/:id",
+        name: "modification-annonce",
+        component: () => import("./pages/profilpages/modifyAnnonce.vue"),
+      },
     ],
   },
 ];

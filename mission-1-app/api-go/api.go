@@ -90,8 +90,7 @@ func main() {
 	http.HandleFunc("GET /annonces/{id}", app.GetAnnonce)
 	http.HandleFunc("PUT /annonces/{id}", app.ModifyAnnonce)
 	http.HandleFunc("DELETE /annonces/{id}", app.DeleteAnnonce)
-	http.HandleFunc("PATCH /annonces/{id}", app.ValidAnnonce)
-
+	http.HandleFunc("GET /users/{id}/annonces", app.GetUserAnnoncesHandler)
 	//Evenement
 	http.HandleFunc("GET /evenements", app.GetAllEvenements)
 	http.HandleFunc("GET /evenements/{id}", app.GetEvenement)

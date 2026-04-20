@@ -74,29 +74,28 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>Chaise vintage années 60</td>
-                <td>Mobilier</td>
-                <td><span class="tag-don">DON</span></td>
-                <td><span class="status-valid">✓ VALIDÉE</span></td>
-                <td>12 fév. 2026</td>
-                <td class="actions-cell">
-                    <button class="btn-view">Voir</button>
-                    <button class="btn-remove">Retirer</button>
-                </td>
-            </tr>
-
-            <tr>
-                <td>Lot de chutes de tissu lin</td>
-                <td>Textile</td>
-                <td><span class="tag-vente">VENTE 15€</span></td>
+            <tr v-for="annonce in annonces.slice(0, 4)" :key="annonce.id">
+                <td>{{ annonce.titre }}</td>
+    
+                <td>{{ annonce.etat_objet }}</td>
+    
                 <td>
-                    <span class="status-pending">⌛ EN ATTENTE</span>
+                <span :class="annonce.type === 'Don' ? 'tag-don' : 'tag-vente'">
+                    {{ annonce.type.toUpperCase() }}
+                </span>
                 </td>
-                <td>18 fév. 2026</td>
+    
+                <td>
+                  <span :class="annonce.est_valide === 'Validé' ? 'status-valid' : 'status-pending'">
+                    {{ annonce.est_valide === 'Validé' ? '✓ VALIDÉE' : '⌛ EN ATTENTE' }}
+                  </span>
+                </td>
+    
+                <td>{{ formatDate(annonce.date_creation) }}</td>
+    
                 <td class="actions-cell">
-                    <button class="btn-view">Voir</button>
-                    <button class="btn-modify">Modifier</button>
+                <button class="btn-view" @click="goToAnnonce(annonce.id)">Voir</button>
+                <button class="btn-remove" @click="removeAnnonce(annonce.id)">Retirer</button>
                 </td>
             </tr>
         </tbody>
@@ -153,6 +152,7 @@
 import { ref, onMounted } from "vue";
 
 const prenom = ref(localStorage.getItem("userPrenom") || 'Invité');
+const annonces = ref([]); 
 
 const stats = ref({
     total_points: 0,
@@ -162,6 +162,24 @@ const stats = ref({
     ressources_economisees: 0
 });
 
+const formatDate = (dateString) => {
+    if (!dateString) return "...";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    });
+};
+
+const goToAnnonce = (id) => {
+    console.log("Navigation vers l'annonce :", id);
+};
+
+const removeAnnonce = (id) => {
+    console.log("Demande de suppression pour :", id);
+};
+
 onMounted(async () => {
     const id = localStorage.getItem("userId");
     const token = localStorage.getItem("userToken");
@@ -170,21 +188,24 @@ onMounted(async () => {
 
     try {
         const response = await fetch(`http://localhost:8081/users/${id}/stats`, {
-            method: "GET",
-            headers: {
-                "Authorization": token,
-                "Content-Type": "application/json",
-            },
+            headers: { "Authorization": token }
         });
-
         if (response.ok) {
-            const data = await response.json();
-            stats.value = data;
-        } else {
-            console.error("Erreur lors de la récupération des statistiques");
+            stats.value = await response.json();
         }
     } catch (error) {
-        console.error("Le serveur de stats est injoignable :", error);
+        console.error("Erreur stats :", error);
+    }
+    
+    try {
+        const resAnnonces = await fetch(`http://localhost:8081/users/${id}/annonces`, {
+            headers: { "Authorization": token }
+        });
+        if (resAnnonces.ok) {
+            annonces.value = await resAnnonces.json();
+        }
+    } catch (error) {
+        console.error("Erreur annonces :", error);
     }
 });
 </script>

@@ -6,50 +6,46 @@ import (
 	"upcycleconnect/api-go/models"
 )
 
-func CreateAnnonce(a models.Annonce) error {
+func CreateAnnonce(a *models.Annonce) error {
 	if Conn == nil {
-		return fmt.Errorf("connexion DB non initialisee")
+		return fmt.Errorf("connexion DB non initialisée")
 	}
 
 	query := `
 		INSERT INTO ANNONCE (
-			id_vendeur,
-			id_acheteur,
-			titre,
-			description,
-			statut,
-			est_valide,
-			prix,
-			etat_objet,
-			adresse,
-			ville,
-			code_postal,
-			type
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			id_vendeur, id_categorie, titre, description, 
+			type_materiau, poids_estime_kg, prix, etat_objet, 
+			statut, est_valide, type, ville, code_postal, adresse
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	res, err := Conn.Exec(
 		query,
 		a.IdVendeur,
-		a.IdAcheteur,
+		a.IdCategorie,
 		a.Titre,
 		a.Description,
-		a.Statut,
-		a.EstValide,
+		a.TypeMateriau,
+		a.PoidsEstimeKg,
 		a.Prix,
 		a.EtatObjet,
-		a.Adresse,
+		"Disponible", 
+		"En attente",
+		a.Type,
 		a.Ville,
 		a.CodePostal,
-		a.Type,
+		a.Adresse,
 	)
 	if err != nil {
 		return err
 	}
 
-	if id, err := res.LastInsertId(); err == nil {
-		a.ID = int(id)
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
 	}
+
+	a.ID = int(id)
 	return nil
 }
 

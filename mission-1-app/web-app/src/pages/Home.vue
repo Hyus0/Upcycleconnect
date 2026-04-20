@@ -5,7 +5,7 @@
               :is-authenticated="isLoggedIn"
               :user-name="userName"
               user-role="Particulier"
-              :user-score="847"
+              :user-score="userScore"
             />
             <section class="page-background">
                 <div class="hero-content">

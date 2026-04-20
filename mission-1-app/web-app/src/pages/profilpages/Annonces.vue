@@ -41,12 +41,12 @@
                         <button class="btn-view" @click="goToAnnonce(annonce.id)">Voir</button>
                         <button class="btn-remove" @click="removeAnnonce(annonce.id)">Retirer</button>
                         <button 
-                          v-if="annonce.est_valide === 'Non validé'" 
+                          v-if="annonce.est_valide === 'En attente'" 
                           class="btn-modify" 
                           @click="goToAnnonce(annonce.id)"
                         >
-                          Modifier
-                        </button>                    </td>
+                          Modifier</button>                    
+                    </td>
                 </tr>
             </tbody>
         </table>

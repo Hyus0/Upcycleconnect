@@ -47,6 +47,11 @@ const routes = [
         name: "modification-annonce",
         component: () => import("./pages/profilpages/modifyAnnonce.vue"),
       },
+      {
+        path: "createAnnonce",
+        name: "create-annonce",
+        component: () => import("./pages/profilpages/CreateAnnonce.vue"),
+      },
     ],
   },
 ];

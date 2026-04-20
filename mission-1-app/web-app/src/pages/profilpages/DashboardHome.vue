@@ -2,37 +2,39 @@
     <header class="content-header">
         <div class="header-left">
             <p class="sidebar__category2">ACCUEIL > TABLEAU DE BORD</p>
-            <h1 class="hero-title1">Bonjour {{prenom}} 👋</h1>
+            <h1 class="hero-title1">Bonjour {{ prenom }} 👋</h1>
             <p class="classic-text">
                 Voici un résumé de votre activité sur UpcycleConnect
             </p>
         </div>
-        <button class="btn-main-action">+ Déposer une annonce</button>
+        <router-link to="/profil/createAnnonce" class="btn-main-action">+ Déposer une annonce</router-link>
     </header>
 
     <div class="stats-grid">
         <div class="card card--score">
             <p class="tag-score">♻ UPCYCLING SCORE</p>
-            
+
             <div class="score-value">
                 {{ stats.total_points }} <span>pts</span>
             </div>
-            
+
             <p class="score-level">Niveau : {{ stats.niveau }}</p>
-            
+
             <div class="score-footer">
                 <div class="mini-stat">
                     <strong>{{ stats.co2_total_evite_kg }} kg</strong><br />
                     CO2 évité
                 </div>
-                
+
                 <div class="mini-stat">
-                    <strong>{{ stats.nb_objets_recycles }}</strong><br />
+                    <strong>{{ stats.nb_objets_recycles }}</strong
+                    ><br />
                     Objets recyclés
                 </div>
-                
+
                 <div class="mini-stat">
-                    <strong>€ {{ stats.ressources_economisees }}</strong><br/>
+                    <strong>€ {{ stats.ressources_economisees }}</strong
+                    ><br />
                     Économisé
                 </div>
             </div>
@@ -49,93 +51,108 @@
         </div>
     </div>
 
-<div class="section-container">
-    <div class="section-header">
-        <h2>Mes dernières annonces</h2>
-        <div class="header-actions">
-            <input
-                type="text"
-                placeholder="Rechercher..."
-                class="search-input"
-            />
-            <button class="btn-secondary">Tous statuts</button>
-            <button class="btn-main-action1">+ Nouvelle annonce</button>
+    <div class="section-container">
+        <div class="section-header">
+            <h2>Mes dernières annonces</h2>
+            <div class="header-actions">
+                <input
+                    type="text"
+                    placeholder="Rechercher..."
+                    class="search-input"
+                />
+                <button class="btn-secondary">Tous statuts</button>
+                <button class="btn-main-action1">+ Nouvelle annonce</button>
+            </div>
         </div>
-    </div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>OBJET</th>
-                <th>CATÉGORIE</th>
-                <th>TYPE</th>
-                <th>STATUT</th>
-                <th>DATE</th>
-                <th>ACTIONS</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="annonce in annonces.slice(0, 4)" :key="annonce.id">
-                <td>{{ annonce.titre }}</td>
-    
-                <td>{{ annonce.etat_objet }}</td>
-    
-                <td>
-                <span :class="annonce.type === 'Don' ? 'tag-don' : 'tag-vente'">
-                    {{ annonce.type.toUpperCase() }}
-                </span>
-                </td>
-    
-                <td>
-                  <span :class="annonce.est_valide === 'Validé' ? 'status-valid' : 'status-pending'">
-                    {{ annonce.est_valide === 'Validé' ? '✓ VALIDÉE' : '⌛ EN ATTENTE' }}
-                  </span>
-                </td>
-    
-                <td>{{ formatDate(annonce.date_creation) }}</td>
-    
-                <td class="actions-cell">
-                <button class="btn-view" @click="goToAnnonce(annonce.id)">Voir</button>
-                <button class="btn-remove" @click="removeAnnonce(annonce.id)">Retirer</button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>OBJET</th>
+                    <th>CATÉGORIE</th>
+                    <th>TYPE</th>
+                    <th>STATUT</th>
+                    <th>DATE</th>
+                    <th>ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="annonce in annonces.slice(0, 4)" :key="annonce.id">
+                    <td>{{ annonce.titre }}</td>
 
-<div class="section-container">
-    <div class="section-header">
-        <h2>📅 Mon planning — semaine du 23 fév.</h2>
-        <button class="btn-secondary">Vue mensuelle</button>
+                    <td>{{ annonce.etat_objet }}</td>
+
+                    <td>
+                        <span
+                            :class="
+                                annonce.type === 'Don' ? 'tag-don' : 'tag-vente'
+                            "
+                        >
+                            {{ annonce.type.toUpperCase() }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span :class="annonce.est_valide === 'Validé' ? 'status-valid' : 'status-pending'">
+                            {{ annonce.est_valide === "Validé" ? "✓ VALIDÉE" : "⌛ EN ATTENTE" }}
+                        </span>
+                    </td>
+
+                    <td>{{ formatDate(annonce.date_creation) }}</td>
+
+                    <td class="actions-cell">
+                        <button
+                            class="btn-view"
+                            @click="goToAnnonce(annonce.id)"
+                        >
+                            Voir
+                        </button>
+                        <button
+                            class="btn-remove"
+                            @click="removeAnnonce(annonce.id)"
+                        >
+                            Retirer
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <p v-if="annonces.length === 0" class="empty-msg">Vous n'avez pas encore déposé d'annonces.</p>
     </div>
-    <div class="planning-row">
-        <div class="day-box active">
-            <span class="day-num">23</span>
-            <div class="event event--green">Atelier bois - 14h</div>
+
+    <div class="section-container">
+        <div class="section-header">
+            <h2>📅 Mon planning — semaine du 23 fév.</h2>
+            <button class="btn-secondary">Vue mensuelle</button>
         </div>
-        <div class="day-box"><span class="day-num">24</span></div>
-        <div class="day-box active">
-            <span class="day-num">25</span>
-            <div class="event event--orange">Dépôt conteneur 11h</div>
+        <div class="planning-row">
+            <div class="day-box active">
+                <span class="day-num">23</span>
+                <div class="event event--green">Atelier bois - 14h</div>
+            </div>
+            <div class="day-box"><span class="day-num">24</span></div>
+            <div class="day-box active">
+                <span class="day-num">25</span>
+                <div class="event event--orange">Dépôt conteneur 11h</div>
+            </div>
+            <div class="day-box"><span class="day-num">26</span></div>
         </div>
-        <div class="day-box"><span class="day-num">26</span></div>
     </div>
-</div>
     <div class="end-grid">
         <div class="section-container-tips">
             <p class="tag-vente">💡 Conseil du jour</p>
-    
+
             <div class="section-header">
                 <h2>Transformer un vieux jean en sac</h2>
             </div>
             <p>
-                Apprenez à confectionner un sac tote en 30 minutes avec un
-                jean usé. Matériel nécessaire : aiguille, fil, ciseaux.
+                Apprenez à confectionner un sac tote en 30 minutes avec un jean
+                usé. Matériel nécessaire : aiguille, fil, ciseaux.
             </p>
             <button class="btn-view">Lire la suite →</button>
         </div>
         <div class="section-container-tips">
             <p class="tag-don">🔔 Notification</p>
-    
+
             <div class="section-header">
                 <h2>Votre dépôt a été récupéré !</h2>
             </div>
@@ -151,15 +168,15 @@
 <script setup>
 import { ref, onMounted } from "vue";
 
-const prenom = ref(localStorage.getItem("userPrenom") || 'Invité');
-const annonces = ref([]); 
+const prenom = ref(localStorage.getItem("userPrenom") || "Invité");
+const annonces = ref([]);
 
 const stats = ref({
     total_points: 0,
     niveau: "Chargement...",
     co2_total_evite_kg: 0,
     nb_objets_recycles: 0,
-    ressources_economisees: 0
+    ressources_economisees: 0,
 });
 
 const formatDate = (dateString) => {
@@ -187,20 +204,31 @@ onMounted(async () => {
     if (!id || !token) return;
 
     try {
-        const response = await fetch(`http://localhost:8081/users/${id}/stats`, {
-            headers: { "Authorization": token }
-        });
-        if (response.ok) {
-            stats.value = await response.json();
+            const response = await fetch(
+                `http://localhost:8081/users/${id}/stats`,
+                {
+                    headers: { Authorization: token },
+                },
+            );
+            if (response.ok) {
+                const data = await response.json();
+                stats.value = data;
+                if (data.total_points !== undefined) {
+                    localStorage.setItem("userScore", data.total_points.toString());
+                    window.dispatchEvent(new Event("auth-change"));
+                }
+            }
+        } catch (error) {
+            console.error("Erreur stats :", error);
         }
-    } catch (error) {
-        console.error("Erreur stats :", error);
-    }
-    
+
     try {
-        const resAnnonces = await fetch(`http://localhost:8081/users/${id}/annonces`, {
-            headers: { "Authorization": token }
-        });
+        const resAnnonces = await fetch(
+            `http://localhost:8081/users/${id}/annonces`,
+            {
+                headers: { Authorization: token },
+            },
+        );
         if (resAnnonces.ok) {
             annonces.value = await resAnnonces.json();
         }

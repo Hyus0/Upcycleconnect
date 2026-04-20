@@ -4,7 +4,7 @@
       :is-authenticated="isLoggedIn"
       :user-name="userName"
       user-role="Particulier"
-      :user-score="847"
+      :user-score="userScore"
     />
     <router-view />
   </main>

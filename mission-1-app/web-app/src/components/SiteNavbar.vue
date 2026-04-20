@@ -113,7 +113,7 @@ const props = defineProps({
   },
   userScore: {
     type: [String, Number],
-    default: 847
+    default: () => localStorage.getItem("userScore") || 0
   },
   isAuthenticated: {
     type: Boolean,

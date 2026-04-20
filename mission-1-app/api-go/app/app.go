@@ -511,6 +511,76 @@ func GetAnnonce(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", string(res))
 }
 
+func ValidateAnnonce(a models.Annonce) []string {
+	var errsMsg []string
+
+	// 1. Validation du Titre
+	if len(a.Titre) < 5 || len(a.Titre) > 100 {
+		errsMsg = append(errsMsg, "Le titre doit faire entre 5 et 100 caractères")
+	}
+
+	// 2. Validation de la Description
+	if len(a.Description) < 10 {
+		errsMsg = append(errsMsg, "La description doit faire au moins 10 caractères")
+	}
+
+	// 3. Validation de la Catégorie
+	if a.IdCategorie <= 0 {
+		errsMsg = append(errsMsg, "Veuillez sélectionner une catégorie valide")
+	}
+
+	// 4. Validation du Prix selon le Type
+	if a.Type == "Vente" && a.Prix <= 0 {
+		errsMsg = append(errsMsg, "Pour une vente, le prix doit être supérieur à 0€")
+	}
+	if a.Type == "Don" && a.Prix != 0 {
+		// Optionnel : On force le prix à 0 si c'est un don
+		a.Prix = 0 
+	}
+
+	// 5. Validation du Poids
+	if a.PoidsEstimeKg < 0 {
+		errsMsg = append(errsMsg, "Le poids ne peut pas être négatif")
+	}
+
+	// 6. Validation de la Localisation
+	if len(a.CodePostal) != 5 {
+		errsMsg = append(errsMsg, "Le code postal doit contenir exactement 5 chiffres")
+	}
+	if len(a.Ville) < 2 || len(a.Ville) > 50 {
+		errsMsg = append(errsMsg, "La ville doit faire entre 2 et 50 caractères")
+	}
+
+	// 7. Validation des Enums (Sécurité injection)
+	validTypes := map[string]bool{"Don": true, "Vente": true}
+	if !validTypes[a.Type] {
+		errsMsg = append(errsMsg, "Type d'annonce invalide (Don ou Vente attendu)")
+	}
+
+	validEtats := map[string]bool{"Neuf": true, "Bon etat": true, "Usage": true}
+	if !validEtats[a.EtatObjet] {
+		errsMsg = append(errsMsg, "État de l'objet invalide")
+	}
+
+	// 8. Caractères interdits (XSS protection)
+	forbiddenChars := "$<>[{}]*%"
+	fields := map[string]string{
+		"Le titre":       a.Titre,
+		"La description": a.Description,
+		"Le matériau":    a.TypeMateriau,
+		"La ville":       a.Ville,
+		"L'adresse":      a.Adresse,
+	}
+
+	for label, value := range fields {
+		if strings.ContainsAny(value, forbiddenChars) {
+			errsMsg = append(errsMsg, fmt.Sprintf("%s contient des caractères interdits ($ < > [ ] { } * %%)", label))
+		}
+	}
+
+	return errsMsg
+}
+
 func CreateAnnonce(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -520,13 +590,22 @@ func CreateAnnonce(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.CreateAnnonce(a); err != nil {
-		fmt.Println("Erreur DB CreateAnnonce:", err.Error())
-		http.Error(w, "Erreur serveur lors de la création de l'annonce", http.StatusInternalServerError)
+	validationErrors := ValidateAnnonce(a)
+	if len(validationErrors) > 0 {
+		w.WriteHeader(http.StatusUnprocessableEntity) 
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"errors": validationErrors,
+		})
+		return
+	}
+
+	if err := db.CreateAnnonce(&a); err != nil {
+		http.Error(w, "Erreur lors de la création", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(a)
 }
 
 func ModifyAnnonce(w http.ResponseWriter, r *http.Request) {

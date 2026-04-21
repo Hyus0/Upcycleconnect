@@ -514,36 +514,29 @@ func GetAnnonce(w http.ResponseWriter, r *http.Request) {
 func ValidateAnnonce(a models.Annonce) []string {
 	var errsMsg []string
 
-	// 1. Validation du Titre
 	if len(a.Titre) < 5 || len(a.Titre) > 100 {
 		errsMsg = append(errsMsg, "Le titre doit faire entre 5 et 100 caractères")
 	}
 
-	// 2. Validation de la Description
 	if len(a.Description) < 10 {
 		errsMsg = append(errsMsg, "La description doit faire au moins 10 caractères")
 	}
 
-	// 3. Validation de la Catégorie
 	if a.IdCategorie <= 0 {
 		errsMsg = append(errsMsg, "Veuillez sélectionner une catégorie valide")
 	}
 
-	// 4. Validation du Prix selon le Type
 	if a.Type == "Vente" && a.Prix <= 0 {
 		errsMsg = append(errsMsg, "Pour une vente, le prix doit être supérieur à 0€")
 	}
 	if a.Type == "Don" && a.Prix != 0 {
-		// Optionnel : On force le prix à 0 si c'est un don
 		a.Prix = 0 
 	}
 
-	// 5. Validation du Poids
 	if a.PoidsEstimeKg < 0 {
 		errsMsg = append(errsMsg, "Le poids ne peut pas être négatif")
 	}
 
-	// 6. Validation de la Localisation
 	if len(a.CodePostal) != 5 {
 		errsMsg = append(errsMsg, "Le code postal doit contenir exactement 5 chiffres")
 	}
@@ -551,7 +544,6 @@ func ValidateAnnonce(a models.Annonce) []string {
 		errsMsg = append(errsMsg, "La ville doit faire entre 2 et 50 caractères")
 	}
 
-	// 7. Validation des Enums (Sécurité injection)
 	validTypes := map[string]bool{"Don": true, "Vente": true}
 	if !validTypes[a.Type] {
 		errsMsg = append(errsMsg, "Type d'annonce invalide (Don ou Vente attendu)")
@@ -562,7 +554,6 @@ func ValidateAnnonce(a models.Annonce) []string {
 		errsMsg = append(errsMsg, "État de l'objet invalide")
 	}
 
-	// 8. Caractères interdits (XSS protection)
 	forbiddenChars := "$<>[{}]*%"
 	fields := map[string]string{
 		"Le titre":       a.Titre,
@@ -666,9 +657,9 @@ func GetUserAnnoncesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	annonces, err := db.GetAnnoncesByUser(userId)
+	annonces, err := db.GetAnnoncesByUserID(userId)
 	if err != nil {
-		println("Erreur DB GetAnnoncesByUser:", err.Error())
+		println("Erreur DB GetAnnoncesByUserID:", err.Error())
 		http.Error(w, "Erreur lors de la récupération des annonces", http.StatusInternalServerError)
 		return
 	}

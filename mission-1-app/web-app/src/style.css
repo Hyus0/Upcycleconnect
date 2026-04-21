@@ -40,6 +40,19 @@ button {
   min-height: 100vh;
 }
 
+.btn-plan {
+    background-color: #2e7d32;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.btn-plan:hover { background-color: #1b5e20; }
+
 .site-navbar {
   position: sticky;
   top: 18px;

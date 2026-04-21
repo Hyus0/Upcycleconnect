@@ -77,41 +77,56 @@
             </thead>
             <tbody>
                 <tr v-for="annonce in annonces.slice(0, 4)" :key="annonce.id">
-                    <td>{{ annonce.titre }}</td>
-
-                    <td>{{ annonce.etat_objet }}</td>
+                    <td>
+                        <strong>{{ annonce.titre }}</strong><br>
+                        <small>{{ annonce.type_materiau }}</small>
+                    </td>
 
                     <td>
-                        <span
-                            :class="
-                                annonce.type === 'Don' ? 'tag-don' : 'tag-vente'
-                            "
-                        >
-                            {{ annonce.type.toUpperCase() }}
+                        <span :class="annonce.type === 'Don' ? 'tag-don' : 'tag-vente'">
+                            {{ annonce.type === 'Don' ? '🎁 DON' : '💰 VENTE ' + annonce.prix + '€' }}
                         </span>
                     </td>
 
                     <td>
-                        <span :class="annonce.est_valide === 'Validé' ? 'status-valid' : 'status-pending'">
-                            {{ annonce.est_valide === "Validé" ? "✓ VALIDÉE" : "⌛ EN ATTENTE" }}
+                        <span :class="annonce.est_valide === 'Valide' ? 'status-valid' : 'status-pending'">
+                            {{ annonce.est_valide === 'Valide' ? '✓ APPROUVÉ' : '⌛ EN ANALYSE' }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="status-neutral">
+                            📍 {{ annonce.statut }}
                         </span>
                     </td>
 
                     <td>{{ formatDate(annonce.date_creation) }}</td>
 
                     <td class="actions-cell">
+                        <button 
+                            v-if="annonce.est_valide === 'Valide' && annonce.statut === 'Disponible'"
+                            class="btn-plan"
+                            @click="goToPlanning(annonce.id)"
+                        >
+                            📦 Planifier dépôt
+                        </button>
+                        
                         <button
                             class="btn-view"
                             @click="goToAnnonce(annonce.id)"
                         >
                             Voir
                         </button>
-                        <button
-                            class="btn-remove"
-                            @click="removeAnnonce(annonce.id)"
+                        
+                        <button 
+                            v-if="annonce.est_valide === 'En attente'" 
+                            class="btn-modify" 
+                            @click="goToModify(annonce.id)"
                         >
-                            Retirer
+                            Modifier
                         </button>
+
+                        <button class="btn-remove" @click="removeAnnonce(annonce.id)">Retirer</button>
                     </td>
                 </tr>
             </tbody>
@@ -168,6 +183,10 @@
 <script setup>
 import { ref, onMounted } from "vue";
 
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
 const prenom = ref(localStorage.getItem("userPrenom") || "Invité");
 const annonces = ref([]);
 
@@ -190,7 +209,11 @@ const formatDate = (dateString) => {
 };
 
 const goToAnnonce = (id) => {
-    console.log("Navigation vers l'annonce :", id);
+    router.push({ name: 'see-annonce', params: { id: id } });
+};
+
+const goToModify = (id) => {
+    router.push({ name: 'modification-annonce', params: { id: id } });
 };
 
 const removeAnnonce = (id) => {

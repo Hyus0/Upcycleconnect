@@ -48,6 +48,11 @@ const routes = [
         component: () => import("./pages/profilpages/modifyAnnonce.vue"),
       },
       {
+        path: "seeAnnonce/:id",
+        name: "see-annonce",
+        component: () => import("./pages/profilpages/SeeAnnonce.vue"),
+      },
+      {
         path: "createAnnonce",
         name: "create-annonce",
         component: () => import("./pages/profilpages/CreateAnnonce.vue"),

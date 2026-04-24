@@ -6,12 +6,14 @@ import Profil from "./pages/Profil.vue";
 
 import Home from "./pages/Home.vue";
 import Annonces from "./pages/Annonces.vue";
+import Forums from "./pages/Forums.vue";
 
 const routes = [
   { path: "/", component: Home },
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
   { path: "/annonces", component: Annonces },
+  { path: "/forums", component: Forums },
   {
     path: "/profil",
     component: Profil,
@@ -36,6 +38,11 @@ const routes = [
         path: "informations",
         name: "mes-informations",
         component: () => import("./pages/profilpages/Infos.vue"),
+      },
+      {
+        path: "forums",
+        name: "mes-forums",
+        component: () => import("./pages/profilpages/Forums.vue"),
       },
       {
         path: "password",

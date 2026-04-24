@@ -175,8 +175,8 @@ const communityChildren = [
   },
   {
     label: "Forums",
-    to: "/profil",
-    description: "Discussions communaute"
+    to: "/forums",
+    description: "Discussions, entraide et projets"
   },
   {
     label: "Formations & Ateliers",

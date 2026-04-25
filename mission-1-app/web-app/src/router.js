@@ -6,12 +6,18 @@ import Profil from "./pages/Profil.vue";
 
 import Home from "./pages/Home.vue";
 import Annonces from "./pages/Annonces.vue";
-
+import Formations from "./pages/Formations.vue"
 const routes = [
   { path: "/", component: Home },
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
   { path: "/annonces", component: Annonces },
+  { path: "/formations", component: Formations },
+  {
+    path: '/formations/:id',
+    name: 'formation-detail',
+    component: () => import('./pages/FormationDetail.vue')
+  },
   {
     path: "/profil",
     component: Profil,
@@ -56,6 +62,11 @@ const routes = [
         path: "createAnnonce",
         name: "create-annonce",
         component: () => import("./pages/profilpages/CreateAnnonce.vue"),
+      },
+      {
+        path: "reserveCasier/:id",
+        name: "reserve-casier",
+        component: () => import("./pages/profilpages/ReserverCasier.vue"),
       },
     ],
   },

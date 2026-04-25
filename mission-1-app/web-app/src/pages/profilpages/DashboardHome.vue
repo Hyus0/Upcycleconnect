@@ -40,14 +40,17 @@
             </div>
         </div>
         <div class="card card--white">
-            <div class="card-num">3</div>
+            <div class="card-num">{{ annoncesActivesCount }}</div>
             <p class="text-dm">Annonces actives</p>
-            <span class="badge badge--green">+1 ce mois</span>
+            <span class="badge badge--green" v-if="annoncesActivesCount > 0">+1 ce mois</span>
         </div>
+
         <div class="card card--white">
-            <div class="card-num2">2</div>
+            <div class="card-num2">{{ depotsEnAttenteCount }}</div>
             <p class="text-dm">Dépôts en attente</p>
-            <span class="badge badge--orange">EN COURS</span>
+            <span class="badge badge--orange">
+                {{ depotsEnAttenteCount > 0 ? 'EN COURS' : 'AUCUN' }}
+            </span>
         </div>
     </div>
 
@@ -108,7 +111,7 @@
                             class="btn-plan"
                             @click="goToPlanning(annonce.id)"
                         >
-                            📦 Planifier dépôt
+                            Planifier dépôt
                         </button>
                         
                         <button
@@ -181,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 
 import { useRouter } from 'vue-router';
 
@@ -219,6 +222,14 @@ const goToModify = (id) => {
 const removeAnnonce = (id) => {
     console.log("Demande de suppression pour :", id);
 };
+
+const annoncesActivesCount = computed(() => {
+    return annonces.value.filter(a => a.est_valide === 'Valide' && a.statut === 'Disponible').length;
+});
+
+const depotsEnAttenteCount = computed(() => {
+    return annonces.value.filter(a => a.statut === 'Reserve').length;
+});
 
 onMounted(async () => {
     const id = localStorage.getItem("userId");

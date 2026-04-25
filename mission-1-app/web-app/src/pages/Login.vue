@@ -200,7 +200,7 @@ async function handleLogin() {
             localStorage.setItem("userPrenom", data.prenom);
             localStorage.setItem("userNom", data.nom);
             
-            alert("Connecté avec succès ! 🎉");
+            alert("Connecté avec succès !");
             router.push("/profil");
             return;
         } else {

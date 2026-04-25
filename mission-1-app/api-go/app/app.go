@@ -924,27 +924,18 @@ func GetAllFormations(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetFormation(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	w.Header().Set("Content-Type", "application/json")
+	formationID, _ := strconv.Atoi(r.PathValue("id"))
+	
+	userIDStr := r.URL.Query().Get("user_id")
+	userID, _ := strconv.Atoi(userIDStr)
 
-	id, err := strconv.Atoi(idStr)
-	if err != nil || id <= 0 {
-		http.Error(w, "ID de formation invalide", http.StatusBadRequest)
-		return
-	}
-
-	formation, err := db.GetFormation(id)
+	formation, err := db.GetFormation(formationID, userID)
 	if err != nil {
-		fmt.Println("Erreur DB GetFormation:", err.Error())
-		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		http.Error(w, "Erreur serveur", 500)
 		return
 	}
 
-	if formation == nil {
-		http.Error(w, fmt.Sprintf("Formation %d non trouvée", id), http.StatusNotFound)
-		return
-	}
-
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(formation)
 }
 
@@ -1094,4 +1085,90 @@ func JoinFormation(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Inscription enregistrée avec succès"))
+}
+
+func QuitFormation(w http.ResponseWriter, r *http.Request) {
+	formationID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || formationID <= 0 {
+		http.Error(w, "ID de formation invalide", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		UserID int `json:"id_utilisateur"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	err = db.QuitFormation(body.UserID, formationID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Désinscription réussie"))
+}
+// Logistique
+
+type ReserveRequest struct {
+	SiteID int `json:"site_id"`
+}
+
+func ReserverCasier(w http.ResponseWriter, r *http.Request) {
+	annonceIDStr := r.PathValue("id")
+	annonceID, err := strconv.Atoi(annonceIDStr)
+	if err != nil {
+		http.Error(w, "ID d'annonce invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req ReserveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
+
+	pin, err := db.ReserverUnCasier(annonceID, req.SiteID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"pin": pin,
+		"status": "success",
+	})
+}
+
+func GetSites(w http.ResponseWriter, r *http.Request) {
+	sites, err := db.GetAllSites()
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération des sites", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sites)
+}
+
+func GetConteneurs(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id") 
+	siteID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID de site invalide", http.StatusBadRequest)
+		return
+	}
+
+	conteneurs, err := db.GetConteneursBySite(siteID)
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération des conteneurs", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(conteneurs)
 }

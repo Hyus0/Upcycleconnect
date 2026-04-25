@@ -126,10 +126,12 @@ func GetAnnoncesByUserID(userID int) ([]models.Annonce, error) {
         var a models.Annonce
 
         err := rows.Scan(
-            &a.ID, &a.IdVendeur, &a.IdAcheteur, &a.IdCasier, &a.IdCategorie,
-            &a.Titre, &a.Description, &a.TypeMateriau, &a.PoidsEstimeKg, &a.Prix,
-            &a.EtatObjet, &a.Statut, &a.EstValide, &a.CodePinDepot, &a.CodeBarreRetrait,
-            &a.DateCreation, &a.DateDepotEffective, &a.DateRecuperationEffective,
+            &a.ID, &a.IdVendeur, &a.IdAcheteur, &a.IdCasier, &a.IdCategorie, 
+            &a.Titre, &a.Description, &a.TypeMateriau, &a.PoidsEstimeKg,  
+            &a.Prix, &a.EtatObjet, &a.Statut, &a.EstValide,                
+            &a.CodePinDepot, &a.CodeBarreRetrait, 
+            &a.DateCreation, 
+            &a.DateDepotEffective, &a.DateRecuperationEffective,
             &a.Type, &a.Ville, &a.CodePostal, &a.Adresse,
         )
         if err != nil {

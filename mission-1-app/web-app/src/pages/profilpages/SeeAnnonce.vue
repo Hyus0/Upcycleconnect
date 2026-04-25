@@ -8,7 +8,7 @@
         </div>
         <div class="header-actions">
             <button class="btn-secondary" @click="$router.back()">
-                ⬅ Retour
+                🠔 Retour
             </button>
             <button
                 v-if="annonce?.est_valide === 'En attente'"

@@ -6,7 +6,7 @@
         </div>
         <div class="header-actions">
             <button class="btn-secondary" @click="$router.back()">
-                ⬅ Retour
+                🠔 Retour
             </button>
             <button
                 type="submit"

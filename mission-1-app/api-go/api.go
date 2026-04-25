@@ -107,12 +107,18 @@ func main() {
 
 	//Formation
 	http.HandleFunc("GET /formations", app.GetAllFormations)
-	http.HandleFunc("GET /formation/{id}", app.GetFormation)
+	http.HandleFunc("GET /formations/{id}", app.GetFormation)
 	http.HandleFunc("POST /formation", app.CreateFormation)
 	http.HandleFunc("PUT /formation/{id}", app.ModifyFormation)
 	http.HandleFunc("DELETE /formation/{id}", app.DeleteFormation)
 	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormation)
+	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormation)
+	//Logistique
+	http.HandleFunc("GET /sites", app.GetSites)                      
+	http.HandleFunc("GET /sites/:id/conteneurs", app.GetConteneurs)  
 
+	http.HandleFunc("POST /annonces/:id/reserver", app.ReserverCasier) 
+	
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))
 }

@@ -13,7 +13,7 @@
     <div v-if="successMsg" class="success-box">
         {{ successMsg }}
     </div>
-    <button class="btn-secondary" @click="$router.back()">⬅ Retour</button>
+    <button class="btn-secondary" @click="$router.back()">🠔 Retour</button>
   </header>
 
   <form @submit.prevent="handleSubmit" class="create-annonce-form">

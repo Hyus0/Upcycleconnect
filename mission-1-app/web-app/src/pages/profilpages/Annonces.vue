@@ -55,7 +55,7 @@
                             class="btn-plan"
                             @click="goToPlanning(annonce.id)"
                         >
-                            📦 Planifier dépôt
+                            Planifier dépôt
                         </button>
                         
                         <button
@@ -137,7 +137,7 @@ onMounted(async () => {
 
 <style scoped>
 .btn-plan {
-    background-color: #2e7d32;
+    background-color: #2d7a4f;
     color: white;
     border: none;
     padding: 6px 12px;

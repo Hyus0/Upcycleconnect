@@ -152,7 +152,7 @@ const serviceChildren = [
   },
   {
     label: "Formations & Ateliers",
-    to: "/profil",
+    to: "/formations",
     description: "Sessions et apprentissage"
   },
   {

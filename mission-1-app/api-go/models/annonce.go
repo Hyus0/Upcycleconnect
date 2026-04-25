@@ -1,12 +1,10 @@
-package models 
-
-import "time"
+package models
 
 type Annonce struct {
 	ID                        int        `json:"id"`
 	IdVendeur                 int        `json:"id_vendeur"`
 	IdAcheteur                *int       `json:"id_acheteur,omitempty"`
-	IdCasier                  *int       `json:"id_casier,omitempty"`  
+	IdCasier                  *int       `json:"id_casier,omitempty"`
 	IdCategorie               int        `json:"id_categorie"`
 	Titre                     string     `json:"titre"`
 	Description               string     `json:"description"`
@@ -18,9 +16,9 @@ type Annonce struct {
 	EstValide                 string     `json:"est_valide"`
 	CodePinDepot              *string     `json:"code_pin_depot"`
 	CodeBarreRetrait          *string     `json:"code_barre_retrait"`
-	DateCreation              time.Time  `json:"date_creation"`
-	DateDepotEffective        *time.Time `json:"date_depot_effective,omitempty"`        
-	DateRecuperationEffective *time.Time `json:"date_recuperation_effective,omitempty"` 
+	DateCreation              *string `json:"date_creation,omitempty"`
+	DateDepotEffective        *string `json:"date_depot_effective,omitempty"`
+	DateRecuperationEffective *string `json:"date_recuperation_effective,omitempty"`
 	Type                      string     `json:"type"`
 	Ville                     string     `json:"ville"`
 	CodePostal                string     `json:"code_postal"`

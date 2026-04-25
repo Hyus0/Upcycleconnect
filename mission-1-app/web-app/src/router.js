@@ -15,16 +15,13 @@ const routes = [
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
   { path: "/annonces", component: Annonces },
-<<<<<<< HEAD
   { path: "/forums", component: Forums },
-=======
   { path: "/formations", component: Formations },
   {
     path: '/formations/:id',
     name: 'formation-detail',
     component: () => import('./pages/FormationDetail.vue')
   },
->>>>>>> features/web-app
   {
     path: "/profil",
     component: Profil,

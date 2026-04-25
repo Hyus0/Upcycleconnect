@@ -9,6 +9,7 @@ import Annonces from "./pages/Annonces.vue";
 import Forums from "./pages/Forums.vue";
 
 import Formations from "./pages/Formations.vue"
+import Evenements from "./pages/Evenements.vue"
 
 const routes = [
   { path: "/", component: Home },
@@ -17,6 +18,7 @@ const routes = [
   { path: "/annonces", component: Annonces },
   { path: "/forums", component: Forums },
   { path: "/formations", component: Formations },
+  { path: "/evenements", component: Evenements },
   {
     path: '/formations/:id',
     name: 'formation-detail',

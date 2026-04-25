@@ -179,9 +179,9 @@ const communityChildren = [
     description: "Discussions, entraide et projets"
   },
   {
-    label: "Formations & Ateliers",
-    to: "/profil",
-    description: "Ressources communaute"
+    label: "Evenements",
+    to: "/evenements",
+    description: "Participez à des événements"
   }
 ];
 

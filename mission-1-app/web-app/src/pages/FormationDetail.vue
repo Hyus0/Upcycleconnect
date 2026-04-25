@@ -1,6 +1,11 @@
 <template>
-    <SiteNavbar />
-
+    <SiteNavbar
+        :is-authenticated="isLoggedIn"
+        :user-name="userName"
+        user-role="Particulier"
+        :user-score="userScore"
+    />
+    
     <main class="page-container">
         <header class="content-header">
             <div class="header-left">
@@ -164,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import SiteNavbar from "../components/SiteNavbar.vue";
@@ -175,9 +180,20 @@ const router = useRouter();
 const loading = ref(true);
 const isRegistering = ref(false);
 const formation = ref(null);
+const userScore = ref(0); 
 
 const isRegistered = ref(false);
 const isLeaving = ref(false);
+
+const isLoggedIn = computed(() => {
+    return !!localStorage.getItem("userToken");
+});
+
+const userName = computed(() => {
+    const prenom = localStorage.getItem("userPrenom") || "";
+    const nom = localStorage.getItem("userNom") || "";
+    return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
+});
 
 const formatDate = (d) => {
     if (!d || d.startsWith("0001")) return "Non définie";

@@ -179,6 +179,11 @@ const communityChildren = [
     description: "Discussions, entraide et projets"
   },
   {
+    label: "Projets Upcycling",
+    to: "/projets",
+    description: "Rejoignez des initiatives de création collective"
+  },
+  {
     label: "Evenements",
     to: "/evenements",
     description: "Participez à des événements"

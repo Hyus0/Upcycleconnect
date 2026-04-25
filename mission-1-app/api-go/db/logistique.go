@@ -1,72 +1,111 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
+	"database/sql"
 	"upcycleconnect/api-go/models"
 	"math/rand"
 	"time"
 )
 
 func ReserverUnCasier(annonceID int, siteID int) (string, error) {
-	query := `
-		SELECT c.id 
-		FROM CASIER c
-		JOIN CONTENEUR co ON c.id_conteneur = co.id
-		WHERE co.id_site = ? 
-		AND co.statut = 'Operationnel' 
-		AND c.statut = 'Libre'
-		LIMIT 1`
+    var poidsAnnonce float64
+    err := Conn.QueryRow("SELECT poids_estime_kg FROM ANNONCE WHERE id = ?", annonceID).Scan(&poidsAnnonce)
+    if err != nil {
+        return "", fmt.Errorf("impossible de trouver le poids de l'annonce")
+    }
 
-	var casierID int
-	err := Conn.QueryRow(query, siteID).Scan(&casierID)
-	if err == sql.ErrNoRows {
-		return "", fmt.Errorf("plus de casiers disponibles sur ce site")
-	}
-	if err != nil {
-		return "", err
-	}
+    query := `
+        SELECT c.id FROM CASIER c
+        JOIN CONTENEUR co ON c.id_conteneur = co.id
+        WHERE co.id_site = ? 
+        AND c.statut = 'Libre' 
+        AND co.statut = 'Operationnel'
+        AND (co.niveau_remplissage + ?) <= co.capacite_max_kg
+        LIMIT 1`
 
-	rand.Seed(time.Now().UnixNano())
-	pin := fmt.Sprintf("%04d", rand.Intn(10000))
+    var casierID int
+    err = Conn.QueryRow(query, siteID, poidsAnnonce).Scan(&casierID)
+    if err != nil {
+        return "", fmt.Errorf("Site complet ou limite de poids atteinte")
+    }
 
-	tx, err := Conn.Begin()
-	if err != nil { return "", err }
+    rand.Seed(time.Now().UnixNano())
+    pin := fmt.Sprintf("%06d", rand.Intn(1000000))
 
-	_, err = tx.Exec("UPDATE CASIER SET statut = 'Reserve' WHERE id = ?", casierID)
-	if err != nil { tx.Rollback(); return "", err }
+    _, err = Conn.Exec("UPDATE CASIER SET statut = 'Reserve' WHERE id = ?", casierID)
+    if err != nil {
+        return "", err
+    }
 
-	_, err = tx.Exec(`
-		UPDATE ANNONCE SET 
-			id_casier = ?, 
-			code_pin_depot = ?, 
-			statut = 'En attente de depot' 
-		WHERE id = ?`, casierID, pin, annonceID)
-	if err != nil { tx.Rollback(); return "", err }
+    _, err = Conn.Exec(`
+        UPDATE ANNONCE SET 
+            id_casier = ?, 
+            id_site = ?, 
+            code_pin_depot = ?, 
+            statut = 'Reserve' 
+        WHERE id = ?`, casierID, siteID, pin, annonceID)
 
-	err = tx.Commit()
-	if err != nil { return "", err }
-
-	return pin, nil
+    return pin, err
 }
 
 func GetAllSites() ([]models.Site, error) {
-	query := "SELECT id, nom, ville, code_postal, adresse, telephone, type, actif FROM SITE WHERE actif = 1"
-	rows, err := Conn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+    if Conn == nil {
+        return nil, fmt.Errorf("DB non connectée")
+    }
 
-	var sites []models.Site
-	for rows.Next() {
-		var s models.Site
-		if err := rows.Scan(&s.ID, &s.Nom, &s.Ville, &s.CodePostal, &s.Adresse, &s.Telephone, &s.Type, &s.Actif); err != nil {
-			return nil, err
-		}
-		sites = append(sites, s)
-	}
-	return sites, nil
+    query := `SELECT id, nom, ville, code_postal, adresse, COALESCE(telephone, ''), type, actif FROM SITE`
+    
+    rows, err := Conn.Query(query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    sites := []models.Site{}
+
+    for rows.Next() {
+        var s models.Site
+        err := rows.Scan(
+            &s.ID, 
+            &s.Nom, 
+            &s.Ville, 
+            &s.CodePostal, 
+            &s.Adresse, 
+            &s.Telephone, 
+            &s.Type, 
+            &s.Actif,
+        )
+        if err != nil {
+            fmt.Println("Erreur lors du Scan du site:", err)
+            return nil, err
+        }
+        sites = append(sites, s)
+    }
+
+    return sites, nil
+}
+
+func GetSiteByID(id int) (map[string]string, error) {
+    query := `SELECT nom, ville, code_postal, adresse, COALESCE(telephone, "") FROM SITE WHERE id = ?`
+    
+    var nom, ville, codePostal, adresse, telephone string
+    err := Conn.QueryRow(query, id).Scan(&nom, &ville, &codePostal, &adresse, &telephone)
+    
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, fmt.Errorf("site introuvable")
+        }
+        return nil, err
+    }
+
+    return map[string]string{
+        "nom":         nom,
+        "ville":       ville,
+        "code_postal": codePostal,
+        "adresse":     adresse,
+        "telephone":   telephone,
+    }, nil
 }
 
 func GetConteneursBySite(siteID int) ([]models.Conteneur, error) {

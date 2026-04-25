@@ -10,6 +10,7 @@ import Forums from "./pages/Forums.vue";
 
 import Formations from "./pages/Formations.vue"
 import Evenements from "./pages/Evenements.vue"
+import Projets from "./pages/Projets.vue"
 
 const routes = [
   { path: "/", component: Home },
@@ -19,6 +20,7 @@ const routes = [
   { path: "/forums", component: Forums },
   { path: "/formations", component: Formations },
   { path: "/evenements", component: Evenements },
+  { path: "/projets", component: Projets },
   {
     path: '/formations/:id',
     name: 'formation-detail',

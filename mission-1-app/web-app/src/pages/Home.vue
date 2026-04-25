@@ -334,6 +334,10 @@ html {
     font-family: "Syne", sans-serif;
 }
 
+.app-container main {
+    position: relative;
+}
+
 .logo-text {
     display: inline-block;
     white-space: nowrap;

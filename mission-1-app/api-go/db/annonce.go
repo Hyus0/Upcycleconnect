@@ -100,19 +100,21 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 func GetAnnoncesByUserID(userID int) ([]models.Annonce, error) {
     query := `
         SELECT
-            id, id_vendeur, 
-            COALESCE(id_acheteur, 0), 
-            COALESCE(id_casier, 0), 
-            id_categorie, titre, description, type_materiau, poids_estime_kg, prix,
-            etat_objet, statut, est_valide, 
-            COALESCE(code_pin_depot, ''), 
-            COALESCE(code_barre_retrait, ''),
-            date_creation, 
-            CAST(COALESCE(date_depot_effective, '0001-01-01 00:00:00') AS DATETIME), 
-            CAST(COALESCE(date_recuperation_effective, '0001-01-01 00:00:00') AS DATETIME),
-            type, ville, code_postal, adresse
-        FROM ANNONCE
-        WHERE id_vendeur = ?
+            a.id, a.id_vendeur, 
+            COALESCE(a.id_acheteur, 0), 
+            COALESCE(a.id_casier, 0), 
+            a.id_categorie, a.titre, a.description, a.type_materiau, a.poids_estime_kg, a.prix,
+            a.etat_objet, a.statut, a.est_valide, 
+            COALESCE(a.code_pin_depot, ''), 
+            COALESCE(a.code_barre_retrait, ''),
+            a.date_creation, 
+            COALESCE(a.date_depot_effective, '0001-01-01 00:00:00'), 
+            COALESCE(a.date_recuperation_effective, '0001-01-01 00:00:00'),
+            a.type, a.ville, a.code_postal, a.adresse,
+            COALESCE(a.id_site, 0)       
+        FROM ANNONCE a
+        LEFT JOIN SITE s ON a.id_site = s.id 
+        WHERE a.id_vendeur = ?
     `
 
     rows, err := Conn.Query(query, userID)
@@ -124,18 +126,18 @@ func GetAnnoncesByUserID(userID int) ([]models.Annonce, error) {
     var annonces []models.Annonce
     for rows.Next() {
         var a models.Annonce
-
         err := rows.Scan(
             &a.ID, &a.IdVendeur, &a.IdAcheteur, &a.IdCasier, &a.IdCategorie, 
             &a.Titre, &a.Description, &a.TypeMateriau, &a.PoidsEstimeKg,  
-            &a.Prix, &a.EtatObjet, &a.Statut, &a.EstValide,                
+            &a.Prix, &a.EtatObjet, &a.Statut, &a.EstValide,                 
             &a.CodePinDepot, &a.CodeBarreRetrait, 
             &a.DateCreation, 
             &a.DateDepotEffective, &a.DateRecuperationEffective,
             &a.Type, &a.Ville, &a.CodePostal, &a.Adresse,
+            &a.IdSite,
         )
         if err != nil {
-            fmt.Println("Erreur Scan Index 16 ou autre:", err)
+            fmt.Println("Erreur Scan GetAnnoncesByUserID:", err)
             return nil, err
         }
         annonces = append(annonces, a)

@@ -128,8 +128,16 @@ import { fetchAnnonces } from "../services/annoncesApi";
 const loading = ref(true);
 const source = ref("api");
 const annonces = ref([]);
-const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
-const userName = ref("Marie Lambert");
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem("userToken");
+});
+
+const userName = computed(() => {
+  const prenom = localStorage.getItem("userPrenom") || "";
+  const nom = localStorage.getItem("userNom") || "";
+  
+  return (prenom || nom) ? `${prenom} ${nom}`.trim() : "Utilisateur";
+});
 
 const filters = reactive({
   search: "",

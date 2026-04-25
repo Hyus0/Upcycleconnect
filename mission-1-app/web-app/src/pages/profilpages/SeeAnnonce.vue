@@ -100,7 +100,7 @@
                     </span>
                 </div>
                 <div class="data-row">
-                    <span class="data-label">État actuel :</span>
+                    <span class="data-label">État actuel : </span>
                     <span class="status-badge">{{ annonce.statut }}</span>
                 </div>
                 <div v-if="annonce.id_casier" class="data-row">

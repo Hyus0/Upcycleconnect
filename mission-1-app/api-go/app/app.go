@@ -1118,33 +1118,34 @@ type ReserveRequest struct {
 }
 
 func ReserverCasier(w http.ResponseWriter, r *http.Request) {
-	annonceIDStr := r.PathValue("id")
-	annonceID, err := strconv.Atoi(annonceIDStr)
-	if err != nil {
-		http.Error(w, "ID d'annonce invalide", http.StatusBadRequest)
-		return
-	}
+    annonceID, err := strconv.Atoi(r.PathValue("id"))
+    if err != nil {
+        http.Error(w, "ID invalide", http.StatusBadRequest)
+        return
+    }
 
-	var req ReserveRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Données invalides", http.StatusBadRequest)
-		return
-	}
+    var req ReserveRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "JSON invalide", http.StatusBadRequest)
+        return
+    }
 
-	pin, err := db.ReserverUnCasier(annonceID, req.SiteID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+    pin, err := db.ReserverUnCasier(annonceID, req.SiteID)
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"pin": pin,
-		"status": "success",
-	})
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{
+        "pin": pin,
+        "status": "success",
+    })
 }
 
-func GetSites(w http.ResponseWriter, r *http.Request) {
+func GetAllSites(w http.ResponseWriter, r *http.Request) {
 	sites, err := db.GetAllSites()
 	if err != nil {
 		http.Error(w, "Erreur lors de la récupération des sites", http.StatusInternalServerError)
@@ -1153,6 +1154,23 @@ func GetSites(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(sites)
+}
+
+func GetSiteHandler(w http.ResponseWriter, r *http.Request) {
+    idStr := r.PathValue("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        http.Error(w, "ID de site invalide", http.StatusBadRequest)
+        return
+    }
+
+    site, err := db.GetSiteByID(id)
+    if err != nil {
+        http.Error(w, "Site introuvable", http.StatusNotFound)
+        return
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(site)
 }
 
 func GetConteneurs(w http.ResponseWriter, r *http.Request) {

@@ -15,6 +15,7 @@ type Annonce struct {
 	Statut                    string     `json:"statut"`
 	EstValide                 string     `json:"est_valide"`
 	CodePinDepot              *string     `json:"code_pin_depot"`
+	IdSite       			  int    `json:"id_site"`
 	CodeBarreRetrait          *string     `json:"code_barre_retrait"`
 	DateCreation              *string `json:"date_creation,omitempty"`
 	DateDepotEffective        *string `json:"date_depot_effective,omitempty"`

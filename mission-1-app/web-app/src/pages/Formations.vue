@@ -1,12 +1,12 @@
 <template>
-    <SiteNavbar
-        :is-authenticated="isLoggedIn"
-        :user-name="userName"
-        user-role="Particulier"
-        :user-score="userScore"
-    />
 
     <main class="page-main-content">
+        <SiteNavbar
+            :is-authenticated="isLoggedIn"
+            :user-name="userName"
+            user-role="Particulier"
+            :user-score="userScore"
+        />
         <header class="content-header">
             <div class="header-left">
                 <p class="sidebar__category2">ACCUEIL > FORMATIONS</p>
@@ -200,10 +200,11 @@ onMounted(fetchFormations);
 
 <style scoped>
 .page-main-content {
-    padding: 2rem 5%;
-    max-width: 1600px;
-    margin: 0 auto;
     min-height: 100vh;
+    padding: 20px;
+    background: var(--bg-light, #f7f9f7);
+    max-width: 1600px; 
+    margin: 0 auto;
 }
 
 .content-header {

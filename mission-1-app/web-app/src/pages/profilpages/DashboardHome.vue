@@ -64,7 +64,7 @@
                     class="search-input"
                 />
                 <button class="btn-secondary">Tous statuts</button>
-                <button class="btn-main-action1">+ Nouvelle annonce</button>
+                <router-link to="/profil/createAnnonce" class="btn-main-action">+ Nouvelle annonce</router-link>
             </div>
         </div>
         <table class="data-table">

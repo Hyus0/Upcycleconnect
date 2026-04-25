@@ -114,10 +114,11 @@ func main() {
 	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormation)
 	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormation)
 	//Logistique
-	http.HandleFunc("GET /sites", app.GetSites)                      
-	http.HandleFunc("GET /sites/:id/conteneurs", app.GetConteneurs)  
+	http.HandleFunc("GET /sites", app.GetAllSites)                  
+	http.HandleFunc("GET /site/{id}", app.GetSiteHandler)                       
+	http.HandleFunc("GET /sites/{id}/conteneurs", app.GetConteneurs)  
 
-	http.HandleFunc("POST /annonces/:id/reserver", app.ReserverCasier) 
+	http.HandleFunc("POST /annonces/{id}/reserver", app.ReserverCasier) 
 	
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))

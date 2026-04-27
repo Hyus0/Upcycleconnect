@@ -139,7 +139,7 @@ func ValidateUserModify(userDto models.User) []string {
 	        errsMsg = append(errsMsg, "L'adresse doit faire entre 5 et 100 caractères")
 	    }
 	}
-	
+
 	if len(userDto.Ville) > 0 {
 	    if len(userDto.Ville) < 2 || len(userDto.Ville) > 50 {
 	        errsMsg = append(errsMsg, "La ville doit faire entre 2 et 50 caractères")
@@ -205,7 +205,7 @@ func ValidateUserPassword(userDto models.User) []string {
 	if !hasSpecial {
 		errsMsg = append(errsMsg, "Password must contain at least one special character")
 	}
-	
+
 	return errsMsg
 }
 
@@ -235,7 +235,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	if len(errsMsg) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(errsMsg) 
+		json.NewEncoder(w).Encode(errsMsg)
 		return
 	}
 
@@ -268,7 +268,7 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ID de jeu invalide dans l'URI", http.StatusBadRequest)
 		return
 	}
-	
+
 	if !db.VerifyUserByToken(userId, token) {
         w.WriteHeader(http.StatusUnauthorized)
         return
@@ -307,7 +307,7 @@ func ModifyUserPassword(w http.ResponseWriter, r *http.Request) {
         OldPassword string `json:"old_password"`
         NewPassword string `json:"password"`
     }
-    
+
     if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
         http.Error(w, "Format JSON invalide", http.StatusBadRequest)
         return
@@ -334,7 +334,7 @@ func ModifyUserPassword(w http.ResponseWriter, r *http.Request) {
 
     var userDto models.User
     userDto.Password = input.NewPassword
-    
+
     errsMsg := ValidateUserPassword(userDto)
     if len(errsMsg) > 0 {
         w.WriteHeader(http.StatusBadRequest)
@@ -412,9 +412,9 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 
     b := make([]byte, 16)
     rand.Read(b)
-    randomToken := fmt.Sprintf("%x", b) 
+    randomToken := fmt.Sprintf("%x", b)
 
-    err = db.UpdateUserToken(user.Id, randomToken) 
+    err = db.UpdateUserToken(user.Id, randomToken)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         json.NewEncoder(w).Encode(map[string]string{"message": "Erreur lors de la création de session"})
@@ -425,7 +425,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(map[string]interface{}{
         "message": "Bienvenue !",
         "token":   randomToken,
-        "userId":  user.Id, 
+        "userId":  user.Id,
         "prenom":  user.Prenom,
         "nom":     user.Nom,
     })
@@ -530,7 +530,7 @@ func ValidateAnnonce(a models.Annonce) []string {
 		errsMsg = append(errsMsg, "Pour une vente, le prix doit être supérieur à 0€")
 	}
 	if a.Type == "Don" && a.Prix != 0 {
-		a.Prix = 0 
+		a.Prix = 0
 	}
 
 	if a.PoidsEstimeKg < 0 {
@@ -583,7 +583,7 @@ func CreateAnnonce(w http.ResponseWriter, r *http.Request) {
 
 	validationErrors := ValidateAnnonce(a)
 	if len(validationErrors) > 0 {
-		w.WriteHeader(http.StatusUnprocessableEntity) 
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"errors": validationErrors,
 		})
@@ -651,7 +651,7 @@ func DeleteAnnonce(w http.ResponseWriter, r *http.Request) {
 func GetUserAnnoncesHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	userId, err := strconv.Atoi(idStr)
-	
+
 	if err != nil || userId <= 0 {
 		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
 		return
@@ -669,7 +669,7 @@ func GetUserAnnoncesHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("[]"))
 		return
 	}
-	
+
 	json.NewEncoder(w).Encode(annonces)
 }
 
@@ -925,7 +925,7 @@ func GetAllFormations(w http.ResponseWriter, r *http.Request) {
 
 func GetFormation(w http.ResponseWriter, r *http.Request) {
 	formationID, _ := strconv.Atoi(r.PathValue("id"))
-	
+
 	userIDStr := r.URL.Query().Get("user_id")
 	userID, _ := strconv.Atoi(userIDStr)
 
@@ -1174,7 +1174,7 @@ func GetSiteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetConteneurs(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id") 
+	idStr := r.PathValue("id")
 	siteID, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "ID de site invalide", http.StatusBadRequest)
@@ -1190,3 +1190,144 @@ func GetConteneurs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(conteneurs)
 }
+
+func RetireObjetCasierHandler(w http.ResponseWriter, r *http.Request) {
+    idStr := r.PathValue("id")
+    idAnnonce, err := strconv.Atoi(idStr)
+
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(map[string]string{
+            "error": "ID d'annonce invalide",
+        })
+        return
+    }
+
+    err = db.RetireObjetCasier(idAnnonce)
+
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{
+            "error": "Impossible de libérer le casier : " + err.Error(),
+        })
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{
+        "message": "Succès : L'objet est retiré et le poids du site est mis à jour",
+    })
+}
+
+func GetAllProjets(w http.ResponseWriter, r *http.Request) {
+	projets, err := db.GetAllProjets()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	json.NewEncoder(w).Encode(projets)
+}
+
+func GetProjet(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	projetID, _ := strconv.Atoi(r.PathValue("id"))
+    userID, _ := strconv.Atoi(r.PathValue("userId"))
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID de projet invalide", http.StatusBadRequest)
+		return
+	}
+	
+	ip := r.Header.Get("X-Forwarded-For")
+    if ip == "" {
+        ip = r.RemoteAddr
+    }
+    go db.IncrementVue(projetID, userID, ip)
+    projet, err := db.GetProjet(id, userID)
+	if err != nil || projet == nil {
+		http.Error(w, "Projet introuvable", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(projet)
+}
+
+func JoinProjet(w http.ResponseWriter, r *http.Request) {
+	projetID, _ := strconv.Atoi(r.PathValue("id"))
+	userID, err := strconv.Atoi(r.PathValue("userId"))
+
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur manquant ou invalide", http.StatusBadRequest)
+		return
+	}
+
+	err = db.JoinProjet(userID, projetID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Inscription réussie"})
+}
+
+func QuitProjet(w http.ResponseWriter, r *http.Request) {
+    projetID, _ := strconv.Atoi(r.PathValue("id"))
+    userID, err := strconv.Atoi(r.PathValue("userId"))
+
+    if err != nil || userID <= 0 {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(map[string]string{"error": "ID utilisateur invalide"})
+        return
+    }
+
+    err = db.QuitProjet(userID, projetID)
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"message": "Vous avez quitté le projet"})
+}
+
+func ToggleLike(w http.ResponseWriter, r *http.Request) {
+    projetID, _ := strconv.Atoi(r.PathValue("id"))
+    userID, err := strconv.Atoi(r.PathValue("userId"))
+
+    if err != nil || userID <= 0 {
+        w.WriteHeader(http.StatusBadRequest)
+        return
+    }
+
+    err = db.IncrementLike(userID, projetID)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+    w.WriteHeader(http.StatusOK)
+}
+
+func CheckLikeStatusHandler(w http.ResponseWriter, r *http.Request) {
+    projetID, _ := strconv.Atoi(r.PathValue("id"))
+    userID, err := strconv.Atoi(r.PathValue("userId"))
+
+    if err != nil || userID <= 0 {
+        json.NewEncoder(w).Encode(map[string]bool{"liked": false})
+        return
+    }
+
+    liked, _ := db.CheckUserLike(userID, projetID)
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]bool{"liked": liked})
+}
+

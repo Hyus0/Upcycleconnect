@@ -90,7 +90,6 @@ import { ref, onMounted } from "vue";
 const errors = ref([]);
 const successMsg = ref("");
 
-// On sépare la date du formulaire pour qu'elle ne soit pas effacée au reset
 const lastChangedDate = ref("");
 
 const pwdForm = ref({

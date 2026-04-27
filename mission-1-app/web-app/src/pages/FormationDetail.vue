@@ -1,12 +1,12 @@
 <template>
-    <SiteNavbar
-        :is-authenticated="isLoggedIn"
-        :user-name="userName"
-        user-role="Particulier"
-        :user-score="userScore"
-    />
     
     <main class="page-container">
+        <SiteNavbar
+            :is-authenticated="isLoggedIn"
+            :user-name="userName"
+            user-role="Particulier"
+            :user-score="userScore"
+        />
         <header class="content-header">
             <div class="header-left">
                 <p class="sidebar__category2">
@@ -100,7 +100,6 @@
                                 class="link-btn"
                                 @click="viewProfile(formation.id_formateur)"
                             >
-                                Voir le profil expert
                             </button>
                         </div>
                     </div>
@@ -236,7 +235,7 @@ const handleInscription = async () => {
 
     if (!token || !userId) {
         alert("Vous devez être connecté pour vous inscrire.");
-        return router.push("/login");
+        return router.push("/connexion");
     }
 
     isRegistering.value = true;
@@ -314,8 +313,10 @@ onMounted(fetchDetail);
 
 <style scoped>
 .page-container {
-    padding: 0 5%;
-    max-width: 1400px;
+    min-height: 100vh;
+    padding: 20px;
+    background: #f7f9f7;
+    max-width: 1600px; 
     margin: 0 auto;
 }
 

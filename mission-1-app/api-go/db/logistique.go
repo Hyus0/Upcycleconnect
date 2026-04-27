@@ -127,3 +127,50 @@ func GetConteneursBySite(siteID int) ([]models.Conteneur, error) {
 	}
 	return conteneurs, nil
 }
+
+func RetireObjetCasier(idAnnonce int) error {
+    var poids float64
+    var idCasier int
+    var idConteneur int
+
+    err := Conn.QueryRow(`
+        SELECT a.poids_estime_kg, a.id_casier, c.id_conteneur 
+        FROM ANNONCE a 
+        JOIN CASIER c ON a.id_casier = c.id 
+        WHERE a.id = ?`, idAnnonce).Scan(&poids, &idCasier, &idConteneur)
+
+    if err != nil {
+        return err
+    }
+
+    tx, err := Conn.Begin()
+    if err != nil {
+        return err
+    }
+
+    _, err = tx.Exec("UPDATE CONTENEUR SET niveau_remplissage = niveau_remplissage - ? WHERE id = ?", poids, idConteneur)
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    _, err = tx.Exec("UPDATE CASIER SET statut = 'Libre' WHERE id = ?", idCasier)
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    _, err = tx.Exec(`
+        UPDATE ANNONCE SET 
+            statut = 'Disponible', 
+            id_casier = NULL, 
+            id_site = NULL, 
+            code_pin_depot = NULL 
+        WHERE id = ?`, idAnnonce)
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    return tx.Commit()
+}

@@ -27,6 +27,11 @@ const routes = [
     component: () => import('./pages/FormationDetail.vue')
   },
   {
+    path: '/projets/:id',
+    name: 'projet-detail',
+    component: () => import('./pages/ProjetDetail.vue')
+  },
+  {
     path: "/profil",
     component: Profil,
     meta: { requiresAuth: true },

@@ -40,23 +40,7 @@ mission-2-infra/
 mission-3-module/
   Espace prevu pour les modules suivants.
 ```
-
-## URLs locales
-
-La stack Docker expose les services suivants :
-
-- Site public : `http://localhost:8088/`
-- Back-office admin : `http://localhost:8088/admin/`
-- Health API Go : `http://localhost:8088/health/api-go`
-- Health backoffice PHP : `http://localhost:8088/health/backoffice`
-- phpMyAdmin : `http://localhost:8089/`
-
-Acces base locale via phpMyAdmin :
-
-- Serveur : `mysql`
-- Base : `upcycletest`
-- Utilisateur : `root`
-- Mot de passe : `password`
+hpMyAdmin : `http://localhost:8089/`
 
 ## Lancement rapide
 

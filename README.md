@@ -40,23 +40,7 @@ mission-2-infra/
 mission-3-module/
   Espace prevu pour les modules suivants.
 ```
-
-## URLs locales
-
-La stack Docker expose les services suivants :
-
-- Site public : `http://localhost:8088/`
-- Back-office admin : `http://localhost:8088/admin/`
-- Health API Go : `http://localhost:8088/health/api-go`
-- Health backoffice PHP : `http://localhost:8088/health/backoffice`
-- phpMyAdmin : `http://localhost:8089/`
-
-Acces base locale via phpMyAdmin :
-
-- Serveur : `mysql`
-- Base : `upcycletest`
-- Utilisateur : `root`
-- Mot de passe : `password`
+hpMyAdmin : `http://localhost:8089/`
 
 ## Lancement rapide
 
@@ -247,54 +231,3 @@ Health check :
 ```text
 http://localhost:8088/health/backoffice
 ```
-
-## Variables d'environnement
-
-Les fichiers `.env`, `.env.*` et `*.env` ne doivent pas etre suivis par Git.
-
-La configuration locale principale est actuellement portee par Docker Compose. Si des variables doivent etre ajoutees plus tard, creer un fichier local non versionne et documenter les cles attendues dans ce README sans commiter les valeurs.
-
-## Bonnes pratiques Git
-
-Avant de travailler :
-
-```powershell
-git fetch origin
-git pull --ff-only origin main
-```
-
-Avant de pousser :
-
-```powershell
-git status
-git add <fichiers>
-git commit -m "message clair"
-git push origin main
-```
-
-Ne pas commiter :
-
-- fichiers `.env`
-- `node_modules/`
-- builds temporaires non necessaires
-- dumps de base contenant des donnees sensibles
-
-## Etat actuel
-
-Fonctionnel :
-
-- stack Docker locale
-- site public Vue
-- back-office admin Vue
-- API Go connectee a MySQL
-- schema MySQL initialise automatiquement
-- phpMyAdmin local
-- routes principales du back-office admin connectees a l'API
-
-A surveiller / completer :
-
-- authentification et gestion des sessions reelles
-- droits et roles admin avances
-- donnees de production non fictives
-- integration finale Stripe / OneSignal / PDF si requise par le sujet
-- tests automatises plus complets sur les regles metier

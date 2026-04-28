@@ -307,12 +307,35 @@ const planifier = (id) =>
     router.push({ name: "reserve-casier", params: { id } });
 
 const annulerFlux = async (id, statut) => {
-    const msg =
-        statut === "Reserve"
-            ? "Libérer ce casier ?."
-            : "Retirer l'objet du casier ? Attention, l'acheteur ne pourra plus le voir.";
-    if (confirm(msg)) {
-        console.log("Action d'annulation pour", id);
+    const actionLabel = statut === "Reserve" ? "annuler la réservation" : "retirer l'objet";
+    
+    if (!confirm(`Voulez-vous vraiment ${actionLabel} ?`)) return;
+
+    const token = localStorage.getItem("userToken");
+
+    try {
+        const res = await fetch(`http://localhost:8081/annonces/${id}/retirer`, {
+            method: "POST",
+            headers: { 
+                "Authorization": token,
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (res.ok) {
+            alert(statut === "Reserve" 
+                ? "Réservation annulée et casier libéré." 
+                : "Objet retiré. L'annonce est de nouveau disponible !"
+            );
+            
+            fetchAnnonces();
+        } else {
+            const error = await res.text();
+            alert("Erreur lors de l'opération : " + error);
+        }
+    } catch (e) {
+        console.error("Erreur serveur :", e);
+        alert("Impossible de joindre le serveur.");
     }
 };
 

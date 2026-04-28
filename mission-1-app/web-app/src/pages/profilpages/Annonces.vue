@@ -113,7 +113,28 @@ const goToPlanning = (id) => {
 
 const removeAnnonce = async (id) => {
     if (!confirm("Voulez-vous vraiment retirer cette annonce ?")) return;
-    console.log("Suppression de l'annonce", id);
+    
+    const token = localStorage.getItem("userToken");
+    
+    try {
+        const res = await fetch(`http://localhost:8081/annonces/${id}`, {
+            method: "DELETE",
+            headers: { 
+                "Authorization": token 
+            }
+        });
+
+        if (res.ok) {
+            annonces.value = annonces.value.filter(a => a.id !== id);
+            console.log("Annonce supprimée avec succès", id);
+        } else {
+            const msg = await res.text();
+            alert("Erreur lors de la suppression : " + msg);
+        }
+    } catch (e) {
+        console.error("Erreur réseau :", e);
+        alert("Impossible de joindre le serveur.");
+    }
 };
 
 onMounted(async () => {

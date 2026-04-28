@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"upcycleconnect/api-go/models"
 )
 
@@ -195,4 +196,65 @@ func DeleteEvenement(id int) error {
 		return fmt.Errorf("aucun evenement trouve avec l'ID %d", id)
 	}
 	return nil
+}
+
+// À AJOUTER à la fin de db/evenement.go
+
+func JoinEvenement(userID int, evenementID int) error {
+	if Conn == nil {
+		return fmt.Errorf("connexion DB non initialisee")
+	}
+
+	query := `
+		INSERT INTO EVENEMENT_INSCRIPTION (id_utilisateur, id_evenement)
+		VALUES (?, ?)
+	`
+
+	_, err := Conn.Exec(query, userID, evenementID)
+	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			return fmt.Errorf("utilisateur déjà inscrit à cet événement")
+		}
+		return fmt.Errorf("JoinEvenement: %v", err)
+	}
+	return nil
+}
+
+func QuitEvenement(userID int, evenementID int) error {
+	if Conn == nil {
+		return fmt.Errorf("connexion DB non initialisee")
+	}
+
+	result, err := Conn.Exec(
+		"DELETE FROM EVENEMENT_INSCRIPTION WHERE id_utilisateur = ? AND id_evenement = ?",
+		userID, evenementID,
+	)
+	if err != nil {
+		return fmt.Errorf("QuitEvenement: %v", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("QuitEvenement RowsAffected: %v", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("inscription introuvable pour cet utilisateur et cet événement")
+	}
+	return nil
+}
+
+func IsUserInscritEvenement(userID int, evenementID int) (bool, error) {
+	if Conn == nil {
+		return false, fmt.Errorf("connexion DB non initialisee")
+	}
+
+	var count int
+	err := Conn.QueryRow(
+		"SELECT COUNT(*) FROM EVENEMENT_INSCRIPTION WHERE id_utilisateur = ? AND id_evenement = ?",
+		userID, evenementID,
+	).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

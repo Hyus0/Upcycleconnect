@@ -1,13 +1,13 @@
 package app
 
 import (
+	"crypto/rand"
 	"encoding/json"
-	"time"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
-	"crypto/rand"
+	"time"
 	"upcycleconnect/api-go/db"
 	"upcycleconnect/api-go/models"
 	"upcycleconnect/api-go/passwordHashing"
@@ -135,15 +135,15 @@ func ValidateUserModify(userDto models.User) []string {
 	}
 
 	if len(userDto.Adresse) > 0 {
-	    if len(userDto.Adresse) < 5 || len(userDto.Adresse) > 100 {
-	        errsMsg = append(errsMsg, "L'adresse doit faire entre 5 et 100 caractères")
-	    }
+		if len(userDto.Adresse) < 5 || len(userDto.Adresse) > 100 {
+			errsMsg = append(errsMsg, "L'adresse doit faire entre 5 et 100 caractères")
+		}
 	}
 
 	if len(userDto.Ville) > 0 {
-	    if len(userDto.Ville) < 2 || len(userDto.Ville) > 50 {
-	        errsMsg = append(errsMsg, "La ville doit faire entre 2 et 50 caractères")
-	    }
+		if len(userDto.Ville) < 2 || len(userDto.Ville) > 50 {
+			errsMsg = append(errsMsg, "La ville doit faire entre 2 et 50 caractères")
+		}
 	}
 
 	if len(userDto.CodePostal) != 5 {
@@ -240,15 +240,15 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = db.CreateUser(userDto)
-    if err != nil {
-        fmt.Println("Erreur(s) :", err)
-        w.WriteHeader(http.StatusInternalServerError)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Problème d'insertion"})
-        return
-    }
+	if err != nil {
+		fmt.Println("Erreur(s) :", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Problème d'insertion"})
+		return
+	}
 
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]string{"message": "Utilisateur créé avec succès !"})
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Utilisateur créé avec succès !"})
 }
 
 func ModifyUser(w http.ResponseWriter, r *http.Request) {
@@ -270,9 +270,9 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !db.VerifyUserByToken(userId, token) {
-        w.WriteHeader(http.StatusUnauthorized)
-        return
-    }
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	userDto.Id = userId
 
@@ -300,62 +300,62 @@ func ModifyUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func ModifyUserPassword(w http.ResponseWriter, r *http.Request) {
-    userIDStr := r.PathValue("id")
-    token := r.Header.Get("Authorization")
+	userIDStr := r.PathValue("id")
+	token := r.Header.Get("Authorization")
 
-    var input struct {
-        OldPassword string `json:"old_password"`
-        NewPassword string `json:"password"`
-    }
+	var input struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"password"`
+	}
 
-    if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-        http.Error(w, "Format JSON invalide", http.StatusBadRequest)
-        return
-    }
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
 
-    userId, _ := strconv.Atoi(userIDStr)
+	userId, _ := strconv.Atoi(userIDStr)
 
-    if !db.VerifyUserByToken(userId, token) {
-        w.WriteHeader(http.StatusUnauthorized)
-        return
-    }
+	if !db.VerifyUserByToken(userId, token) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
-    currentHash, err := db.GetPasswordHashed(userId)
-    if err != nil {
-        http.Error(w, "Erreur lors de la récupération du compte", http.StatusInternalServerError)
-        return
-    }
+	currentHash, err := db.GetPasswordHashed(userId)
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération du compte", http.StatusInternalServerError)
+		return
+	}
 
-    if !passwordHashing.VerifyPassword(input.OldPassword, currentHash) {
-        w.WriteHeader(http.StatusUnauthorized)
-        json.NewEncoder(w).Encode([]string{"L'ancien mot de passe est incorrect"})
-        return
-    }
+	if !passwordHashing.VerifyPassword(input.OldPassword, currentHash) {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode([]string{"L'ancien mot de passe est incorrect"})
+		return
+	}
 
-    var userDto models.User
-    userDto.Password = input.NewPassword
+	var userDto models.User
+	userDto.Password = input.NewPassword
 
-    errsMsg := ValidateUserPassword(userDto)
-    if len(errsMsg) > 0 {
-        w.WriteHeader(http.StatusBadRequest)
-        json.NewEncoder(w).Encode(errsMsg)
-        return
-    }
+	errsMsg := ValidateUserPassword(userDto)
+	if len(errsMsg) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errsMsg)
+		return
+	}
 
-    newHashed, err := passwordHashing.HashPassword(input.NewPassword)
-    if err != nil {
-        http.Error(w, "Erreur de sécurité lors du hashage", http.StatusInternalServerError)
-        return
-    }
-    userDto.Password = newHashed
+	newHashed, err := passwordHashing.HashPassword(input.NewPassword)
+	if err != nil {
+		http.Error(w, "Erreur de sécurité lors du hashage", http.StatusInternalServerError)
+		return
+	}
+	userDto.Password = newHashed
 
-    err = db.ModifyUserPassword(userId, userDto)
-    if err != nil {
-        http.Error(w, "Erreur serveur lors de la mise à jour", http.StatusInternalServerError)
-        return
-    }
+	err = db.ModifyUserPassword(userId, userDto)
+	if err != nil {
+		http.Error(w, "Erreur serveur lors de la mise à jour", http.StatusInternalServerError)
+		return
+	}
 
-    w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -384,67 +384,67 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func UserLogin(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 
-    var loginData struct {
-        Email    string `json:"email"`
-        Password string `json:"password"`
-    }
+	var loginData struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 
-    if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
-        w.WriteHeader(http.StatusBadRequest)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Format JSON invalide"})
-        return
-    }
+	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Format JSON invalide"})
+		return
+	}
 
-    user, err := db.GetUserByEmail(loginData.Email)
-    if err != nil {
-        w.WriteHeader(http.StatusUnauthorized)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Email ou mot de passe incorrect"})
-        return
-    }
+	user, err := db.GetUserByEmail(loginData.Email)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Email ou mot de passe incorrect"})
+		return
+	}
 
-    if !passwordHashing.VerifyPassword(loginData.Password, user.Password) {
-        w.WriteHeader(http.StatusUnauthorized)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Email ou mot de passe incorrect"})
-        return
-    }
+	if !passwordHashing.VerifyPassword(loginData.Password, user.Password) {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Email ou mot de passe incorrect"})
+		return
+	}
 
-    b := make([]byte, 16)
-    rand.Read(b)
-    randomToken := fmt.Sprintf("%x", b)
+	b := make([]byte, 16)
+	rand.Read(b)
+	randomToken := fmt.Sprintf("%x", b)
 
-    err = db.UpdateUserToken(user.Id, randomToken)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Erreur lors de la création de session"})
-        return
-    }
+	err = db.UpdateUserToken(user.Id, randomToken)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Erreur lors de la création de session"})
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "message": "Bienvenue !",
-        "token":   randomToken,
-        "userId":  user.Id,
-        "prenom":  user.Prenom,
-        "nom":     user.Nom,
-    })
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Bienvenue !",
+		"token":   randomToken,
+		"userId":  user.Id,
+		"prenom":  user.Prenom,
+		"nom":     user.Nom,
+	})
 }
 
 func CheckSession(w http.ResponseWriter, r *http.Request) {
-    id_Str := r.URL.Query().Get("id")
-    token := r.Header.Get("Authorization")
+	id_Str := r.URL.Query().Get("id")
+	token := r.Header.Get("Authorization")
 
-    id_Int, err := strconv.Atoi(id_Str)
-    if err != nil {
-        w.WriteHeader(http.StatusBadRequest)
-        return
-    }
+	id_Int, err := strconv.Atoi(id_Str)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-    isValid := db.VerifyUserByToken(id_Int, token)
+	isValid := db.VerifyUserByToken(id_Int, token)
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]bool{"isValid": isValid})
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"isValid": isValid})
 }
 
 func GetUserStatsHandler(w http.ResponseWriter, r *http.Request) {
@@ -461,7 +461,7 @@ func GetUserStatsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(stats)
 }
 
-//Annonces
+// Annonces
 func GetAllAnnonces(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -789,6 +789,88 @@ func DeleteEvenement(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func JoinEvenement(w http.ResponseWriter, r *http.Request) {
+	evenementID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || evenementID <= 0 {
+		http.Error(w, "ID d'événement invalide", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		UserID int `json:"id_utilisateur"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	if body.UserID <= 0 {
+		http.Error(w, "ID utilisateur manquant ou invalide", http.StatusBadRequest)
+		return
+	}
+
+	err = db.JoinEvenement(body.UserID, evenementID)
+	if err != nil {
+		if strings.Contains(err.Error(), "déjà inscrit") {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+		fmt.Println("Erreur JoinEvenement:", err)
+		http.Error(w, "Erreur lors de l'inscription", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Inscription à l'événement enregistrée avec succès"))
+}
+
+func QuitEvenement(w http.ResponseWriter, r *http.Request) {
+	evenementID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || evenementID <= 0 {
+		http.Error(w, "ID d'événement invalide", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		UserID int `json:"id_utilisateur"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	err = db.QuitEvenement(body.UserID, evenementID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Désinscription réussie"))
+}
+func CheckInscriptionEvenement(w http.ResponseWriter, r *http.Request) {
+	evenementID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || evenementID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "user_id invalide", http.StatusBadRequest)
+		return
+	}
+
+	inscrit, err := db.IsUserInscritEvenement(userID, evenementID)
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"inscrit": inscrit})
+}
+
 func GetAllCategories(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -1111,6 +1193,7 @@ func QuitFormation(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Désinscription réussie"))
 }
+
 // Logistique
 
 type ReserveRequest struct {
@@ -1118,31 +1201,31 @@ type ReserveRequest struct {
 }
 
 func ReserverCasier(w http.ResponseWriter, r *http.Request) {
-    annonceID, err := strconv.Atoi(r.PathValue("id"))
-    if err != nil {
-        http.Error(w, "ID invalide", http.StatusBadRequest)
-        return
-    }
+	annonceID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
 
-    var req ReserveRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "JSON invalide", http.StatusBadRequest)
-        return
-    }
+	var req ReserveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "JSON invalide", http.StatusBadRequest)
+		return
+	}
 
-    pin, err := db.ReserverUnCasier(annonceID, req.SiteID)
-    if err != nil {
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusInternalServerError)
-        json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-        return
-    }
+	pin, err := db.ReserverUnCasier(annonceID, req.SiteID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{
-        "pin": pin,
-        "status": "success",
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"pin":    pin,
+		"status": "success",
+	})
 }
 
 func GetAllSites(w http.ResponseWriter, r *http.Request) {
@@ -1157,20 +1240,20 @@ func GetAllSites(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetSiteHandler(w http.ResponseWriter, r *http.Request) {
-    idStr := r.PathValue("id")
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        http.Error(w, "ID de site invalide", http.StatusBadRequest)
-        return
-    }
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID de site invalide", http.StatusBadRequest)
+		return
+	}
 
-    site, err := db.GetSiteByID(id)
-    if err != nil {
-        http.Error(w, "Site introuvable", http.StatusNotFound)
-        return
-    }
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(site)
+	site, err := db.GetSiteByID(id)
+	if err != nil {
+		http.Error(w, "Site introuvable", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(site)
 }
 
 func GetConteneurs(w http.ResponseWriter, r *http.Request) {
@@ -1192,34 +1275,34 @@ func GetConteneurs(w http.ResponseWriter, r *http.Request) {
 }
 
 func RetireObjetCasierHandler(w http.ResponseWriter, r *http.Request) {
-    idStr := r.PathValue("id")
-    idAnnonce, err := strconv.Atoi(idStr)
+	idStr := r.PathValue("id")
+	idAnnonce, err := strconv.Atoi(idStr)
 
-    if err != nil {
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusBadRequest)
-        json.NewEncoder(w).Encode(map[string]string{
-            "error": "ID d'annonce invalide",
-        })
-        return
-    }
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "ID d'annonce invalide",
+		})
+		return
+	}
 
-    err = db.RetireObjetCasier(idAnnonce)
+	err = db.RetireObjetCasier(idAnnonce)
 
-    if err != nil {
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusInternalServerError)
-        json.NewEncoder(w).Encode(map[string]string{
-            "error": "Impossible de libérer le casier : " + err.Error(),
-        })
-        return
-    }
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Impossible de libérer le casier : " + err.Error(),
+		})
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]string{
-        "message": "Succès : L'objet est retiré et le poids du site est mis à jour",
-    })
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Succès : L'objet est retiré et le poids du site est mis à jour",
+	})
 }
 
 func GetAllProjets(w http.ResponseWriter, r *http.Request) {
@@ -1235,19 +1318,19 @@ func GetAllProjets(w http.ResponseWriter, r *http.Request) {
 func GetProjet(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	projetID, _ := strconv.Atoi(r.PathValue("id"))
-    userID, _ := strconv.Atoi(r.PathValue("userId"))
+	userID, _ := strconv.Atoi(r.PathValue("userId"))
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "ID de projet invalide", http.StatusBadRequest)
 		return
 	}
-	
+
 	ip := r.Header.Get("X-Forwarded-For")
-    if ip == "" {
-        ip = r.RemoteAddr
-    }
-    go db.IncrementVue(projetID, userID, ip)
-    projet, err := db.GetProjet(id, userID)
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+	go db.IncrementVue(projetID, userID, ip)
+	projet, err := db.GetProjet(id, userID)
 	if err != nil || projet == nil {
 		http.Error(w, "Projet introuvable", http.StatusNotFound)
 		return
@@ -1277,57 +1360,56 @@ func JoinProjet(w http.ResponseWriter, r *http.Request) {
 }
 
 func QuitProjet(w http.ResponseWriter, r *http.Request) {
-    projetID, _ := strconv.Atoi(r.PathValue("id"))
-    userID, err := strconv.Atoi(r.PathValue("userId"))
+	projetID, _ := strconv.Atoi(r.PathValue("id"))
+	userID, err := strconv.Atoi(r.PathValue("userId"))
 
-    if err != nil || userID <= 0 {
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusBadRequest)
-        json.NewEncoder(w).Encode(map[string]string{"error": "ID utilisateur invalide"})
-        return
-    }
+	if err != nil || userID <= 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "ID utilisateur invalide"})
+		return
+	}
 
-    err = db.QuitProjet(userID, projetID)
-    if err != nil {
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusInternalServerError)
-        json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-        return
-    }
+	err = db.QuitProjet(userID, projetID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{"message": "Vous avez quitté le projet"})
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Vous avez quitté le projet"})
 }
 
 func ToggleLike(w http.ResponseWriter, r *http.Request) {
-    projetID, _ := strconv.Atoi(r.PathValue("id"))
-    userID, err := strconv.Atoi(r.PathValue("userId"))
+	projetID, _ := strconv.Atoi(r.PathValue("id"))
+	userID, err := strconv.Atoi(r.PathValue("userId"))
 
-    if err != nil || userID <= 0 {
-        w.WriteHeader(http.StatusBadRequest)
-        return
-    }
+	if err != nil || userID <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-    err = db.IncrementLike(userID, projetID)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        return
-    }
-    w.WriteHeader(http.StatusOK)
+	err = db.IncrementLike(userID, projetID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func CheckLikeStatusHandler(w http.ResponseWriter, r *http.Request) {
-    projetID, _ := strconv.Atoi(r.PathValue("id"))
-    userID, err := strconv.Atoi(r.PathValue("userId"))
+	projetID, _ := strconv.Atoi(r.PathValue("id"))
+	userID, err := strconv.Atoi(r.PathValue("userId"))
 
-    if err != nil || userID <= 0 {
-        json.NewEncoder(w).Encode(map[string]bool{"liked": false})
-        return
-    }
+	if err != nil || userID <= 0 {
+		json.NewEncoder(w).Encode(map[string]bool{"liked": false})
+		return
+	}
 
-    liked, _ := db.CheckUserLike(userID, projetID)
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]bool{"liked": liked})
+	liked, _ := db.CheckUserLike(userID, projetID)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"liked": liked})
 }
-

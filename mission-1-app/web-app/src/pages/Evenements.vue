@@ -113,10 +113,20 @@
 
                     <div class="card-footer">
                         <button
+                            v-if="!inscrit.has(evenement.id)"
                             class="btn-main-action-full"
-                            @click="inscrire(evenement.id)"
+                            :disabled="inscriptionsEnCours.has(evenement.id)"
+                            @click="inscrire(evenement)"
                         >
-                            S'inscrire à l'évènement
+                            {{ inscriptionsEnCours.has(evenement.id) ? "Inscription..." : "S'inscrire à l'évènement" }}
+                        </button>
+                        <button
+                            v-else
+                            class="btn-quit-action-full"
+                            :disabled="inscriptionsEnCours.has(evenement.id)"
+                            @click="desinscrire(evenement)"
+                        >
+                            {{ inscriptionsEnCours.has(evenement.id) ? "Désinscription..." : "✓ Inscrit — Se désinscrire" }}
                         </button>
                     </div>
                 </div>
@@ -134,6 +144,8 @@ const loading = ref(true);
 const selectedType = ref("All");
 const searchQuery = ref("");
 const userScore = ref(0);
+const inscriptionsEnCours = ref(new Set()); // IDs en cours de traitement (loading)
+const inscrit = ref(new Set()); // IDs où l'utilisateur est déjà inscrit
 
 const isLoggedIn = computed(() => {
     return !!localStorage.getItem("userToken");
@@ -181,6 +193,25 @@ const truncate = (text, max = 100) => {
     return text.length > max ? text.substring(0, max) + "..." : text;
 };
 
+const checkInscriptions = async (liste) => {
+    const userID = parseInt(localStorage.getItem("userId"));
+    if (!userID) return;
+
+    await Promise.all(liste.map(async (e) => {
+        try {
+            const res = await fetch(
+                `http://localhost:8081/api/evenements/${e.id}/inscription-status?user_id=${userID}`
+            );
+            if (res.ok) {
+                const data = await res.json();
+                if (data.inscrit) inscrit.value.add(e.id);
+            }
+        } catch (_) {}
+    }));
+    // Forcer la réactivité
+    inscrit.value = new Set(inscrit.value);
+};
+
 const fetchEvenements = async () => {
     loading.value = true;
     try {
@@ -189,6 +220,7 @@ const fetchEvenements = async () => {
         });
         if (res.ok) {
             evenements.value = await res.json();
+            await checkInscriptions(evenements.value);
         }
     } catch (error) {
         console.error("Erreur lors du chargement des évènements :", error);
@@ -197,9 +229,80 @@ const fetchEvenements = async () => {
     }
 };
 
-const inscrire = (id) => {
-    // TODO : appel API inscription + feedback utilisateur
-    alert(`Inscription à l'évènement #${id} (à implémenter)`);
+const inscrire = async (evenement) => {
+    const userID = parseInt(localStorage.getItem("userId"));
+    const token = localStorage.getItem("userToken");
+
+    if (!userID || !token) {
+        alert("Vous devez être connecté pour vous inscrire à un évènement.");
+        return;
+    }
+
+    if (inscriptionsEnCours.value.has(evenement.id)) return;
+    inscriptionsEnCours.value.add(evenement.id);
+
+    try {
+        const res = await fetch(`http://localhost:8081/api/evenements/${evenement.id}/join`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": token,
+            },
+            body: JSON.stringify({ id_utilisateur: userID }),
+        });
+
+        if (res.status === 201) {
+            inscrit.value = new Set([...inscrit.value, evenement.id]);
+            alert(`✅ Inscription confirmée pour "${evenement.titre}" !`);
+        } else if (res.status === 409) {
+            inscrit.value = new Set([...inscrit.value, evenement.id]);
+            alert("Vous êtes déjà inscrit à cet évènement.");
+        } else {
+            const msg = await res.text();
+            alert("Erreur lors de l'inscription : " + msg);
+        }
+    } catch (error) {
+        console.error("Erreur inscription évènement :", error);
+        alert("Une erreur réseau est survenue.");
+    } finally {
+        inscriptionsEnCours.value.delete(evenement.id);
+        inscriptionsEnCours.value = new Set(inscriptionsEnCours.value);
+    }
+};
+
+const desinscrire = async (evenement) => {
+    const userID = parseInt(localStorage.getItem("userId"));
+    const token = localStorage.getItem("userToken");
+
+    if (!userID || !token) return;
+    if (inscriptionsEnCours.value.has(evenement.id)) return;
+    inscriptionsEnCours.value.add(evenement.id);
+
+    try {
+        const res = await fetch(`http://localhost:8081/api/evenements/${evenement.id}/quit`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": token,
+            },
+            body: JSON.stringify({ id_utilisateur: userID }),
+        });
+
+        if (res.ok) {
+            inscrit.value.delete(evenement.id);
+            inscrit.value = new Set(inscrit.value);
+            alert(`❌ Vous êtes désinscrit de "${evenement.titre}".`);
+        } else {
+            const msg = await res.text();
+            alert("Erreur lors de la désinscription : " + msg);
+        }
+    } catch (error) {
+        console.error("Erreur désinscription évènement :", error);
+        alert("Une erreur réseau est survenue.");
+    } finally {
+        inscriptionsEnCours.value.delete(evenement.id);
+        inscriptionsEnCours.value = new Set(inscriptionsEnCours.value);
+    }
 };
 
 onMounted(fetchEvenements);
@@ -358,6 +461,29 @@ onMounted(fetchEvenements);
 
 .btn-main-action-full:hover {
     background: #1b4332;
+}
+
+.btn-quit-action-full {
+    width: 100%;
+    background: #fff;
+    color: #c0392b;
+    border: 2px solid #c0392b;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-quit-action-full:hover {
+    background: #c0392b;
+    color: white;
+}
+
+.btn-main-action-full:disabled,
+.btn-quit-action-full:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .loading-state,

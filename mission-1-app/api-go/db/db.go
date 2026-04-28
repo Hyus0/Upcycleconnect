@@ -4,6 +4,7 @@ import (
 	// "context"
 	"database/sql"
 	"fmt"
+
 	// "os"
 	// "time"
 
@@ -21,10 +22,9 @@ const (
 	dbname   = "upcycletest"
 )
 
-
 func NewDB() *sql.DB {
-		var sqlInfo = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
-		 			user, password,host, port, dbname)
+	var sqlInfo = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
+		user, password, host, port, dbname)
 	conn, err := sql.Open(driver, sqlInfo)
 	if err != nil {
 		panic(err.Error())
@@ -32,8 +32,6 @@ func NewDB() *sql.DB {
 	fmt.Println("Connected to database !")
 	return conn
 }
-
-
 
 // func NewDB() *sql.DB {
 // 	dbHost := getenv("DB_HOST", host)

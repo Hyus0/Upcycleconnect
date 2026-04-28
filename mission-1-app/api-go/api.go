@@ -97,6 +97,9 @@ func main() {
 	http.HandleFunc("POST /evenements", app.CreateEvenement)
 	http.HandleFunc("PUT /evenements/{id}", app.ModifyEvenement)
 	http.HandleFunc("DELETE /evenements/{id}", app.DeleteEvenement)
+	http.HandleFunc("POST /api/evenements/{id}/join", app.JoinEvenement)
+	http.HandleFunc("POST /api/evenements/{id}/quit", app.QuitEvenement)
+	http.HandleFunc("GET /api/evenements/{id}/inscription-status", app.CheckInscriptionEvenement)
 
 	//Categorie
 	http.HandleFunc("GET /categories", app.GetAllCategories)
@@ -113,14 +116,14 @@ func main() {
 	http.HandleFunc("DELETE /formation/{id}", app.DeleteFormation)
 	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormation)
 	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormation)
-	
+
 	//Logistique
-	http.HandleFunc("GET /sites", app.GetAllSites)                  
-	http.HandleFunc("GET /site/{id}", app.GetSiteHandler)                       
-	http.HandleFunc("GET /sites/{id}/conteneurs", app.GetConteneurs)  
+	http.HandleFunc("GET /sites", app.GetAllSites)
+	http.HandleFunc("GET /site/{id}", app.GetSiteHandler)
+	http.HandleFunc("GET /sites/{id}/conteneurs", app.GetConteneurs)
 	http.HandleFunc("POST /annonces/{id}/retirer", app.RetireObjetCasierHandler)
-	http.HandleFunc("POST /annonces/{id}/reserver", app.ReserverCasier) 
-	
+	http.HandleFunc("POST /annonces/{id}/reserver", app.ReserverCasier)
+
 	//Projets
 	http.HandleFunc("GET /projets", app.GetAllProjets)
 	http.HandleFunc("GET /projet/{id}", app.GetProjet)
@@ -128,7 +131,7 @@ func main() {
 	http.HandleFunc("POST /projets/{id}/quit", app.QuitProjet)
 	http.HandleFunc("POST /projets/{id}/like/{userId}", app.ToggleLike)
 	http.HandleFunc("GET /projets/{id}/like-status/{userId}", app.CheckLikeStatusHandler)
-	
+
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))
 }

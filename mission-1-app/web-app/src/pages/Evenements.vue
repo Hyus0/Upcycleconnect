@@ -1,4 +1,4 @@
-<template>
+gi<template>
     <main class="page-main-content">
         <SiteNavbar
             :is-authenticated="isLoggedIn"

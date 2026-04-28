@@ -144,8 +144,8 @@ const loading = ref(true);
 const selectedType = ref("All");
 const searchQuery = ref("");
 const userScore = ref(0);
-const inscriptionsEnCours = ref(new Set()); // IDs en cours de traitement (loading)
-const inscrit = ref(new Set()); // IDs où l'utilisateur est déjà inscrit
+const inscriptionsEnCours = ref(new Set()); 
+const inscrit = ref(new Set());
 
 const isLoggedIn = computed(() => {
     return !!localStorage.getItem("userToken");
@@ -208,7 +208,7 @@ const checkInscriptions = async (liste) => {
             }
         } catch (_) {}
     }));
-    // Forcer la réactivité
+
     inscrit.value = new Set(inscrit.value);
 };
 
@@ -253,7 +253,7 @@ const inscrire = async (evenement) => {
 
         if (res.status === 201) {
             inscrit.value = new Set([...inscrit.value, evenement.id]);
-            alert(`✅ Inscription confirmée pour "${evenement.titre}" !`);
+            alert(`Inscription confirmée pour "${evenement.titre}" !`);
         } else if (res.status === 409) {
             inscrit.value = new Set([...inscrit.value, evenement.id]);
             alert("Vous êtes déjà inscrit à cet évènement.");
@@ -291,7 +291,7 @@ const desinscrire = async (evenement) => {
         if (res.ok) {
             inscrit.value.delete(evenement.id);
             inscrit.value = new Set(inscrit.value);
-            alert(`❌ Vous êtes désinscrit de "${evenement.titre}".`);
+            alert(`Vous êtes désinscrit de "${evenement.titre}".`);
         } else {
             const msg = await res.text();
             alert("Erreur lors de la désinscription : " + msg);

@@ -1,12 +1,10 @@
 package db
 
 import (
-	// "context"
 	"database/sql"
 	"fmt"
-
-	// "os"
-	// "time"
+	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -23,48 +21,36 @@ const (
 )
 
 func NewDB() *sql.DB {
-	var sqlInfo = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
-		user, password, host, port, dbname)
+	dbHost := getenv("DB_HOST", host)
+	dbPort := getenv("DB_PORT", fmt.Sprintf("%d", port))
+	dbUser := getenv("DB_USER", user)
+	dbPassword := getenv("DB_PASSWORD", password)
+	dbName := getenv("DB_NAME", dbname)
+
+	var sqlInfo = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+		dbUser, dbPassword, dbHost, dbPort, dbName)
+
 	conn, err := sql.Open(driver, sqlInfo)
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Println("Connected to database !")
+
+	conn.SetConnMaxLifetime(3 * time.Minute)
+	conn.SetMaxIdleConns(10)
+	conn.SetMaxOpenConns(25)
+
+	if err := conn.Ping(); err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println("Connected to database!")
 	return conn
 }
 
-// func NewDB() *sql.DB {
-// 	dbHost := getenv("DB_HOST", host)
-// 	dbPort := getenv("DB_PORT", fmt.Sprintf("%d", port))
-// 	dbUser := getenv("DB_USER", user)
-// 	dbPassword := getenv("DB_PASSWORD", password)
-// 	dbName := getenv("DB_NAME", dbname)
-
-// 	var sqlInfo = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
-// 		dbUser, dbPassword, dbHost, dbPort, dbName)
-// 	conn, err := sql.Open(driver, sqlInfo)
-// 	if err != nil {
-// 		fmt.Printf("Database disabled: %v\n", err)
-// 		return nil
-// 	}
-
-// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-// 	defer cancel()
-
-// 	if err := conn.PingContext(ctx); err != nil {
-// 		fmt.Printf("Database unavailable, API Go will use fallback data: %v\n", err)
-// 		_ = conn.Close()
-// 		return nil
-// 	}
-
-// 	fmt.Println("Connected to database!")
-// 	return conn
-// }
-
-// func getenv(key, fallback string) string {
-// 	value := os.Getenv(key)
-// 	if value == "" {
-// 		return fallback
-// 	}
-// 	return value
-// }
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	return value
+}

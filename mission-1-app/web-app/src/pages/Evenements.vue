@@ -1,4 +1,4 @@
-gi<template>
+<template>
     <main class="page-main-content">
         <SiteNavbar
             :is-authenticated="isLoggedIn"
@@ -6,107 +6,72 @@ gi<template>
             user-role="Particulier"
             :user-score="userScore"
         />
+
         <header class="content-header">
             <div class="header-left">
-                <p class="sidebar__category2">ACCUEIL > ÉVÈNEMENTS</p>
-                <h1 class="hero-title1">DÉCOUVRIR LES ÉVÈNEMENTS</h1>
+                <p class="sidebar__category2">ACCUEIL &gt; EVENEMENTS</p>
+                <h1 class="hero-title1">DECOUVRIR LES EVENEMENTS</h1>
                 <p class="classic-text">
-                    Participez à nos ateliers, collectes, conférences et échanges autour de l'upcycling.
+                    Participez aux ateliers, collectes, conferences et echanges publies depuis le back office.
                 </p>
             </div>
 
             <div class="header-actions">
-                <div class="search-section">
-                    <div class="search-box">
-                        <input
-                            v-model="searchQuery"
-                            type="text"
-                            placeholder="Rechercher un évènement..."
-                            class="search-input"
-                        />
-                    </div>
+                <div class="search-box">
+                    <input
+                        v-model="searchQuery"
+                        type="text"
+                        placeholder="Rechercher un evenement..."
+                        class="search-input"
+                    />
                 </div>
             </div>
         </header>
 
         <div class="section-container">
             <div class="filter-tags">
-                <button
-                    class="tag-filter"
-                    :class="{ active: selectedType === 'All' }"
-                    @click="selectedType = 'All'"
-                >
+                <button class="tag-filter" :class="{ active: selectedType === 'All' }" @click="selectedType = 'All'">
                     Tous les types
                 </button>
-                <button
-                    class="tag-filter"
-                    :class="{ active: selectedType === 'Atelier' }"
-                    @click="selectedType = 'Atelier'"
-                >
+                <button class="tag-filter" :class="{ active: selectedType === 'Atelier' }" @click="selectedType = 'Atelier'">
                     Ateliers
                 </button>
-                <button
-                    class="tag-filter"
-                    :class="{ active: selectedType === 'Collecte' }"
-                    @click="selectedType = 'Collecte'"
-                >
+                <button class="tag-filter" :class="{ active: selectedType === 'Collecte' }" @click="selectedType = 'Collecte'">
                     Collectes
                 </button>
-                <button
-                    class="tag-filter"
-                    :class="{ active: selectedType === 'Conference' }"
-                    @click="selectedType = 'Conference'"
-                >
-                    Conférences
+                <button class="tag-filter" :class="{ active: selectedType === 'Conference' }" @click="selectedType = 'Conference'">
+                    Conferences
                 </button>
-                <button
-                    class="tag-filter"
-                    :class="{ active: selectedType === 'Echange' }"
-                    @click="selectedType = 'Echange'"
-                >
-                    Échanges
+                <button class="tag-filter" :class="{ active: selectedType === 'Echange' }" @click="selectedType = 'Echange'">
+                    Echanges
                 </button>
             </div>
 
-            <div v-if="loading" class="loading-state">
-                Chargement des évènements...
-            </div>
-
+            <div v-if="loading" class="loading-state">Chargement des evenements...</div>
             <div v-else-if="filteredEvenements.length === 0" class="empty-msg">
-                Aucun évènement disponible pour le moment.
+                Aucun evenement disponible pour le moment.
             </div>
 
             <div v-else class="annonces-grid">
-                <div
-                    v-for="evenement in filteredEvenements"
-                    :key="evenement.id"
-                    class="annonce-card evenement-card"
-                >
+                <article v-for="evenement in filteredEvenements" :key="evenement.id" class="annonce-card formation-card">
                     <div class="card-header">
-                        <span :class="['tag-type', 'type-' + evenement.type.toLowerCase()]">
-                            {{ evenement.type }}
-                        </span>
-                        <span class="tag-date">
-                            {{ formatDate(evenement.date_evenement) }}
-                        </span>
+                        <span class="tag-type">{{ evenement.type || "Evenement" }}</span>
+                        <span class="tag-price">{{ formatDate(evenement.date_evenement) }}</span>
                     </div>
 
                     <div class="card-body">
                         <h3 class="item-title">{{ evenement.titre }}</h3>
-                        <p class="host-name">📍 {{ evenement.ville }} ({{ evenement.code_postal }})</p>
+                        <p class="host-name">{{ evenement.ville || "Ville inconnue" }} ({{ evenement.code_postal || "NULL" }})</p>
 
                         <div class="info-list">
                             <div class="info-item">
-                                <span class="icon">📅</span>
                                 <span>{{ formatDateLong(evenement.date_evenement) }}</span>
                             </div>
                             <div class="info-item">
-                                <span class="icon">🏠</span>
-                                <span class="address-text">{{ evenement.adresse }}</span>
+                                <span>{{ evenement.adresse || "Adresse non renseignee" }}</span>
                             </div>
                             <div class="info-item">
-                                <span class="icon">📝</span>
-                                <span class="desc-text">{{ truncate(evenement.description) }}</span>
+                                <span>{{ truncate(evenement.description) || "Description NULL" }}</span>
                             </div>
                         </div>
                     </div>
@@ -118,38 +83,42 @@ gi<template>
                             :disabled="inscriptionsEnCours.has(evenement.id)"
                             @click="inscrire(evenement)"
                         >
-                            {{ inscriptionsEnCours.has(evenement.id) ? "Inscription..." : "S'inscrire à l'évènement" }}
+                            {{ inscriptionsEnCours.has(evenement.id) ? "Inscription..." : "S'inscrire a l'evenement" }}
                         </button>
                         <button
                             v-else
-                            class="btn-quit-action-full"
+                            class="btn-secondary btn-full-width"
                             :disabled="inscriptionsEnCours.has(evenement.id)"
                             @click="desinscrire(evenement)"
                         >
-                            {{ inscriptionsEnCours.has(evenement.id) ? "Désinscription..." : "✓ Inscrit — Se désinscrire" }}
+                            {{ inscriptionsEnCours.has(evenement.id) ? "Desinscription..." : "Inscrit - Se desinscrire" }}
                         </button>
                     </div>
-                </div>
+                </article>
             </div>
         </div>
     </main>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import {
+    fetchEvenementInscriptionStatus,
+    fetchEvenements,
+    joinEvenement,
+    quitEvenement
+} from "../services/publicApi";
 
 const evenements = ref([]);
 const loading = ref(true);
 const selectedType = ref("All");
 const searchQuery = ref("");
 const userScore = ref(0);
-const inscriptionsEnCours = ref(new Set()); 
+const inscriptionsEnCours = ref(new Set());
 const inscrit = ref(new Set());
 
-const isLoggedIn = computed(() => {
-    return !!localStorage.getItem("userToken");
-});
+const isLoggedIn = computed(() => !!localStorage.getItem("userToken"));
 
 const userName = computed(() => {
     const prenom = localStorage.getItem("userPrenom") || "";
@@ -157,113 +126,95 @@ const userName = computed(() => {
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
-const filteredEvenements = computed(() => {
-    return evenements.value.filter(e => {
-        const matchesType = selectedType.value === "All" || e.type === selectedType.value;
+const filteredEvenements = computed(() =>
+    evenements.value.filter((eventItem) => {
+        const matchesType = selectedType.value === "All" || eventItem.type === selectedType.value;
         const term = searchQuery.value.toLowerCase();
-        const matchesSearch = !term || e.titre?.toLowerCase().includes(term);
+        const matchesSearch = !term || (eventItem.titre || "").toLowerCase().includes(term);
         return matchesType && matchesSearch;
-    });
-});
+    })
+);
 
 const formatDate = (dateStr) => {
-    if (!dateStr) return "N/C";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("fr-FR", {
+    if (!dateStr) return "NULL";
+    return new Date(dateStr).toLocaleDateString("fr-FR", {
         day: "numeric",
-        month: "short",
+        month: "short"
     });
 };
 
 const formatDateLong = (dateStr) => {
-    if (!dateStr) return "N/C";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("fr-FR", {
+    if (!dateStr) return "Date NULL";
+    return new Date(dateStr).toLocaleDateString("fr-FR", {
         weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
         hour: "2-digit",
-        minute: "2-digit",
+        minute: "2-digit"
     });
 };
 
 const truncate = (text, max = 100) => {
     if (!text) return "";
-    return text.length > max ? text.substring(0, max) + "..." : text;
+    return text.length > max ? `${text.slice(0, max)}...` : text;
 };
 
-const checkInscriptions = async (liste) => {
-    const userID = parseInt(localStorage.getItem("userId"));
-    if (!userID) return;
+const syncInscriptions = async () => {
+    const userId = Number(localStorage.getItem("userId"));
+    if (!userId) {
+        inscrit.value = new Set();
+        return;
+    }
 
-    await Promise.all(liste.map(async (e) => {
-        try {
-            const res = await fetch(
-                `http://localhost:8081/api/evenements/${e.id}/inscription-status?user_id=${userID}`
-            );
-            if (res.ok) {
-                const data = await res.json();
-                if (data.inscrit) inscrit.value.add(e.id);
+    const nextRegistered = new Set();
+    await Promise.all(
+        evenements.value.map(async (eventItem) => {
+            try {
+                const payload = await fetchEvenementInscriptionStatus(eventItem.id, userId);
+                if (payload?.inscrit) {
+                    nextRegistered.add(eventItem.id);
+                }
+            } catch {
+                // Ignore status read failures item by item.
             }
-        } catch (_) {}
-    }));
-
-    inscrit.value = new Set(inscrit.value);
+        })
+    );
+    inscrit.value = nextRegistered;
 };
 
-const fetchEvenements = async () => {
+const loadEvenements = async () => {
     loading.value = true;
     try {
-        const res = await fetch("http://localhost:8081/evenements", {
-            method: "GET",
-        });
-        if (res.ok) {
-            evenements.value = await res.json();
-            await checkInscriptions(evenements.value);
-        }
+        const payload = await fetchEvenements();
+        evenements.value = Array.isArray(payload) ? payload : [];
+        await syncInscriptions();
     } catch (error) {
-        console.error("Erreur lors du chargement des évènements :", error);
+        console.error("Erreur chargement evenements :", error);
+        evenements.value = [];
     } finally {
         loading.value = false;
     }
 };
 
 const inscrire = async (evenement) => {
-    const userID = parseInt(localStorage.getItem("userId"));
-    const token = localStorage.getItem("userToken");
-
-    if (!userID || !token) {
-        alert("Vous devez être connecté pour vous inscrire à un évènement.");
+    const userId = Number(localStorage.getItem("userId"));
+    if (!userId || !localStorage.getItem("userToken")) {
+        alert("Vous devez etre connecte pour vous inscrire.");
         return;
     }
-
     if (inscriptionsEnCours.value.has(evenement.id)) return;
+
     inscriptionsEnCours.value.add(evenement.id);
+    inscriptionsEnCours.value = new Set(inscriptionsEnCours.value);
 
     try {
-        const res = await fetch(`http://localhost:8081/api/evenements/${evenement.id}/join`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token,
-            },
-            body: JSON.stringify({ id_utilisateur: userID }),
-        });
-
-        if (res.status === 201) {
-            inscrit.value = new Set([...inscrit.value, evenement.id]);
-            alert(`Inscription confirmée pour "${evenement.titre}" !`);
-        } else if (res.status === 409) {
-            inscrit.value = new Set([...inscrit.value, evenement.id]);
-            alert("Vous êtes déjà inscrit à cet évènement.");
-        } else {
-            const msg = await res.text();
-            alert("Erreur lors de l'inscription : " + msg);
-        }
+        await joinEvenement(evenement.id, userId);
+        inscrit.value = new Set([...inscrit.value, evenement.id]);
+        alert(`Inscription confirmee pour "${evenement.titre}".`);
     } catch (error) {
-        console.error("Erreur inscription évènement :", error);
-        alert("Une erreur réseau est survenue.");
+        console.error("Erreur inscription evenement :", error);
+        alert(error.message || "Inscription impossible.");
     } finally {
         inscriptionsEnCours.value.delete(evenement.id);
         inscriptionsEnCours.value = new Set(inscriptionsEnCours.value);
@@ -271,41 +222,28 @@ const inscrire = async (evenement) => {
 };
 
 const desinscrire = async (evenement) => {
-    const userID = parseInt(localStorage.getItem("userId"));
-    const token = localStorage.getItem("userToken");
-
-    if (!userID || !token) return;
+    const userId = Number(localStorage.getItem("userId"));
+    if (!userId || !localStorage.getItem("userToken")) return;
     if (inscriptionsEnCours.value.has(evenement.id)) return;
+
     inscriptionsEnCours.value.add(evenement.id);
+    inscriptionsEnCours.value = new Set(inscriptionsEnCours.value);
 
     try {
-        const res = await fetch(`http://localhost:8081/api/evenements/${evenement.id}/quit`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token,
-            },
-            body: JSON.stringify({ id_utilisateur: userID }),
-        });
-
-        if (res.ok) {
-            inscrit.value.delete(evenement.id);
-            inscrit.value = new Set(inscrit.value);
-            alert(`Vous êtes désinscrit de "${evenement.titre}".`);
-        } else {
-            const msg = await res.text();
-            alert("Erreur lors de la désinscription : " + msg);
-        }
+        await quitEvenement(evenement.id, userId);
+        inscrit.value.delete(evenement.id);
+        inscrit.value = new Set(inscrit.value);
+        alert(`Desinscription confirmee pour "${evenement.titre}".`);
     } catch (error) {
-        console.error("Erreur désinscription évènement :", error);
-        alert("Une erreur réseau est survenue.");
+        console.error("Erreur desinscription evenement :", error);
+        alert(error.message || "Desinscription impossible.");
     } finally {
         inscriptionsEnCours.value.delete(evenement.id);
         inscriptionsEnCours.value = new Set(inscriptionsEnCours.value);
     }
 };
 
-onMounted(fetchEvenements);
+onMounted(loadEvenements);
 </script>
 
 <style scoped>
@@ -324,10 +262,6 @@ onMounted(fetchEvenements);
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #f0f0f0;
-}
-
-.section-container {
-    margin-top: 1rem;
 }
 
 .filter-tags {
@@ -362,144 +296,57 @@ onMounted(fetchEvenements);
     gap: 1.5rem;
 }
 
-.evenement-card {
+.formation-card {
     border: 1px solid #f0f0f0;
     border-radius: 16px;
     background: white;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: all 0.3s ease;
 }
 
-.evenement-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+.card-header,
+.card-body,
+.card-footer {
+    padding: 1.2rem;
 }
 
 .card-header {
-    padding: 1.2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .tag-type {
+    background: #eaf4ed;
+    color: #2d6a4f;
     font-weight: 800;
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 0.7rem;
-    background: #e3f2fd;
-    color: #1565c0;
 }
 
-.tag-type.type-atelier    { background: #f3e5f5; color: #7b1fa2; }
-.tag-type.type-collecte   { background: #e8f5e9; color: #2e7d32; }
-.tag-type.type-conference { background: #fff3e0; color: #e65100; }
-.tag-type.type-echange    { background: #e3f2fd; color: #1565c0; }
-
-.tag-date {
+.tag-price {
     color: #2d6a4f;
     font-weight: 800;
-    font-size: 0.85rem;
-}
-
-.card-body {
-    padding: 0 1.2rem 1.2rem;
-    flex-grow: 1;
+    font-size: 0.9rem;
 }
 
 .item-title {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: #333;
+    margin-bottom: 0.8rem;
+    color: #222;
 }
 
-.host-name {
-    font-size: 0.8rem;
-    color: #888;
-    margin-bottom: 1.2rem;
-}
-
-.info-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 1.5rem;
-}
-
+.host-name,
 .info-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 0.85rem;
-    color: #444;
-}
-
-.desc-text {
     color: #666;
-    font-style: italic;
+    margin-bottom: 0.45rem;
 }
 
-.card-footer {
-    padding: 1.2rem;
-    border-top: 1px solid #f9f9f9;
-}
-
-.btn-main-action-full {
+.btn-main-action-full,
+.btn-full-width {
     width: 100%;
-    background: #2d6a4f;
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.btn-main-action-full:hover {
-    background: #1b4332;
-}
-
-.btn-quit-action-full {
-    width: 100%;
-    background: #fff;
-    color: #c0392b;
-    border: 2px solid #c0392b;
-    padding: 12px;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-quit-action-full:hover {
-    background: #c0392b;
-    color: white;
-}
-
-.btn-main-action-full:disabled,
-.btn-quit-action-full:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.loading-state,
-.empty-msg {
-    text-align: center;
-    padding: 3rem;
-    color: #999;
-    font-size: 0.95rem;
-}
-
-.search-input {
-    padding: 10px 20px;
-    border-radius: 25px;
-    border: 1px solid #ddd;
-    width: 280px;
-    outline: none;
-    font-size: 0.9rem;
 }
 </style>

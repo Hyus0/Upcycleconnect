@@ -1,52 +1,57 @@
 package db
 
 import (
-	"fmt"
 	"database/sql"
-	"upcycleconnect/api-go/models"
+	"fmt"
 	"math/rand"
+	"upcycleconnect/api-go/models"
 	"time"
 )
 
 func ReserverUnCasier(annonceID int, siteID int) (string, error) {
-    var poidsAnnonce float64
-    err := Conn.QueryRow("SELECT poids_estime_kg FROM ANNONCE WHERE id = ?", annonceID).Scan(&poidsAnnonce)
-    if err != nil {
-        return "", fmt.Errorf("impossible de trouver le poids de l'annonce")
-    }
-
     query := `
-        SELECT c.id FROM CASIER c
-        JOIN CONTENEUR co ON c.id_conteneur = co.id
-        WHERE co.id_site = ? 
-        AND c.statut = 'Libre' 
-        AND co.statut = 'Operationnel'
-        AND (co.niveau_remplissage + ?) <= co.capacite_max_kg
+        SELECT id
+        FROM CONTENEUR
+        WHERE id_site = ?
+        AND statut = 'Operationnel'
         LIMIT 1`
 
-    var casierID int
-    err = Conn.QueryRow(query, siteID, poidsAnnonce).Scan(&casierID)
+    var conteneurID int
+    err := Conn.QueryRow(query, siteID).Scan(&conteneurID)
     if err != nil {
-        return "", fmt.Errorf("Site complet ou limite de poids atteinte")
+        return "", fmt.Errorf("aucun conteneur operationnel disponible sur ce site")
     }
 
     rand.Seed(time.Now().UnixNano())
     pin := fmt.Sprintf("%06d", rand.Intn(1000000))
 
-    _, err = Conn.Exec("UPDATE CASIER SET statut = 'Reserve' WHERE id = ?", casierID)
+    tx, err := Conn.Begin()
     if err != nil {
         return "", err
     }
 
-    _, err = Conn.Exec(`
-        UPDATE ANNONCE SET 
-            id_casier = ?, 
-            id_site = ?, 
-            code_pin_depot = ?, 
-            statut = 'Reserve' 
-        WHERE id = ?`, casierID, siteID, pin, annonceID)
+    _, err = tx.Exec(`
+        INSERT INTO DEPOT_CONTENEUR (id_utilisateur, id_conteneur, id_objet, statut)
+        SELECT id_vendeur, ?, id, 'Prevu'
+        FROM ANNONCE
+        WHERE id = ?
+    `, conteneurID, annonceID)
+    if err != nil {
+        tx.Rollback()
+        return "", err
+    }
 
-    return pin, err
+    _, err = tx.Exec(`UPDATE ANNONCE SET statut = 'Reserve' WHERE id = ?`, annonceID)
+    if err != nil {
+        tx.Rollback()
+        return "", err
+    }
+
+    if err := tx.Commit(); err != nil {
+        return "", err
+    }
+
+    return pin, nil
 }
 
 func GetAllSites() ([]models.Site, error) {
@@ -129,44 +134,22 @@ func GetConteneursBySite(siteID int) ([]models.Conteneur, error) {
 }
 
 func RetireObjetCasier(idAnnonce int) error {
-    var poids float64
-    var idCasier int
-    var idConteneur int
-
-    err := Conn.QueryRow(`
-        SELECT a.poids_estime_kg, a.id_casier, c.id_conteneur 
-        FROM ANNONCE a 
-        JOIN CASIER c ON a.id_casier = c.id 
-        WHERE a.id = ?`, idAnnonce).Scan(&poids, &idCasier, &idConteneur)
-
-    if err != nil {
-        return err
-    }
-
     tx, err := Conn.Begin()
     if err != nil {
         return err
     }
 
-    _, err = tx.Exec("UPDATE CONTENEUR SET niveau_remplissage = niveau_remplissage - ? WHERE id = ?", poids, idConteneur)
-    if err != nil {
-        tx.Rollback()
-        return err
-    }
-
-    _, err = tx.Exec("UPDATE CASIER SET statut = 'Libre' WHERE id = ?", idCasier)
-    if err != nil {
-        tx.Rollback()
-        return err
-    }
-
     _, err = tx.Exec(`
-        UPDATE ANNONCE SET 
-            statut = 'Disponible', 
-            id_casier = NULL, 
-            id_site = NULL, 
-            code_pin_depot = NULL 
-        WHERE id = ?`, idAnnonce)
+        UPDATE DEPOT_CONTENEUR
+        SET statut = 'Annule', date_recuperation = NOW()
+        WHERE id_objet = ? AND statut IN ('Prevu', 'Effectue')
+    `, idAnnonce)
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    _, err = tx.Exec(`UPDATE ANNONCE SET statut = 'Disponible' WHERE id = ?`, idAnnonce)
     if err != nil {
         tx.Rollback()
         return err

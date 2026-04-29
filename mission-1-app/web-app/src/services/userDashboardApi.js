@@ -1,14 +1,9 @@
-async function getJson(url) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      return null;
-    }
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
+import {
+  fetchAnnonces,
+  fetchEvenements,
+  fetchFormations,
+  fetchUsers
+} from "./publicApi";
 
 function normalizeUser(payload) {
   const items = Array.isArray(payload?.items) ? payload.items : [];
@@ -37,16 +32,21 @@ function normalizeSingle(payload) {
 }
 
 export async function fetchUserDashboard() {
-  const [users, annonces, evenements, formations] = await Promise.all([
-    getJson("/api-go/admin/users"),
-    getJson("/annonces"),
-    getJson("/evenements"),
-    getJson("/formations")
+  const [users, annonces, evenements, formations] = await Promise.allSettled([
+    fetchUsers(),
+    fetchAnnonces(),
+    fetchEvenements(),
+    fetchFormations()
   ]);
 
+  const usersPayload = users.status === "fulfilled" ? users.value : null;
+  const annoncesPayload = annonces.status === "fulfilled" ? annonces.value : null;
+  const evenementsPayload = evenements.status === "fulfilled" ? evenements.value : null;
+  const formationsPayload = formations.status === "fulfilled" ? formations.value : null;
+
   const planning =
-    Array.isArray(evenements) && evenements.length > 0
-      ? evenements.slice(0, 7).map((item) => ({
+    Array.isArray(evenementsPayload) && evenementsPayload.length > 0
+      ? evenementsPayload.slice(0, 7).map((item) => ({
           id: item.id,
           task: item.titre ?? null,
           date: item.date_evenement ?? null
@@ -54,16 +54,16 @@ export async function fetchUserDashboard() {
       : null;
 
   const advice =
-    Array.isArray(formations) && formations.length > 0
+    Array.isArray(formationsPayload) && formationsPayload.length > 0
       ? {
-          title: formations[0].titre ?? null,
-          content: formations[0].description ?? null
+          title: formationsPayload[0].titre ?? null,
+          content: formationsPayload[0].description ?? null
         }
       : null;
 
   return {
-    user: normalizeUser(users),
-    annonces: normalizeArray(annonces),
+    user: normalizeUser(usersPayload),
+    annonces: normalizeArray(annoncesPayload),
     planning,
     advice,
     notification: null

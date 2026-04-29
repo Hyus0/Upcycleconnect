@@ -27,16 +27,4 @@ export const fallbackAnnonces = [
   }
 ];
 
-export async function fetchAnnonces() {
-  const response = await fetch("/go/annonces");
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const payload = await response.json();
-  if (!Array.isArray(payload)) {
-    throw new Error("Format annonces invalide");
-  }
-
-  return payload;
-}
+export { fetchAnnonces } from "./publicApi";

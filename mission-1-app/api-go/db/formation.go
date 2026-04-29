@@ -73,51 +73,52 @@ func GetAllFormations() ([]models.GetFormation, error) {
 }
 
 func GetFormation(formationID int, userID int) (*models.GetFormation, error) {
-    if Conn == nil {
-        return nil, fmt.Errorf("connexion DB non initialisee")
-    }
+	if Conn == nil {
+		return nil, fmt.Errorf("connexion DB non initialisee")
+	}
 
-    query := `
+	query := `
         SELECT 
             f.id, f.id_formateur, u.prenom, u.nom, f.type, f.titre, f.description, 
-            f.capacite_max, f.date_debut, f.date_fin, f.statut, f.prix_unitaire, 
+            f.capacite_max, f.est_valide, f.date_debut, f.date_fin, f.statut, f.prix_unitaire, 
             f.adresse, f.ville, f.code_postal,
             (SELECT COUNT(*) FROM FORMATION_INSCRIPTION WHERE id_formation = f.id) as nb_inscrit
         FROM FORMATION f
         JOIN UTILISATEUR u ON f.id_formateur = u.id
         WHERE f.id = ?`
 
-    var f models.GetFormation
-    
-    err := Conn.QueryRow(query, formationID).Scan(
-        &f.ID, 
-        &f.ID_formateur, 
-        &f.Prenom_formateur, 
-        &f.Nom_formateur,  
-        &f.Type, 
-        &f.Titre, 
-        &f.Description, 
-        &f.Capacite_max,
-        &f.Date_debut, 
-        &f.Date_fin, 
-        &f.Statut, 
-        &f.Prix_unitaire, 
-        &f.Adresse, 
-        &f.Ville, 
-        &f.CodePostal,
-        &f.Nb_inscrit,       
-    )
-    if err != nil {
-        return nil, err
-    }
+	var f models.GetFormation
 
-    var count int
-    checkQuery := "SELECT COUNT(*) FROM FORMATION_INSCRIPTION WHERE id_utilisateur = ? AND id_formation = ?"
-    Conn.QueryRow(checkQuery, userID, formationID).Scan(&count)
+	err := Conn.QueryRow(query, formationID).Scan(
+		&f.ID,
+		&f.ID_formateur,
+		&f.Prenom_formateur,
+		&f.Nom_formateur,
+		&f.Type,
+		&f.Titre,
+		&f.Description,
+		&f.Capacite_max,
+		&f.Est_valide,
+		&f.Date_debut,
+		&f.Date_fin,
+		&f.Statut,
+		&f.Prix_unitaire,
+		&f.Adresse,
+		&f.Ville,
+		&f.CodePostal,
+		&f.Nb_inscrit,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-    f.IsRegistered = (count > 0)
+	var count int
+	checkQuery := "SELECT COUNT(*) FROM FORMATION_INSCRIPTION WHERE id_utilisateur = ? AND id_formation = ?"
+	Conn.QueryRow(checkQuery, userID, formationID).Scan(&count)
 
-    return &f, nil
+	f.IsRegistered = (count > 0)
+
+	return &f, nil
 }
 func CreateFormation(formation models.Formation) error {
 	if Conn == nil {
@@ -130,6 +131,7 @@ func CreateFormation(formation models.Formation) error {
 		titre,
 		description,
 		capacite_max,
+		est_valide,
 		date_debut,
 		date_fin,
 		statut,
@@ -137,7 +139,7 @@ func CreateFormation(formation models.Formation) error {
 		adresse,
 		ville,
 		code_postal
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := Conn.Exec(
 		query,
@@ -146,6 +148,7 @@ func CreateFormation(formation models.Formation) error {
 		formation.Titre,
 		formation.Description,
 		formation.Capacite_max,
+		defaultFormationValidationStatus(formation.Est_valide),
 		formation.Date_debut,
 		formation.Date_fin,
 		formation.Statut,
@@ -172,6 +175,7 @@ func ModifyFormation(id int, f models.Formation) error {
 			titre = ?,
 			description = ?,
 			capacite_max = ?,
+			est_valide = ?,
 			date_debut = ?,
 			date_fin = ?,
 			statut = ?,
@@ -189,6 +193,7 @@ func ModifyFormation(id int, f models.Formation) error {
 		f.Titre,
 		f.Description,
 		f.Capacite_max,
+		defaultFormationValidationStatus(f.Est_valide),
 		f.Date_debut,
 		f.Date_fin,
 		f.Statut,
@@ -283,4 +288,11 @@ func QuitFormation(userID int, formationID int) error {
 	}
 
 	return nil
+}
+
+func defaultFormationValidationStatus(value string) string {
+	if value == "Valide" || value == "Refuse" {
+		return value
+	}
+	return "En attente"
 }

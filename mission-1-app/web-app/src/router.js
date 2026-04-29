@@ -7,6 +7,7 @@ import Profil from "./pages/Profil.vue";
 import Home from "./pages/Home.vue";
 import Annonces from "./pages/Annonces.vue";
 import Forums from "./pages/Forums.vue";
+import { checkSession } from "./services/publicApi";
 
 import Formations from "./pages/Formations.vue"
 import Evenements from "./pages/Evenements.vue"
@@ -111,13 +112,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     try {
-      const response = await fetch(
-        `http://localhost:8081/check-session?id=${id}`,
-        {
-          headers: { Authorization: token },
-        },
-      );
-      const data = await response.json();
+      const data = await checkSession(id);
 
       if (data.isValid) {
         next();

@@ -133,52 +133,38 @@
         <p v-if="annonces.length === 0" class="empty-msg">Vous n'avez pas encore depose d'annonces.</p>
     </div>
 
-    <div class="section-container planning-section">
+    <div class="section-container planning-section planning-section--compact" @click="openPlanningModal">
         <div class="section-header planning-section__header">
             <div>
-                <h2>Mon calendrier d'inscriptions</h2>
-                <p class="planning-subtitle">
-                    Formations, evenements et autres rendez-vous auxquels vous etes inscrit.
-                </p>
+                <h2>Mon planning - semaine du {{ planningWeekLabel }}</h2>
+                <p class="planning-subtitle">Cliquez pour agrandir et parcourir le calendrier complet.</p>
             </div>
             <div class="planning-toolbar">
-                <button class="btn-secondary" @click="previousMonth">Mois precedent</button>
-                <span class="planning-month">{{ currentMonthLabel }}</span>
-                <button class="btn-secondary" @click="nextMonth">Mois suivant</button>
+                <button class="btn-secondary planning-toolbar__button" @click.stop="openPlanningModal">Vue mensuelle</button>
             </div>
         </div>
 
-        <div class="planning-legend">
-            <span class="planning-legend__item"><i class="planning-dot planning-dot--formation"></i> Formation</span>
-            <span class="planning-legend__item"><i class="planning-dot planning-dot--event"></i> Evenement</span>
-            <span class="planning-legend__item"><i class="planning-dot planning-dot--other"></i> Autre rendez-vous</span>
-        </div>
-
-        <div class="planning-calendar">
-            <div class="planning-calendar__weekday" v-for="day in weekDays" :key="day">{{ day }}</div>
+        <div class="planning-week">
+            <div class="planning-week__weekday" v-for="day in compactWeekDays" :key="day.key">
+                <span>{{ day.weekLabel }}</span>
+                <strong>{{ day.dayLabel }}</strong>
+            </div>
             <div
-                v-for="day in calendarDays"
-                :key="day.key"
-                class="planning-day"
-                :class="{ 'is-outside': !day.isCurrentMonth, 'is-today': day.isToday, 'has-events': day.entries.length > 0 }"
+                v-for="day in compactWeekDays"
+                :key="`${day.key}-card`"
+                class="planning-week__day"
+                :class="{ 'is-today': day.isToday, 'has-events': day.entries.length > 0 }"
             >
-                <div class="planning-day__head">
-                    <span class="planning-day__number">{{ day.label }}</span>
-                    <small v-if="day.entries.length">{{ day.entries.length }} inscrit.</small>
-                </div>
-
-                <div class="planning-day__entries">
+                <div class="planning-week__head">{{ day.dayNumber }}</div>
+                <div class="planning-week__entries">
                     <div
-                        v-for="entry in day.entries.slice(0, 3)"
+                        v-for="entry in day.entries.slice(0, 1)"
                         :key="entry.id"
-                        class="planning-entry"
+                        class="planning-week__entry"
                         :class="`planning-entry--${entry.kind}`"
                     >
                         <strong>{{ entry.title }}</strong>
                         <span>{{ entry.timeLabel }}</span>
-                    </div>
-                    <div v-if="day.entries.length > 3" class="planning-entry planning-entry--more">
-                        +{{ day.entries.length - 3 }} autre(s)
                     </div>
                 </div>
             </div>
@@ -186,9 +172,69 @@
 
         <div v-if="calendarEntries.length === 0" class="planning-empty">
             <p>Aucune inscription n'est encore visible pour ce compte.</p>
-            <span>
-                Le calendrier se remplira des que vous rejoindrez une formation, un evenement ou un autre rendez-vous.
-            </span>
+            <span>Le planning se remplira des que vous rejoindrez une formation ou un evenement.</span>
+        </div>
+    </div>
+
+    <div v-if="planningModalOpen" class="planning-modal" @click.self="closePlanningModal">
+        <div class="planning-modal__panel">
+            <div class="section-header planning-section__header planning-modal__header">
+                <div>
+                    <h2>Mon calendrier d'inscriptions</h2>
+                    <p class="planning-subtitle">
+                        Formations, evenements et autres rendez-vous auxquels vous etes inscrit.
+                    </p>
+                </div>
+                <div class="planning-toolbar">
+                    <button class="btn-secondary" @click="previousMonth">Mois precedent</button>
+                    <span class="planning-month">{{ currentMonthLabel }}</span>
+                    <button class="btn-secondary" @click="nextMonth">Mois suivant</button>
+                    <button class="btn-main-action1" @click="closePlanningModal">Fermer</button>
+                </div>
+            </div>
+
+            <div class="planning-legend">
+                <span class="planning-legend__item"><i class="planning-dot planning-dot--formation"></i> Formation</span>
+                <span class="planning-legend__item"><i class="planning-dot planning-dot--event"></i> Evenement</span>
+                <span class="planning-legend__item"><i class="planning-dot planning-dot--other"></i> Autre rendez-vous</span>
+            </div>
+
+            <div class="planning-calendar">
+                <div class="planning-calendar__weekday" v-for="day in weekDays" :key="day">{{ day }}</div>
+                <div
+                    v-for="day in calendarDays"
+                    :key="day.key"
+                    class="planning-day"
+                    :class="{ 'is-outside': !day.isCurrentMonth, 'is-today': day.isToday, 'has-events': day.entries.length > 0 }"
+                >
+                    <div class="planning-day__head">
+                        <span class="planning-day__number">{{ day.label }}</span>
+                        <small v-if="day.entries.length">{{ day.entries.length }} inscrit.</small>
+                    </div>
+
+                    <div class="planning-day__entries">
+                        <div
+                            v-for="entry in day.entries.slice(0, 3)"
+                            :key="entry.id"
+                            class="planning-entry"
+                            :class="`planning-entry--${entry.kind}`"
+                        >
+                            <strong>{{ entry.title }}</strong>
+                            <span>{{ entry.timeLabel }}</span>
+                        </div>
+                        <div v-if="day.entries.length > 3" class="planning-entry planning-entry--more">
+                            +{{ day.entries.length - 3 }} autre(s)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="calendarEntries.length === 0" class="planning-empty">
+                <p>Aucune inscription n'est encore visible pour ce compte.</p>
+                <span>
+                    Le calendrier se remplira des que vous rejoindrez une formation, un evenement ou un autre rendez-vous.
+                </span>
+            </div>
         </div>
     </div>
 
@@ -223,6 +269,12 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import {
+    deleteAnnonce,
+    fetchUserAnnonces,
+    fetchUserPlanning,
+    fetchUserStats
+} from "../../services/publicApi";
 
 const router = useRouter();
 
@@ -231,6 +283,7 @@ const annonces = ref([]);
 const calendarEntries = ref([]);
 const currentMonth = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const planningModalOpen = ref(false);
 
 const stats = ref({
     total_points: 0,
@@ -252,6 +305,36 @@ const nextEntryLabel = computed(() => {
 
 const currentMonthLabel = computed(() =>
     currentMonth.value.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+);
+
+const currentWeekStart = computed(() => {
+    const now = new Date();
+    const offset = (now.getDay() + 6) % 7;
+    const monday = new Date(now);
+    monday.setHours(0, 0, 0, 0);
+    monday.setDate(now.getDate() - offset);
+    return monday;
+});
+
+const planningWeekLabel = computed(() =>
+    currentWeekStart.value.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+);
+
+const compactWeekDays = computed(() =>
+    Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(currentWeekStart.value);
+        date.setDate(currentWeekStart.value.getDate() + index);
+        const isoDate = date.toISOString().slice(0, 10);
+        return {
+            key: isoDate,
+            isoDate,
+            weekLabel: weekDays[index].toUpperCase(),
+            dayLabel: date.toLocaleDateString("fr-FR", { day: "numeric" }),
+            dayNumber: date.getDate(),
+            isToday: isoDate === new Date().toISOString().slice(0, 10),
+            entries: calendarEntries.value.filter((entry) => entry.date === isoDate)
+        };
+    })
 );
 
 const calendarDays = computed(() => {
@@ -307,42 +390,6 @@ const toCalendarEntry = (item, kind, title, dateValue) => {
     };
 };
 
-const readJoinedIds = (key) => {
-    try {
-        const raw = localStorage.getItem(key);
-        const parsed = JSON.parse(raw || "[]");
-        return Array.isArray(parsed) ? parsed.map((value) => Number(value)) : [];
-    } catch {
-        return [];
-    }
-};
-
-const readCustomCalendarEntries = (key) => {
-    try {
-        const raw = localStorage.getItem(key);
-        const parsed = JSON.parse(raw || "[]");
-        if (!Array.isArray(parsed)) return [];
-
-        return parsed
-            .map((entry, index) => {
-                const parsedDate = parseDate(entry.date || entry.date_debut || entry.datetime);
-                if (!parsedDate) return null;
-
-                return {
-                    id: `other-${entry.id ?? index}`,
-                    kind: "other",
-                    title: entry.title ?? entry.titre ?? "Rendez-vous",
-                    date: parsedDate.toISOString().slice(0, 10),
-                    dateLabel: parsedDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
-                    timeLabel: parsedDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-                };
-            })
-            .filter(Boolean);
-    } catch {
-        return [];
-    }
-};
-
 const goToAnnonce = (id) => {
     router.push({ name: "see-annonce", params: { id } });
 };
@@ -355,8 +402,16 @@ const goToPlanning = (id) => {
     router.push({ name: "mes-depots", query: { selectedAnnonce: id } });
 };
 
-const removeAnnonce = (id) => {
-    console.log("Demande de suppression pour :", id);
+const removeAnnonce = async (id) => {
+    if (!confirm("Voulez-vous vraiment retirer cette annonce ?")) return;
+
+    try {
+        await deleteAnnonce(id);
+        annonces.value = annonces.value.filter((annonce) => annonce.id !== id);
+    } catch (error) {
+        console.error("Erreur suppression annonce :", error);
+        alert(error.message || "Suppression impossible pour le moment.");
+    }
 };
 
 const previousMonth = () => {
@@ -367,75 +422,60 @@ const nextMonth = () => {
     currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() + 1, 1);
 };
 
-const loadCalendarEntries = async (id, token) => {
-    const joinedFormationIds = readJoinedIds(`upcycleconnect-joined-formations-${id}`);
-    const joinedEventIds = readJoinedIds(`upcycleconnect-joined-events-${id}`);
-    const customEntries = readCustomCalendarEntries(`upcycleconnect-calendar-${id}`);
+const openPlanningModal = () => {
+    planningModalOpen.value = true;
+};
 
-    const [formationsResponse, eventsResponse] = await Promise.all([
-        fetch("http://localhost:8081/formations", { headers: { Authorization: token } }).catch(() => null),
-        fetch("http://localhost:8081/evenements", { headers: { Authorization: token } }).catch(() => null)
-    ]);
+const closePlanningModal = () => {
+    planningModalOpen.value = false;
+};
 
-    const formationItems = formationsResponse?.ok ? await formationsResponse.json() : [];
-    const eventItems = eventsResponse?.ok ? await eventsResponse.json() : [];
-
-    const formationEntries = Array.isArray(formationItems)
-        ? formationItems
-              .filter((item) => joinedFormationIds.includes(Number(item.id)))
-              .map((item) => toCalendarEntry(item, "formation", item.titre ?? "Formation", item.date_debut))
+const loadCalendarEntries = async (id) => {
+    const planningEntries = await fetchUserPlanning(id);
+    const normalizedEntries = Array.isArray(planningEntries)
+        ? planningEntries
+              .map((entry) =>
+                  toCalendarEntry(
+                      entry,
+                      entry.kind || "other",
+                      entry.title || "Rendez-vous",
+                      entry.date_time
+                  )
+              )
               .filter(Boolean)
         : [];
 
-    const eventEntries = Array.isArray(eventItems)
-        ? eventItems
-              .filter((item) => joinedEventIds.includes(Number(item.id)))
-              .map((item) => toCalendarEntry(item, "event", item.titre ?? "Evenement", item.date_evenement ?? item.date))
-              .filter(Boolean)
-        : [];
-
-    calendarEntries.value = [...formationEntries, ...eventEntries, ...customEntries].sort((a, b) =>
-        a.date.localeCompare(b.date)
-    );
+    calendarEntries.value = normalizedEntries.sort((a, b) => a.date.localeCompare(b.date));
 };
 
 onMounted(async () => {
     const id = localStorage.getItem("userId");
-    const token = localStorage.getItem("userToken");
+    if (!id) return;
 
-    if (!id || !token) return;
+    const [statsResult, annoncesResult, planningResult] = await Promise.allSettled([
+        fetchUserStats(id),
+        fetchUserAnnonces(id),
+        loadCalendarEntries(id)
+    ]);
 
-    try {
-        const response = await fetch(`http://localhost:8081/users/${id}/stats`, {
-            headers: { Authorization: token },
-        });
-        if (response.ok) {
-            const data = await response.json();
-            stats.value = data;
-            if (data.total_points !== undefined) {
-                localStorage.setItem("userScore", data.total_points.toString());
-                window.dispatchEvent(new Event("auth-change"));
-            }
+    if (statsResult.status === "fulfilled") {
+        stats.value = statsResult.value;
+        if (statsResult.value?.total_points !== undefined) {
+            localStorage.setItem("userScore", String(statsResult.value.total_points));
+            window.dispatchEvent(new Event("auth-change"));
         }
-    } catch (error) {
-        console.error("Erreur stats :", error);
+    } else {
+        console.error("Erreur stats :", statsResult.reason);
     }
 
-    try {
-        const resAnnonces = await fetch(`http://localhost:8081/users/${id}/annonces`, {
-            headers: { Authorization: token }
-        });
-        if (resAnnonces.ok) {
-            annonces.value = await resAnnonces.json();
-        }
-    } catch (error) {
-        console.error("Erreur annonces :", error);
+    if (annoncesResult.status === "fulfilled") {
+        annonces.value = Array.isArray(annoncesResult.value) ? annoncesResult.value : [];
+    } else {
+        console.error("Erreur annonces :", annoncesResult.reason);
     }
 
-    try {
-        await loadCalendarEntries(id, token);
-    } catch (error) {
-        console.error("Erreur calendrier :", error);
+    if (planningResult.status === "rejected") {
+        console.error("Erreur calendrier :", planningResult.reason);
         calendarEntries.value = [];
     }
 });

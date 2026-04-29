@@ -304,8 +304,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import { fetchPlatformOverview } from "../services/publicApi";
 
 const isLoggedIn = computed(() => {
   return !!localStorage.getItem("userToken");
@@ -318,12 +319,37 @@ const userName = computed(() => {
   return (prenom || nom) ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
-const objets_evites = 2.4;
-const objet_grandeur= "t";
-const objets_upcycle= 8;
-const artisans_partenaire= 340;
-const sites= 7;
-const plateform_user= 12400;
+const overview = ref({
+  members_count: 0,
+  prestataires_count: 0,
+  upcycled_objects_count: 0,
+  co2_saved_kg: 0,
+  sites_count: 0
+});
+
+const objets_evites = computed(() => {
+  const tons = Number(overview.value.co2_saved_kg || 0) / 1000;
+  return tons > 0 ? tons.toFixed(1) : "NULL";
+});
+const objet_grandeur = computed(() => (Number(overview.value.co2_saved_kg || 0) > 0 ? "t" : ""));
+const objets_upcycle = computed(() => overview.value.upcycled_objects_count || "NULL");
+const artisans_partenaire = computed(() => overview.value.prestataires_count || "NULL");
+const sites = computed(() => overview.value.sites_count || "NULL");
+const plateform_user = computed(() => overview.value.members_count || "NULL");
+
+onMounted(async () => {
+  try {
+    overview.value = await fetchPlatformOverview();
+  } catch {
+    overview.value = {
+      members_count: 0,
+      prestataires_count: 0,
+      upcycled_objects_count: 0,
+      co2_saved_kg: 0,
+      sites_count: 0
+    };
+  }
+});
 </script>
 
 <style>

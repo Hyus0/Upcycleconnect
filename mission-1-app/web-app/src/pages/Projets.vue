@@ -6,54 +6,27 @@
             user-role="Particulier"
             :user-score="userScore"
         />
-        
+
         <header class="content-header">
             <div class="header-left">
-                <p class="sidebar__category2">ACCUEIL > COMMUNAUTÉ</p>
+                <p class="sidebar__category2">ACCUEIL &gt; COMMUNAUTE</p>
                 <h1 class="hero-title1">GALERIE DES PROJETS</h1>
-                <p class="classic-text">
-                    Laissez-vous inspirer par les créations de la communauté et découvrez les secrets de leur fabrication.
-                </p>
+                <p class="classic-text">Les projets affiches ici viennent du back et de l'API publique.</p>
             </div>
 
             <div class="header-actions">
-                <div class="search-section">
-                    <div class="search-box">
-                        <input 
-                            v-model="searchQuery" 
-                            type="text" 
-                            placeholder="Rechercher un projet, un matériau..."
-                            class="search-input"
-                        />
-                    </div>
+                <div class="search-box">
+                    <input v-model="searchQuery" type="text" placeholder="Rechercher un projet..." class="search-input" />
                 </div>
             </div>
         </header>
 
         <div class="section-container">
-            <div v-if="loading" class="loading-state">
-                Chargement de la galerie...
-            </div>
-
-            <div v-else-if="filteredProjets.length === 0" class="empty-msg">
-                Aucune création ne correspond à votre recherche.
-            </div>
+            <div v-if="loading" class="loading-state">Chargement de la galerie...</div>
+            <div v-else-if="filteredProjets.length === 0" class="empty-msg">Aucun projet ne correspond a votre recherche.</div>
 
             <div v-else class="annonces-grid">
-                <div
-                    v-for="projet in filteredProjets"
-                    :key="projet.id"
-                    class="annonce-card formation-card"
-                >
-                    <div class="card-image">
-                        <img 
-                            src='../components/upcycling-concept.jpg' alt='Image de recyclage'
-                        >
-                        <div class="impact-overlay">
-                            🍃 {{ projet.co2_evite_kg }}kg CO2
-                        </div>
-                    </div>
-
+                <article v-for="projet in filteredProjets" :key="projet.id" class="annonce-card formation-card">
                     <div class="card-body">
                         <div class="card-meta">
                             <span class="tag-type">PROJET</span>
@@ -61,40 +34,34 @@
                         </div>
 
                         <h3 class="item-title">{{ projet.titre }}</h3>
-                        
-                        <p class="project-description-short">
-                            {{ projet.description_courte }}
-                        </p>
+                        <p class="project-description-short">{{ projet.description_courte || "Description NULL" }}</p>
 
                         <div class="stats-row">
-                            <span class="stat-item">❤️ {{ projet.nb_likes }}</span>
-                            <span class="stat-item">👁️ {{ projet.nb_vues }}</span>
+                            <span class="stat-item">{{ projet.nb_likes || 0 }} likes</span>
+                            <span class="stat-item">{{ projet.nb_vues || 0 }} vues</span>
+                            <span class="stat-item">{{ projet.co2_evite_kg || 0 }} kg CO2</span>
                         </div>
                     </div>
 
                     <div class="card-footer">
-                        <button
-                            class="btn-main-action-full"
-                            @click="goToProjet(projet.id)"
-                        >
-                            Découvrir les étapes
-                        </button>
+                        <button class="btn-main-action-full" @click="goToProjet(projet.id)">Decouvrir les etapes</button>
                     </div>
-                </div>
+                </article>
             </div>
         </div>
     </main>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import { fetchProjets } from "../services/publicApi";
 
 const projets = ref([]);
 const loading = ref(true);
-const searchQuery = ref(""); 
-const userScore = ref(0); 
+const searchQuery = ref("");
+const userScore = ref(0);
 const router = useRouter();
 
 const isLoggedIn = computed(() => !!localStorage.getItem("userToken"));
@@ -105,38 +72,40 @@ const userName = computed(() => {
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
-const filteredProjets = computed(() => {
-    return projets.value.filter(p => {
+const filteredProjets = computed(() =>
+    projets.value.filter((item) => {
         const term = searchQuery.value.toLowerCase();
-        return !term || 
-               p.titre?.toLowerCase().includes(term) || 
-               p.description_courte?.toLowerCase().includes(term);
-    });
-});
+        return (
+            !term ||
+            (item.titre || "").toLowerCase().includes(term) ||
+            (item.description_courte || "").toLowerCase().includes(term)
+        );
+    })
+);
 
 const formatDate = (dateStr) => {
-    if (!dateStr) return "Récemment";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    if (!dateStr) return "Recemment";
+    return new Date(dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 };
 
-const fetchProjets = async () => {
+const loadProjets = async () => {
     loading.value = true;
     try {
-        const res = await fetch(`http://localhost:8081/projets`);
-        if (res.ok) projets.value = await res.json();
+        const payload = await fetchProjets();
+        projets.value = Array.isArray(payload) ? payload : [];
     } catch (error) {
-        console.error("Erreur:", error);
+        console.error("Erreur chargement projets :", error);
+        projets.value = [];
     } finally {
         loading.value = false;
     }
-}
-
-const goToProjet = (id) => {
-    router.push({ name: 'projet-detail', params: { id: id } });
 };
 
-onMounted(fetchProjets);
+const goToProjet = (id) => {
+    router.push({ name: "projet-detail", params: { id } });
+};
+
+onMounted(loadProjets);
 </script>
 
 <style scoped>
@@ -144,7 +113,7 @@ onMounted(fetchProjets);
     min-height: 100vh;
     padding: 20px;
     background: #f7f9f7;
-    max-width: 1600px; 
+    max-width: 1600px;
     margin: 0 auto;
 }
 
@@ -155,37 +124,6 @@ onMounted(fetchProjets);
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #eee;
-}
-
-.card-image {
-    height: 180px;
-    width: 100%;
-    position: relative;
-    overflow: hidden;
-}
-
-.card-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-}
-
-.formation-card:hover .card-image img {
-    transform: scale(1.05);
-}
-
-.impact-overlay {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 800;
-    color: #2d6a4f;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .annonces-grid {
@@ -200,18 +138,11 @@ onMounted(fetchProjets);
     background: white;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.formation-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-}
-
-.card-body {
+.card-body,
+.card-footer {
     padding: 1.2rem;
-    flex-grow: 1;
 }
 
 .card-meta {
@@ -220,53 +151,23 @@ onMounted(fetchProjets);
     margin-bottom: 0.8rem;
 }
 
+.tag-type {
+    background: #eaf4ed;
+    color: #2d6a4f;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+}
+
 .item-title {
     font-size: 1.15rem;
     font-weight: 700;
     margin-bottom: 0.8rem;
-    color: #222;
 }
 
-.project-description-short {
-    font-size: 0.85rem;
-    color: #666;
-    margin-bottom: 1rem;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
+.project-description-short,
 .stats-row {
-    display: flex;
-    gap: 15px;
-    font-size: 0.8rem;
-    color: #888;
-    margin-bottom: 1.2rem;
-}
-
-.card-footer {
-    padding: 1.2rem;
-    padding-top: 0;
-}
-
-.btn-main-action-full {
-    width: 100%;
-    background: #2d6a4f;
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 10px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.search-input {
-    padding: 12px 20px;
-    border-radius: 25px;
-    border: 1px solid #ddd;
-    width: 320px;
-    outline: none;
+    color: #666;
 }
 </style>

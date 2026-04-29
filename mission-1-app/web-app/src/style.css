@@ -711,6 +711,10 @@ button {
   gap: 18px;
 }
 
+.planning-section--compact {
+  cursor: pointer;
+}
+
 .planning-section__header {
   align-items: flex-start;
 }
@@ -726,6 +730,10 @@ button {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.planning-toolbar__button {
+  min-width: 122px;
 }
 
 .planning-month {
@@ -773,6 +781,83 @@ button {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
+}
+
+.planning-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.planning-week__weekday {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+  color: #a1aea6;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.planning-week__weekday strong {
+  color: #7d8b83;
+  font-family: "Syne", sans-serif;
+  font-size: 0.84rem;
+}
+
+.planning-week__day {
+  min-height: 82px;
+  border: 1px solid #dfe9e2;
+  border-radius: 12px;
+  background: #fcfdfc;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.planning-section--compact:hover .planning-week__day {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(40, 64, 50, 0.06);
+}
+
+.planning-week__day.is-today {
+  border-color: #74bd8f;
+}
+
+.planning-week__day.has-events {
+  background: linear-gradient(180deg, #fcfffc, #f3f8f4);
+}
+
+.planning-week__head {
+  color: #6f7f76;
+  font-family: "Syne", sans-serif;
+  font-size: 1.05rem;
+}
+
+.planning-week__entries {
+  display: grid;
+  gap: 6px;
+}
+
+.planning-week__entry {
+  display: grid;
+  gap: 2px;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #fff;
+  min-height: 34px;
+}
+
+.planning-week__entry strong {
+  font-size: 0.7rem;
+  line-height: 1.1;
+}
+
+.planning-week__entry span {
+  font-size: 0.64rem;
+  opacity: 0.88;
 }
 
 .planning-calendar__weekday {
@@ -871,6 +956,35 @@ button {
   border-radius: 14px;
   background: #f7faf8;
   color: var(--text-secondary);
+}
+
+.planning-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 20, 0.48);
+  backdrop-filter: blur(3px);
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.planning-modal__panel {
+  width: min(1320px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 28px;
+  padding: 28px;
+  box-shadow: 0 24px 80px rgba(16, 24, 20, 0.24);
+}
+
+.planning-modal__header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 2;
+  padding-bottom: 16px;
 }
 
 .day-box {
@@ -1276,6 +1390,20 @@ button {
   .score-details,
   .auth-form__row {
     grid-template-columns: 1fr;
+  }
+
+  .planning-week,
+  .planning-calendar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planning-modal {
+    padding: 12px;
+  }
+
+  .planning-modal__panel {
+    padding: 18px;
+    border-radius: 20px;
   }
 
   .data-table {

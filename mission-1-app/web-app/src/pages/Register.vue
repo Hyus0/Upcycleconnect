@@ -1,202 +1,63 @@
 <template>
-    <SiteNavbar
-        :is-authenticated="isLoggedIn"
-        :user-name="userName"
-        variant="public"
-    />
-    <div class="register-page">
-        <div class="register-left">
-            <div class="register-left__content">
-                <div
-                    class="register-left__logo"
-                    @click="$router.push('/')"
-                    style="cursor: pointer"
-                >
-                    <img
-                        src="../components/logo.png"
-                        class="navbar__logo-img"
-                    />
-                    Upcycle <span class="accent">Connect</span>
-                </div>
-                <h1 class="register-left__title">
-                    Rejoignez la <span class="accent">communauté</span><br />
-                    qui agit.
-                </h1>
-                <p class="register-left__desc">
-                    Plus de 12 400 membres, 340 artisans et des <br />centaines
-                    de projets d'upcycling chaque mois. <br />Commencez
-                    gratuitement dès aujourd'hui.
-                </p>
+    <SiteNavbar :is-authenticated="isLoggedIn" :user-name="userName" variant="public" />
 
-                <div class="register-left__stats">
-                    <div class="stat">
-                        <strong>2.4t</strong>
-                        <span>CO₂ évité / mois</span>
-                    </div>
-                    <div class="stat">
-                        <strong>8k+</strong>
-                        <span>Objets upcyclés</span>
-                    </div>
-                    <div class="stat">
-                        <strong>340</strong>
-                        <span>Artisans actifs</span>
-                    </div>
+    <div class="auth-page">
+        <section class="auth-side auth-side--dark">
+            <div class="auth-side__content">
+                <div class="auth-brand" @click="$router.push('/')">
+                    <img src="../components/logo.png" class="navbar__logo-img" alt="Upcycle Connect" />
+                    <span>Upcycle <strong>Connect</strong></span>
                 </div>
-
-                <div class="register-testimonial">
-                    <p class="register-testimonial__text">
-                        "Grâce à UpcycleConnect, j'ai trouvé les matériaux
-                        parfaits pour mes créations. La plateforme a transformé
-                        mon activité d'artisan."
-                    </p>
-                    <div class="register-testimonial__author">
-                        <div class="register-testimonial__avatar">ML</div>
-                        <div>
-                            <strong>Marie L.</strong>
-                            <span>Artisane ébéniste — Paris 11e</span>
-                        </div>
-                    </div>
-                </div>
+                <h1>Rejoignez la communaute qui agit.</h1>
+                <p>Le compte cree ici sera disponible partout sur le front et administrable depuis le back.</p>
             </div>
-        </div>
+        </section>
 
-        <div class="register-right">
-            <div class="register-right__content">
-                <div class="register-right__logo">
-                    <img
-                        src="../components/logo.png"
-                        class="navbar__logo-img"
-                    />
-                    Upcycle <span class="accent-green">Connect</span>
-                </div>
+        <section class="auth-side auth-side--light">
+            <div class="auth-card">
+                <h2>Creer un compte</h2>
+                <p>Deja membre ? <router-link to="/connexion">Se connecter</router-link></p>
 
-                <h2 class="register-right__title">Créer un compte</h2>
-                <p class="register-right__subtitle">
-                    Déjà membre ?
-                    <router-link to="/connexion" class="register-right__link">
-                        Se connecter
-                    </router-link>
-                </p>
-
-                <p class="register-right__label">Je suis...</p>
-                <div class="register-type">
-                    <button
-                        class="register-type__btn"
-                        :class="{
-                            'register-type__btn--active':
-                                accountType === 'particulier',
-                        }"
-                        @click="accountType = 'particulier'"
-                    >
-                        🏠 <br />Particulier
-                    </button>
-                    <button
-                        class="register-type__btn"
-                        :class="{
-                            'register-type__btn--active': accountType === 'pro',
-                        }"
-                        @click="accountType = 'pro'"
-                    >
-                        🔨<br />
-                        Pro / Artisan
-                    </button>
-                </div>
-
-                <div class="register-row">
-                    <div class="register-field">
-                        <label>Prénom</label>
-                        <input
-                            type="text"
-                            placeholder="Marie"
-                            v-model="prenom"
-                        />
+                <form class="auth-form" @submit.prevent="handleSubmit">
+                    <div class="auth-grid">
+                        <div><label>Prenom</label><input v-model="prenom" type="text" placeholder="Marie" /></div>
+                        <div><label>Nom</label><input v-model="nom" type="text" placeholder="Lambert" /></div>
                     </div>
-                    <div class="register-field">
-                        <label>Nom</label>
-                        <input
-                            type="text"
-                            placeholder="Lambert"
-                            v-model="nom"
-                        />
-                    </div>
-                </div>
-
-                <div class="register-field">
                     <label>Adresse e-mail</label>
-                    <input
-                        type="email"
-                        placeholder="marie.lambert@exemple.fr"
-                        v-model="email"
-                        :class="{ 'input--error': isEmailInvalid }"
-                    />
-                </div>
-
-                <div class="register-field">
+                    <input v-model="email" type="email" placeholder="marie.lambert@exemple.fr" />
                     <label>Mot de passe</label>
-                    <input
-                        type="password"
-                        placeholder="••••••••••"
-                        v-model="motDePasse"
-                    />
-                </div>
-                
-                <div v-if="errorMessages.length > 0" 
-                style="background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; 
-                padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-                    <ul style="margin: 0; padding-left: 20px;">
-                        <li v-for="(err, index) in errorMessages" :key="index">
-                            {{ err }}
-                        </li>
-                    </ul>
-                </div>
-                
-                <div class="register-field">
+                    <input v-model="motDePasse" type="password" placeholder="Minimum 8 caracteres" />
                     <label>Code postal</label>
-                    <input
-                        type="text"
-                        placeholder="75011"
-                        v-model="codePostal"
-                        :class="{ 'input--error': isPostalCodeInvalid }"
-                    />
-                </div>
+                    <input v-model="codePostal" type="text" placeholder="75011" />
 
-                <div class="register-cgu">
-                    <input type="checkbox" id="cgu" v-model="cguAccepte" />
-                    <label for="cgu">
-                        J'accepte les
-                        <router-link to="/" class="register-right__link">CGU</router-link> et la
-                        <router-link to="/" class="register-right__link"
-                            >politique de confidentialité</router-link
-                        >
-                    </label>
-                </div>
+                    <label class="cgu-line"><input v-model="cguAccepte" type="checkbox" /> J'accepte les CGU.</label>
 
-                <button class="register-submit" @click="handleSubmit">
-                    Créer mon compte gratuitement →
-                </button>
+                    <div v-if="errorMessages.length" class="auth-error">
+                        <ul><li v-for="(err, index) in errorMessages" :key="index">{{ err }}</li></ul>
+                    </div>
 
-                <div class="register-separator">
-                    <span>ou</span>
-                </div>
-
-                <button class="register-google">Continuer avec Google</button>
+                    <button class="login-submit" type="submit">Creer mon compte</button>
+                </form>
             </div>
-        </div>
+        </section>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import { registerUser } from "../services/publicApi";
 
 const router = useRouter();
-const accountType = ref("particulier");
-const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
-const userName = ref("Marie Lambert");
+const isLoggedIn = computed(() => Boolean(localStorage.getItem("userToken")));
+const userName = computed(() => {
+    const prenom = localStorage.getItem("userPrenom") || "";
+    const nom = localStorage.getItem("userNom") || "";
+    return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
+});
 
 const errorMessages = ref([]);
-const successMessage = ref('');
 const prenom = ref("");
 const nom = ref("");
 const email = ref("");
@@ -204,398 +65,48 @@ const motDePasse = ref("");
 const codePostal = ref("");
 const cguAccepte = ref(false);
 
-const isEmailInvalid = computed(() => {
-    return email.value.length > 0 && !email.value.includes("@");
-});
-
-const isPostalCodeInvalid = computed(() => {
-    const onlyDigits = /^\d+$/.test(codePostal.value);
-    return (
-        codePostal.value.length > 0 &&
-        (codePostal.value.length !== 5 || !onlyDigits)
-    );
-});
-
 async function handleSubmit() {
     errorMessages.value = [];
-    
-    if (!prenom.value.trim() || !nom.value.trim() || !email.value.trim() || 
-        !motDePasse.value.trim() || !codePostal.value.trim()) {
+
+    if (!prenom.value.trim() || !nom.value.trim() || !email.value.trim() || !motDePasse.value.trim() || !codePostal.value.trim()) {
         errorMessages.value = ["Il manque des informations."];
         return;
     }
-    
     if (!cguAccepte.value) {
         errorMessages.value = ["Veuillez accepter les CGU pour continuer."];
         return;
     }
 
-    const userData = {
-        prenom: prenom.value,
-        nom: nom.value,
-        mail: email.value,
-        password: motDePasse.value,
-        code_postal: codePostal.value,
-        role: "Particulier", 
-        id_langue: 1     
-    };
-    
     try {
-        const response = await fetch("http://localhost:8081/users", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(userData),
+        await registerUser({
+            prenom: prenom.value,
+            nom: nom.value,
+            mail: email.value,
+            password: motDePasse.value,
+            code_postal: codePostal.value,
+            role: "Particulier",
+            id_langue: 1
         });
-
-        if (response.ok) {
-            alert("Compte créé avec succès");
-            router.push("/connexion");
-            return;
-        } else {
-            const data = await response.json();
-            if (Array.isArray(data)) {
-                errorMessages.value = data;
-            } else {
-                errorMessages.value = [data.message || "Erreur de validation"];
-            }
-        }
-
+        router.push("/connexion");
     } catch (error) {
-        console.error("Détail :", error);
-        
-        if (error instanceof SyntaxError) {
-            errorMessages.value = ["Le serveur a réussi mais a renvoyé une réponse illisible."];
-        } else {
-            errorMessages.value = ["Le serveur est injoignable (éteint ou problème réseau)."];
-        }
+        console.error("Erreur inscription :", error);
+        errorMessages.value = [error.message || "Inscription impossible."];
     }
 }
 </script>
 
 <style scoped>
-.register-page {
-    display: flex;
-    min-height: calc(100vh - 86px);
-    margin-top: -108px;
-}
-
-.register-left {
-    width: 50%;
-    background-color: #17201b;
-}
-
-.register-right {
-    width: 50%;
-    background: #ffffff;
-}
-
-.register-left__content {
-    padding: 60px 50px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-}
-
-.register-left__logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #ffffff;
-    font-family: "Syne", sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0;
-    padding-bottom: 60px;
-}
-
-.accent {
-    color: #338454;
-}
-
-.register-left__title {
-    font-family: "Syne", sans-serif;
-    font-size: 2.8rem;
-    font-weight: 800;
-    color: #ffffff;
-    line-height: 1.15;
-    margin: 0 0 24px 0;
-}
-
-.register-left__desc {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin: 0 0 48px 0;
-    max-width: 340px;
-}
-
-.register-left__stats {
-    display: flex;
-    gap: 40px;
-}
-
-.navbar__logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.navbar__logo-img {
-    height: 35px;
-    width: auto;
-    object-fit: contain;
-}
-
-.stat strong {
-    display: block;
-    font-family: "Syne", sans-serif;
-    font-size: 2rem;
-    font-weight: 800;
-    color: #ffffff;
-}
-
-.stat span {
-    display: block;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 4px;
-}
-
-.register-testimonial {
-    margin-top: auto;
-    padding: 20px 24px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.register-testimonial__text {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.7);
-    line-height: 1.6;
-    margin: 0;
-    font-style: italic;
-}
-
-.register-testimonial__author {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 16px;
-}
-
-.register-testimonial__avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: #338454;
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.register-testimonial__author strong {
-    display: block;
-    font-size: 0.85rem;
-    color: #ffffff;
-}
-
-.register-testimonial__author span {
-    display: block;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 2px;
-}
-
-.register-right__logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #17201b;
-    font-family: "Syne", sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0;
-    padding-bottom: 30px;
-}
-
-.accent-green {
-    color: #338454;
-}
-.register-right__content {
-    padding: 60px 50px;
-    max-width: 520px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 100vh;
-}
-
-.register-right__title {
-    font-family: "Syne", sans-serif;
-    font-size: 2rem;
-    font-weight: 800;
-    color: #17201b;
-    margin: 0 0 8px 0;
-    white-space: nowrap;
-}
-
-.register-right__subtitle {
-    font-size: 0.9rem;
-    color: #7b857f;
-    margin: 0 0 28px 0;
-}
-
-.register-right__link {
-    color: #338454;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.register-right__label {
-    font-size: 0.9rem;
-    color: #17201b;
-    margin: 0 0 10px 0;
-    font-weight: 500;
-}
-
-.register-type {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 24px;
-}
-
-.register-type__btn {
-    flex: 1;
-    padding: 14px;
-    border-radius: 12px;
-    border: 1.5px solid #dfe9e1;
-    background: #ffffff;
-    font-size: 0.9rem;
-    color: #17201b;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.register-type__btn--active {
-    border-color: #338454;
-    background: #ecf8f0;
-    color: #338454;
-    font-weight: 700;
-}
-
-.register-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-}
-
-.register-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.register-field label {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #17201b;
-}
-
-.register-field input {
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1.5px solid #dfe9e1;
-    background: #ffffff;
-    font-size: 0.9rem;
-    color: #17201b;
-    outline: none;
-    transition: border-color 0.2s ease;
-}
-
-.register-field input:focus {
-    border-color: #338454;
-}
-
-.register-cgu {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 20px;
-    font-size: 0.85rem;
-    color: #7b857f;
-}
-
-.register-cgu input[type="checkbox"] {
-    margin-top: 2px;
-    accent-color: #338454;
-}
-
-.register-submit {
-    width: 100%;
-    padding: 16px;
-    border-radius: 12px;
-    border: none;
-    background: #338454;
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 16px;
-    transition: background 0.2s ease;
-}
-
-.register-submit:hover {
-    background: #1f6d43;
-}
-
-.register-separator {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    color: #7b857f;
-    font-size: 0.85rem;
-}
-
-.register-separator::before,
-.register-separator::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: #dfe9e1;
-}
-
-.register-google {
-    width: 100%;
-    padding: 14px;
-    border-radius: 12px;
-    border: 1.5px solid #dfe9e1;
-    background: #ffffff;
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #17201b;
-    transition: background 0.2s ease;
-}
-
-.register-google:hover {
-    background: #f5f8f5;
-}
-
-.input--error {
-    border-color: #ff4d4f !important;
-}
-
-.error-text {
-    color: #ff4d4f;
-    font-size: 0.75rem;
-    margin-top: -10px;
-    margin-bottom: 10px;
-}
+.auth-page { display: grid; grid-template-columns: 1fr 1fr; min-height: calc(100vh - 86px); margin-top: -108px; }
+.auth-side { display: flex; align-items: center; justify-content: center; padding: 48px; }
+.auth-side--dark { background: #17201b; color: white; }
+.auth-side--light { background: #ffffff; }
+.auth-brand { display: flex; align-items: center; gap: 12px; font-size: 1.15rem; font-weight: 700; cursor: pointer; margin-bottom: 2rem; }
+.auth-brand strong { color: #338454; }
+.auth-card { width: min(480px, 100%); }
+.auth-form { display: grid; gap: 0.85rem; margin-top: 1.5rem; }
+.auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+.auth-form input { padding: 0.95rem 1rem; border: 1px solid #d9dfdb; border-radius: 12px; width: 100%; }
+.auth-error { color: #b91c1c; background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 10px; }
+.login-submit { margin-top: 0.5rem; background: #338454; color: white; border: none; border-radius: 12px; padding: 0.95rem 1rem; font-weight: 700; }
+.cgu-line { display: flex; align-items: center; gap: 8px; }
 </style>

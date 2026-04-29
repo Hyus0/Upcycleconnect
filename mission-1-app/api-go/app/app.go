@@ -461,6 +461,35 @@ func GetUserStatsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(stats)
 }
 
+func GetUserPlanningHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	entries, err := db.GetUserPlanningEntries(id)
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entries)
+}
+
+func GetPlatformOverviewHandler(w http.ResponseWriter, r *http.Request) {
+	overview, err := db.GetPlatformOverview()
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(overview)
+}
+
 // Annonces
 func GetAllAnnonces(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -1038,11 +1067,11 @@ func ValidateFormation(f models.Formation) []string {
 		errsMsg = append(errsMsg, "Le prix ne peut pas être négatif")
 	}
 
-	if f.Type != "Atelier" && f.Type != "Webinaire" {
-		errsMsg = append(errsMsg, "Le type doit être 'Atelier' ou 'Webinaire'")
+	if f.Type != "Atelier" && f.Type != "Cours" && f.Type != "Webinaire" {
+		errsMsg = append(errsMsg, "Le type doit être 'Atelier', 'Cours' ou 'Webinaire'")
 	}
-	if f.Statut != "Ouvert" && f.Statut != "Fermé" && f.Statut != "Annulé" {
-		errsMsg = append(errsMsg, "Statut invalide (Ouvert, Fermé, Annulé)")
+	if f.Statut != "Ouvert" && f.Statut != "Complet" && f.Statut != "Termine" && f.Statut != "Annule" {
+		errsMsg = append(errsMsg, "Statut invalide (Ouvert, Complet, Termine, Annule)")
 	}
 
 	if f.Type == "Atelier" {

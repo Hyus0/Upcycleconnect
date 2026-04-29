@@ -109,8 +109,8 @@ func CreateProjet(p models.ProjetUpcycling) (int, error) {
 	}
 
 	query := `INSERT INTO PROJET_UPCYCLING (
-		id_createur, titre, description_courte, co2_evite_kg, visible_public
-	) VALUES (?, ?, ?, ?, ?)`
+		id_createur, image_url, titre, description_courte, co2_evite_kg, visible_public
+	) VALUES (?, '', ?, ?, ?, ?)`
 
 	result, err := Conn.Exec(
 		query,
@@ -238,30 +238,6 @@ func IncrementVue(projetID int, userID int, ipAddress string) error {
 		return fmt.Errorf("connexion DB non initialisee")
 	}
 
-	var exists bool
-	checkQuery := `
-		SELECT EXISTS(
-			SELECT 1 FROM PROJET_VUE
-			WHERE id_projet = ?
-			AND (id_utilisateur = ? OR ip_adresse = ?)
-			AND date_vue > DATE_SUB(NOW(), INTERVAL 1 DAY)
-		)`
-
-	err := Conn.QueryRow(checkQuery, projetID, userID, ipAddress).Scan(&exists)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return nil
-	}
-	_, err = Conn.Exec("INSERT INTO PROJET_VUE (id_projet, id_utilisateur, ip_adresse) VALUES (?, ?, ?)",
-		projetID, userID, ipAddress)
-	if err != nil {
-		return err
-	}
-
-	_, err = Conn.Exec("UPDATE PROJET_UPCYCLING SET nb_vues = nb_vues + 1 WHERE id = ?", projetID)
-
+	_, err := Conn.Exec("UPDATE PROJET_UPCYCLING SET nb_vues = nb_vues + 1 WHERE id = ?", projetID)
 	return err
 }

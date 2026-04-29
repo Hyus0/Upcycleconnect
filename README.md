@@ -23,9 +23,6 @@ admin/
 deploy/
   Configuration Docker, Nginx et scripts SQL d'initialisation MySQL.
 
-docs/
-  Documentation projet, cahier des charges et livrables techniques.
-
 mission-1-app/
   web-app/
     Site public et espace utilisateur Vue.js.
@@ -33,12 +30,6 @@ mission-1-app/
     API Go connectee a MySQL.
   backoffice/
     Backoffice PHP historique.
-
-mission-2-infra/
-  Elements d'infrastructure.
-
-mission-3-module/
-  Espace prevu pour les modules suivants.
 ```
 hpMyAdmin : `http://localhost:8089/`
 

@@ -706,6 +706,173 @@ button {
   gap: 10px;
 }
 
+.planning-section {
+  display: grid;
+  gap: 18px;
+}
+
+.planning-section__header {
+  align-items: flex-start;
+}
+
+.planning-subtitle {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.planning-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.planning-month {
+  min-width: 180px;
+  text-align: center;
+  font-family: "Syne", sans-serif;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.planning-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.planning-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.planning-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.planning-dot--formation {
+  background: #2d7a4f;
+}
+
+.planning-dot--event {
+  background: #f39c12;
+}
+
+.planning-dot--other {
+  background: #4b77d1;
+}
+
+.planning-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.planning-calendar__weekday {
+  padding: 0 0 4px;
+  color: #a1aea6;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.planning-day {
+  min-height: 132px;
+  border: 1px solid #edf2ee;
+  border-radius: 14px;
+  background: #fcfdfc;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.planning-day.is-outside {
+  background: #f7faf8;
+  opacity: 0.55;
+}
+
+.planning-day.is-today {
+  border-color: #9fd0b0;
+  box-shadow: 0 10px 24px rgba(45, 122, 79, 0.08);
+}
+
+.planning-day.has-events {
+  background: linear-gradient(180deg, #fdfefd, #f6faf7);
+}
+
+.planning-day__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.planning-day__head small {
+  color: #8d9993;
+  font-size: 0.68rem;
+}
+
+.planning-day__number {
+  font-family: "Syne", sans-serif;
+  font-size: 1.1rem;
+}
+
+.planning-day__entries {
+  display: grid;
+  gap: 6px;
+}
+
+.planning-entry {
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  color: white;
+}
+
+.planning-entry strong {
+  font-size: 0.74rem;
+}
+
+.planning-entry span {
+  opacity: 0.86;
+}
+
+.planning-entry--formation {
+  background: #2d7a4f;
+}
+
+.planning-entry--event {
+  background: #f39c12;
+}
+
+.planning-entry--other {
+  background: #4b77d1;
+}
+
+.planning-entry--more {
+  background: #eef3ef;
+  color: #67756d;
+}
+
+.planning-empty {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #f7faf8;
+  color: var(--text-secondary);
+}
+
 .day-box {
   min-height: 100px;
   border: 1px solid #f0f2f1;

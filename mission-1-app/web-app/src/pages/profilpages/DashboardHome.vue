@@ -7,7 +7,10 @@
                 Voici un resume de votre activite sur UpcycleConnect
             </p>
         </div>
-        <router-link to="/profil/createAnnonce" class="btn-main-action">+ Deposer une annonce</router-link>
+        <div class="header-actions">
+            <button class="btn-secondary" type="button" @click="openTutorial">Relancer le tuto</button>
+            <router-link to="/profil/createAnnonce" class="btn-main-action">+ Deposer une annonce</router-link>
+        </div>
     </header>
 
     <div class="stats-grid">
@@ -162,6 +165,7 @@
                         :key="entry.id"
                         class="planning-week__entry"
                         :class="`planning-entry--${entry.kind}`"
+                        @click.stop="openCalendarEntry(entry)"
                     >
                         <strong>{{ entry.title }}</strong>
                         <span>{{ entry.timeLabel }}</span>
@@ -218,6 +222,7 @@
                             :key="entry.id"
                             class="planning-entry"
                             :class="`planning-entry--${entry.kind}`"
+                            @click.stop="openCalendarEntry(entry)"
                         >
                             <strong>{{ entry.title }}</strong>
                             <span>{{ entry.timeLabel }}</span>
@@ -237,6 +242,8 @@
             </div>
         </div>
     </div>
+
+    <DashboardTutorial v-model="tutorialOpen" @complete="markTutorialSeen" />
 
     <div class="end-grid">
         <div class="section-container-tips">
@@ -267,8 +274,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import DashboardTutorial from "../../components/DashboardTutorial.vue";
 import {
     deleteAnnonce,
     fetchUserAnnonces,
@@ -284,6 +292,7 @@ const calendarEntries = ref([]);
 const currentMonth = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const planningModalOpen = ref(false);
+const tutorialOpen = ref(false);
 
 const stats = ref({
     total_points: 0,
@@ -386,7 +395,13 @@ const toCalendarEntry = (item, kind, title, dateValue) => {
         title,
         date: parsed.toISOString().slice(0, 10),
         dateLabel: parsed.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
-        timeLabel: parsed.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+        timeLabel: parsed.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+        route:
+            kind === "formation"
+                ? { name: "formation-detail", params: { id: item.id_formation || item.id } }
+                : kind === "event"
+                    ? { name: "evenement-detail", params: { id: item.id_evenement || item.id } }
+                    : null
     };
 };
 
@@ -430,6 +445,24 @@ const closePlanningModal = () => {
     planningModalOpen.value = false;
 };
 
+const openCalendarEntry = (entry) => {
+    if (entry.route) {
+        router.push(entry.route);
+    }
+};
+
+const openTutorial = () => {
+    tutorialOpen.value = true;
+};
+
+const markTutorialSeen = () => {
+    localStorage.setItem("upcycle-dashboard-tutorial-seen", "1");
+};
+
+const handleTutorialEvent = () => {
+    openTutorial();
+};
+
 const loadCalendarEntries = async (id) => {
     const planningEntries = await fetchUserPlanning(id);
     const normalizedEntries = Array.isArray(planningEntries)
@@ -449,6 +482,7 @@ const loadCalendarEntries = async (id) => {
 };
 
 onMounted(async () => {
+    window.addEventListener("upcycle-open-dashboard-tutorial", handleTutorialEvent);
     const id = localStorage.getItem("userId");
     if (!id) return;
 
@@ -478,5 +512,13 @@ onMounted(async () => {
         console.error("Erreur calendrier :", planningResult.reason);
         calendarEntries.value = [];
     }
+
+    if (!localStorage.getItem("upcycle-dashboard-tutorial-seen")) {
+        tutorialOpen.value = true;
+    }
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener("upcycle-open-dashboard-tutorial", handleTutorialEvent);
 });
 </script>

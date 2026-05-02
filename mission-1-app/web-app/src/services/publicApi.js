@@ -3,6 +3,8 @@ function authHeaders() {
   return token ? { Authorization: token } : {};
 }
 
+const API_BASE_URL = "http://localhost:8081";
+
 async function parseResponse(response) {
   const contentType = response.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
@@ -12,7 +14,7 @@ async function parseResponse(response) {
 }
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch(path, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...authHeaders(),
@@ -23,186 +25,193 @@ async function apiRequest(path, options = {}) {
 
   const payload = await parseResponse(response);
   if (!response.ok) {
-    const message =
-      typeof payload === "string"
-        ? payload
-        : payload?.message ?? payload?.error ?? `Erreur HTTP ${response.status}`;
+    const message = Array.isArray(payload)
+      ? payload.join(" ")
+      : payload?.errors && Array.isArray(payload.errors)
+        ? payload.errors.join(" ")
+        : typeof payload === "string"
+          ? payload
+          : payload?.message ?? payload?.error ?? `Erreur HTTP ${response.status}`;
     throw new Error(message);
   }
   return payload;
 }
 
 export async function fetchPlatformOverview() {
-  return apiRequest("/go/platform/overview");
+  return apiRequest("/platform/overview");
 }
 
 export async function checkSession(userId) {
-  return apiRequest(`/go/check-session?id=${userId}`);
+  return apiRequest(`/check-session?id=${userId}`);
 }
 
 export async function loginUser(payload) {
-  return apiRequest("/go/login", {
+  return apiRequest("/login", {
     method: "POST",
     body: JSON.stringify(payload)
   });
 }
 
 export async function registerUser(payload) {
-  return apiRequest("/go/users", {
+  return apiRequest("/users", {
     method: "POST",
     body: JSON.stringify(payload)
   });
 }
 
 export async function fetchUsers() {
-  return apiRequest("/go/users");
+  return apiRequest("/users");
 }
 
 export async function fetchUser(userId) {
-  return apiRequest(`/go/users/${userId}`);
+  return apiRequest(`/users/${userId}`);
 }
 
 export async function fetchUserStats(userId) {
-  return apiRequest(`/go/users/${userId}/stats`);
+  return apiRequest(`/users/${userId}/stats`);
 }
 
 export async function fetchUserPlanning(userId) {
-  return apiRequest(`/go/users/${userId}/planning`);
+  return apiRequest(`/users/${userId}/planning`);
 }
 
 export async function updateUser(userId, payload) {
-  return apiRequest(`/go/users/${userId}`, {
+  return apiRequest(`/users/${userId}`, {
     method: "PUT",
     body: JSON.stringify(payload)
   });
 }
 
 export async function updatePassword(userId, payload) {
-  return apiRequest(`/go/users/${userId}/password`, {
+  return apiRequest(`/users/${userId}/password`, {
     method: "PUT",
     body: JSON.stringify(payload)
   });
 }
 
 export async function fetchAnnonces() {
-  return apiRequest("/go/annonces");
+  return apiRequest("/annonces");
 }
 
 export async function fetchAnnonce(id) {
-  return apiRequest(`/go/annonces/${id}`);
+  return apiRequest(`/annonces/${id}`);
 }
 
 export async function fetchUserAnnonces(userId) {
-  return apiRequest(`/go/users/${userId}/annonces`);
+  return apiRequest(`/users/${userId}/annonces`);
 }
 
 export async function createAnnonce(payload) {
-  return apiRequest("/go/annonces", {
+  return apiRequest("/annonces", {
     method: "POST",
     body: JSON.stringify(payload)
   });
 }
 
 export async function updateAnnonce(id, payload) {
-  return apiRequest(`/go/annonces/${id}`, {
+  return apiRequest(`/annonces/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload)
   });
 }
 
 export async function deleteAnnonce(id) {
-  return apiRequest(`/go/annonces/${id}`, {
+  return apiRequest(`/annonces/${id}`, {
     method: "DELETE"
   });
 }
 
 export async function fetchCategories() {
-  return apiRequest("/go/categories");
+  return apiRequest("/categories");
 }
 
 export async function fetchCategory(id) {
-  return apiRequest(`/go/category/${id}`);
+  return apiRequest(`/category/${id}`);
 }
 
 export async function fetchEvenements() {
-  return apiRequest("/go/evenements");
+  return apiRequest("/evenements");
+}
+
+export async function fetchEvenement(id) {
+  return apiRequest(`/evenements/${id}`);
 }
 
 export async function fetchEvenementInscriptionStatus(evenementId, userId) {
-  return apiRequest(`/go/api/evenements/${evenementId}/inscription-status?user_id=${userId}`);
+  return apiRequest(`/api/evenements/${evenementId}/inscription-status?user_id=${userId}`);
 }
 
 export async function joinEvenement(evenementId, userId) {
-  return apiRequest(`/go/api/evenements/${evenementId}/join`, {
+  return apiRequest(`/api/evenements/${evenementId}/join`, {
     method: "POST",
     body: JSON.stringify({ id_utilisateur: Number(userId) })
   });
 }
 
 export async function quitEvenement(evenementId, userId) {
-  return apiRequest(`/go/api/evenements/${evenementId}/quit`, {
+  return apiRequest(`/api/evenements/${evenementId}/quit`, {
     method: "POST",
     body: JSON.stringify({ id_utilisateur: Number(userId) })
   });
 }
 
 export async function fetchFormations() {
-  return apiRequest("/go/formations");
+  return apiRequest("/formations");
 }
 
 export async function fetchFormation(id, userId = 0) {
-  return apiRequest(`/go/formations/${id}?user_id=${Number(userId) || 0}`);
+  return apiRequest(`/formations/${id}?user_id=${Number(userId) || 0}`);
 }
 
 export async function joinFormation(formationId, userId) {
-  return apiRequest(`/go/api/formations/${formationId}/join`, {
+  return apiRequest(`/api/formations/${formationId}/join`, {
     method: "POST",
     body: JSON.stringify({ id_utilisateur: Number(userId) })
   });
 }
 
 export async function quitFormation(formationId, userId) {
-  return apiRequest(`/go/api/formations/${formationId}/quit`, {
+  return apiRequest(`/api/formations/${formationId}/quit`, {
     method: "POST",
     body: JSON.stringify({ id_utilisateur: Number(userId) })
   });
 }
 
 export async function fetchProjets() {
-  return apiRequest("/go/projets");
+  return apiRequest("/projets");
 }
 
 export async function fetchProjet(id) {
-  return apiRequest(`/go/projet/${id}`);
+  return apiRequest(`/projet/${id}`);
 }
 
 export async function fetchProjetLikeStatus(projetId, userId) {
-  return apiRequest(`/go/projets/${projetId}/like-status/${userId}`);
+  return apiRequest(`/projets/${projetId}/like-status/${userId}`);
 }
 
 export async function toggleProjetLike(projetId, userId) {
-  return apiRequest(`/go/projets/${projetId}/like/${userId}`, {
+  return apiRequest(`/projets/${projetId}/like/${userId}`, {
     method: "POST"
   });
 }
 
 export async function fetchSites() {
-  return apiRequest("/go/sites");
+  return apiRequest("/sites");
 }
 
 export async function fetchSite(id) {
-  return apiRequest(`/go/site/${id}`);
+  return apiRequest(`/site/${id}`);
 }
 
 export async function reserveCasier(annonceId, siteId) {
-  return apiRequest(`/go/annonces/${annonceId}/reserver`, {
+  return apiRequest(`/annonces/${annonceId}/reserver`, {
     method: "POST",
     body: JSON.stringify({ site_id: Number(siteId) })
   });
 }
 
 export async function retirerAnnonceDuCasier(annonceId) {
-  return apiRequest(`/go/annonces/${annonceId}/retirer`, {
+  return apiRequest(`/annonces/${annonceId}/retirer`, {
     method: "POST"
   });
 }

@@ -6,6 +6,8 @@ import Profil from "./pages/Profil.vue";
 
 import Home from "./pages/Home.vue";
 import Annonces from "./pages/Annonces.vue";
+import Cart from "./pages/Cart.vue";
+import Messages from "./pages/Messages.vue";
 import Forums from "./pages/Forums.vue";
 import { checkSession } from "./services/publicApi";
 
@@ -18,10 +20,17 @@ const routes = [
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
   { path: "/annonces", component: Annonces },
+  { path: "/panier", component: Cart },
+  { path: "/messages", component: Messages, meta: { requiresAuth: true } },
   { path: "/forums", component: Forums },
   { path: "/formations", component: Formations },
   { path: "/evenements", component: Evenements },
   { path: "/projets", component: Projets },
+  {
+    path: '/evenements/:id',
+    name: 'evenement-detail',
+    component: () => import('./pages/EvenementDetail.vue')
+  },
   {
     path: '/formations/:id',
     name: 'formation-detail',

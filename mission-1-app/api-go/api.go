@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"upcycleconnect/api-go/app"
 	"upcycleconnect/api-go/db"
 )
@@ -16,8 +18,14 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func enableCORS(next http.Handler) http.Handler {
+	allowedOrigins := parseAllowedOrigins()
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5174")
+		origin := r.Header.Get("Origin")
+		if isAllowedOrigin(origin, allowedOrigins) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -28,6 +36,35 @@ func enableCORS(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func parseAllowedOrigins() []string {
+	raw := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if strings.TrimSpace(raw) == "" {
+		raw = "http://localhost:8088,http://localhost:5174"
+	}
+
+	parts := strings.Split(raw, ",")
+	origins := make([]string, 0, len(parts))
+	for _, part := range parts {
+		origin := strings.TrimSpace(part)
+		if origin != "" {
+			origins = append(origins, origin)
+		}
+	}
+	return origins
+}
+
+func isAllowedOrigin(origin string, allowedOrigins []string) bool {
+	if origin == "" {
+		return false
+	}
+	for _, allowed := range allowedOrigins {
+		if origin == allowed {
+			return true
+		}
+	}
+	return false
 }
 
 func main() {

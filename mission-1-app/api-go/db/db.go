@@ -43,8 +43,40 @@ func NewDB() *sql.DB {
 		panic(err.Error())
 	}
 
+	if err := ensureSchemaCompatibility(conn); err != nil {
+		panic(err.Error())
+	}
+
 	fmt.Println("Connected to database!")
 	return conn
+}
+
+func ensureSchemaCompatibility(conn *sql.DB) error {
+	if err := ensureColumn(conn, "UTILISATEUR", "token", "ALTER TABLE UTILISATEUR ADD COLUMN token VARCHAR(255) NULL"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ensureColumn(conn *sql.DB, tableName, columnName, alterSQL string) error {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = ?
+		  AND COLUMN_NAME = ?
+	`
+
+	if err := conn.QueryRow(query, tableName, columnName).Scan(&count); err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	_, err := conn.Exec(alterSQL)
+	return err
 }
 
 func getenv(key, fallback string) string {

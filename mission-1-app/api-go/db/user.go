@@ -116,13 +116,14 @@ func CreateUser(user models.User) error {
 	if err != nil {
 		return err
 	}
+
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
 
-	queryScore := `INSERT INTO UPCYCLING_SCORE (id_utilisateur, ressources_economisees, co2_total_evite_kg, nb_objets_recycles, total_points, niveau) 
-	               VALUES (?, 0, 0, 0, 0, 'Débutant 🌱')`
+	queryScore := `INSERT INTO UPCYCLING_SCORE (id_utilisateur, ressources_economisees, co2_total_evite_kg, nb_objets_recycles, total_points)
+	               VALUES (?, 0, 0, 0, 0)`
 
 	_, err = Conn.Exec(queryScore, lastInsertId)
 	return err
@@ -175,7 +176,7 @@ func DeleteUser(id int) error {
 
 	count, _ := result.RowsAffected()
 	if count == 0 {
-		return fmt.Errorf("aucun utilisateur trouvé")
+		return fmt.Errorf("aucun utilisateur trouve")
 	}
 	return nil
 }
@@ -223,7 +224,6 @@ func GetUserStats(userId int) (*models.UserStats, error) {
 
 	query := `SELECT
                 total_points,
-                niveau,
                 co2_total_evite_kg,
                 nb_objets_recycles,
                 ressources_economisees
@@ -232,24 +232,23 @@ func GetUserStats(userId int) (*models.UserStats, error) {
 
 	err := Conn.QueryRow(query, userId).Scan(
 		&s.Points,
-		&s.Niveau,
 		&s.Co2Evite,
 		&s.ObjetsRecycles,
 		&s.ArgentEconomise,
 	)
 
 	if err == sql.ErrNoRows {
-		return &models.UserStats{Niveau: "Débutant"}, nil
+		return &models.UserStats{Niveau: "Debutant"}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 	if s.Points > 500 {
-		s.Niveau = "Héro 🌿"
+		s.Niveau = "Hero"
 	} else if s.Points > 200 {
-		s.Niveau = "Protecteur 🍃"
+		s.Niveau = "Protecteur"
 	} else {
-		s.Niveau = "Débutant 🌱"
+		s.Niveau = "Debutant"
 	}
 
 	return &s, nil

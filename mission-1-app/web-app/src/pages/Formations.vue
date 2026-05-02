@@ -75,8 +75,15 @@
                     </div>
 
                     <div class="card-footer">
+                        <button
+                            class="btn-secondary btn-full-width"
+                            type="button"
+                            @click="toggleFormationCart(formation)"
+                        >
+                            {{ isFormationInCart(formation.id) ? "Retirer du panier" : "Ajouter au panier" }}
+                        </button>
                         <button class="btn-main-action-full" :disabled="formation.statut !== 'Ouvert'" @click="goToFormation(formation.id)">
-                            {{ formation.statut === "Ouvert" ? "Reserver ma place" : "Complet" }}
+                            Voir les details
                         </button>
                     </div>
                 </article>
@@ -86,10 +93,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import { fetchFormations } from "../services/publicApi";
+import { addItemToCart, isItemInCart, onCartChange, removeItemFromCart } from "../services/cartService";
 
 const formations = ref([]);
 const loading = ref(true);
@@ -97,6 +105,7 @@ const selectedType = ref("All");
 const searchQuery = ref("");
 const userScore = ref(0);
 const router = useRouter();
+let stopCartSync = null;
 
 const isLoggedIn = computed(() => !!localStorage.getItem("userToken"));
 
@@ -143,7 +152,26 @@ const goToFormation = (id) => {
     router.push({ name: "formation-detail", params: { id } });
 };
 
-onMounted(loadFormations);
+const isFormationInCart = (id) => isItemInCart("formation", id);
+
+const toggleFormationCart = (formation) => {
+    if (isFormationInCart(formation.id)) {
+        removeItemFromCart("formation", formation.id);
+        return;
+    }
+    addItemToCart(formation, "formation");
+};
+
+onMounted(() => {
+    loadFormations();
+    stopCartSync = onCartChange(() => {
+        formations.value = [...formations.value];
+    });
+});
+
+onBeforeUnmount(() => {
+    stopCartSync?.();
+});
 </script>
 
 <style scoped>
@@ -212,6 +240,11 @@ onMounted(loadFormations);
 .card-header {
     display: flex;
     justify-content: space-between;
+}
+
+.card-footer {
+    display: grid;
+    gap: 10px;
 }
 
 .tag-type {

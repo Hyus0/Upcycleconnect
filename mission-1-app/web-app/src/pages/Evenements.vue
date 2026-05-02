@@ -77,6 +77,9 @@
                     </div>
 
                     <div class="card-footer">
+                        <button class="btn-secondary btn-full-width" type="button" @click="goToEvenement(evenement.id)">
+                            Voir les details
+                        </button>
                         <button
                             v-if="!inscrit.has(evenement.id)"
                             class="btn-main-action-full"
@@ -102,6 +105,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import {
     fetchEvenementInscriptionStatus,
@@ -117,6 +121,7 @@ const searchQuery = ref("");
 const userScore = ref(0);
 const inscriptionsEnCours = ref(new Set());
 const inscrit = ref(new Set());
+const router = useRouter();
 
 const isLoggedIn = computed(() => !!localStorage.getItem("userToken"));
 
@@ -243,6 +248,10 @@ const desinscrire = async (evenement) => {
     }
 };
 
+const goToEvenement = (id) => {
+    router.push({ name: "evenement-detail", params: { id } });
+};
+
 onMounted(loadEvenements);
 </script>
 
@@ -315,6 +324,11 @@ onMounted(loadEvenements);
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.card-footer {
+    display: grid;
+    gap: 10px;
 }
 
 .tag-type {

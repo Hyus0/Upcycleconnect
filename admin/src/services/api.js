@@ -1,6 +1,7 @@
 import { request } from "./http";
 
-const GO_API_BASE = import.meta.env.VITE_GO_API_BASE ?? "/api-go";
+const GO_API_BASE = import.meta.env.VITE_GO_API_BASE ?? "http://localhost:8081/api";
+const GO_PUBLIC_BASE = import.meta.env.VITE_GO_PUBLIC_BASE ?? "http://localhost:8081";
 
 function buildQuery(params = {}) {
   const searchParams = new URLSearchParams();
@@ -268,7 +269,7 @@ async function readPrestationsFromApi(filters = {}) {
 }
 
 async function readAnnoncesFromApi() {
-  const response = await request("/go/annonces");
+  const response = await request(`${GO_PUBLIC_BASE}/annonces`);
   return (Array.isArray(response) ? response : []).map(normalizeAnnonce);
 }
 
@@ -433,7 +434,7 @@ export const adminApi = {
       type: payload.type
     };
 
-    const response = await request("/go/annonces", {
+    const response = await request(`${GO_PUBLIC_BASE}/annonces`, {
       method: "POST",
       body: JSON.stringify(requestPayload)
     });

@@ -62,7 +62,7 @@
                 <div class="form-group"><label>Adresse</label><input v-model="form.adresse" type="text" /></div>
                 <div class="form-actions-card">
                     <button type="button" class="btn-cancel" @click="$router.back()">Annuler</button>
-                    <button type="submit" class="btn-save" :disabled="loading">{{ loading ? "Publication..." : "Publier l'annonce" }}</button>
+                    <button type="submit" class="btn-save" :disabled="loading || !categories.length">{{ loading ? "Publication..." : "Publier l'annonce" }}</button>
                 </div>
             </div>
         </div>
@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { createAnnonce, fetchCategories } from "../../services/publicApi";
 
@@ -81,7 +81,7 @@ const errors = ref([]);
 const successMsg = ref("");
 
 const form = ref({
-    id_vendeur: Number(localStorage.getItem("userId")),
+    id_vendeur: Number(localStorage.getItem("userId")) || 0,
     id_categorie: "",
     titre: "",
     description: "",
@@ -96,30 +96,64 @@ const form = ref({
     statut: "Disponible"
 });
 
+watch(
+    () => form.value.type,
+    (nextType) => {
+        if (nextType === "Don") {
+            form.value.prix = 0;
+        }
+    }
+);
+
 const loadCategories = async () => {
     try {
         const payload = await fetchCategories();
         categories.value = Array.isArray(payload) ? payload : [];
+        if (!categories.value.length) {
+            errors.value = ["Aucune categorie n'est disponible pour le moment."];
+        }
     } catch (error) {
         console.error("Erreur categories :", error);
         categories.value = [];
+        errors.value = [error.message || "Impossible de charger les categories."];
     }
 };
 
 const validateFrontend = () => {
     errors.value = [];
+    form.value.id_vendeur = Number(localStorage.getItem("userId")) || 0;
+
+    if (!form.value.id_vendeur) errors.value.push("Vous devez etre connecte pour deposer une annonce.");
     if ((form.value.titre || "").length < 5) errors.value.push("Le titre doit faire au moins 5 caracteres.");
+    if ((form.value.description || "").length < 10) errors.value.push("La description doit faire au moins 10 caracteres.");
     if (!form.value.id_categorie) errors.value.push("Veuillez choisir une categorie.");
     if (form.value.type === "Vente" && Number(form.value.prix) <= 0) errors.value.push("Le prix doit etre superieur a 0 EUR.");
+    if ((form.value.code_postal || "").length !== 5) errors.value.push("Le code postal doit contenir 5 caracteres.");
+    if ((form.value.ville || "").trim().length < 2) errors.value.push("La ville doit etre renseignee.");
     return errors.value.length === 0;
 };
+
+const buildPayload = () => ({
+    ...form.value,
+    id_vendeur: Number(localStorage.getItem("userId")) || 0,
+    id_categorie: Number(form.value.id_categorie) || 0,
+    prix: form.value.type === "Don" ? 0 : Number(form.value.prix) || 0,
+    poids_estime_kg: Number(form.value.poids_estime_kg) || 0,
+    titre: (form.value.titre || "").trim(),
+    description: (form.value.description || "").trim(),
+    type_materiau: (form.value.type_materiau || "").trim(),
+    ville: (form.value.ville || "").trim(),
+    code_postal: (form.value.code_postal || "").trim(),
+    adresse: (form.value.adresse || "").trim(),
+    statut: "Disponible"
+});
 
 const handleSubmit = async () => {
     if (!validateFrontend()) return;
     loading.value = true;
     successMsg.value = "";
     try {
-        await createAnnonce(form.value);
+        await createAnnonce(buildPayload());
         successMsg.value = "Annonce creee avec succes.";
         setTimeout(() => router.push("/profil/annonces"), 1000);
     } catch (error) {

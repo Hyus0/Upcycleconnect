@@ -23,6 +23,10 @@
               <span>Activite</span>
               <small>Score, planning et resume</small>
             </RouterLink>
+            <button class="nav-menu__item" type="button" @click="restartTutorial">
+              <span>Relancer le tuto</span>
+              <small>Aide guidee du dashboard</small>
+            </button>
             <button class="nav-menu__item nav-menu__item--danger" type="button" @click="handleLogout">
               <span>Se deconnecter</span>
               <small>Fermer la session locale</small>
@@ -73,12 +77,20 @@
       </nav>
 
       <div class="site-navbar__actions" v-if="isAuthenticated">
+        <RouterLink class="site-navbar__button site-navbar__button--ghost site-navbar__button--cart" to="/panier">
+          Panier
+          <span v-if="cartCount" class="site-navbar__cart-badge">{{ cartCount }}</span>
+        </RouterLink>
         <RouterLink class="site-navbar__button site-navbar__button--primary" to="/profil/annonces">
           + Deposer
         </RouterLink>
       </div>
 
       <div class="site-navbar__actions" v-else>
+        <RouterLink class="site-navbar__button site-navbar__button--ghost site-navbar__button--cart" to="/panier">
+          Panier
+          <span v-if="cartCount" class="site-navbar__cart-badge">{{ cartCount }}</span>
+        </RouterLink>
         <RouterLink class="site-navbar__button site-navbar__button--ghost" to="/connexion">
           Connexion
         </RouterLink>
@@ -91,12 +103,14 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import logoSrc from "./logo_texte.png";
+import { getCartCount, onCartChange } from "../services/cartService";
 
 const route = useRoute();
 const router = useRouter();
+const cartCount = ref(0);
 
 const props = defineProps({
   variant: {
@@ -131,6 +145,11 @@ const dashboardChildren = [
     label: "Mes annonces",
     to: "/profil/annonces",
     description: "Objets publies et brouillons"
+  },
+  {
+    label: "Messagerie",
+    to: "/messages",
+    description: "Vendeurs, organisateurs et formateurs"
   },
   {
     label: "Mes depots conteneurs",
@@ -214,6 +233,8 @@ const userInitials = computed(() =>
     .join("")
 );
 
+let stopCartSync = null;
+
 function itemPath(item) {
   return typeof item.to === "string" ? item.to : item.to?.path;
 }
@@ -241,6 +262,30 @@ function handleLogout() {
   sessionStorage.removeItem("userToken");
   sessionStorage.removeItem("userId");
   localStorage.removeItem("userToken");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("userPrenom");
+  localStorage.removeItem("userNom");
+  localStorage.removeItem("userScore");
   router.push("/connexion");
 }
+
+function restartTutorial() {
+  router.push("/profil");
+  window.setTimeout(() => {
+    window.dispatchEvent(new Event("upcycle-open-dashboard-tutorial"));
+  }, 80);
+}
+
+function syncCartCount() {
+  cartCount.value = getCartCount();
+}
+
+onMounted(() => {
+  syncCartCount();
+  stopCartSync = onCartChange(syncCartCount);
+});
+
+onBeforeUnmount(() => {
+  stopCartSync?.();
+});
 </script>

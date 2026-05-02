@@ -39,6 +39,9 @@
                 <div class="info-card">
                     <h3>Organisateur</h3>
                     <p>{{ formation.prenom_formateur || "NULL" }} {{ formation.nom_formateur || "" }}</p>
+                    <button class="btn-secondary contact-button" type="button" @click="contactOrganizer">
+                        Ouvrir une discussion
+                    </button>
                 </div>
 
                 <div class="price-card">
@@ -48,6 +51,10 @@
                 </div>
 
                 <div class="card registration-card">
+                    <button class="btn-secondary" type="button" @click="toggleCart">
+                        {{ isInCart ? "Retirer du panier" : "Ajouter au panier" }}
+                    </button>
+
                     <button
                         class="btn-main-action"
                         :class="{ 'btn-registered': isRegistered }"
@@ -72,6 +79,8 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import { fetchFormation, joinFormation, quitFormation } from "../services/publicApi";
+import { addItemToCart, isItemInCart, removeItemFromCart } from "../services/cartService";
+import { startConversation } from "../services/messageService";
 
 const route = useRoute();
 const router = useRouter();
@@ -81,6 +90,7 @@ const userScore = ref(0);
 const isRegistered = ref(false);
 const isRegistering = ref(false);
 const isLeaving = ref(false);
+const isInCart = computed(() => formation.value?.id ? isItemInCart("formation", formation.value.id) : false);
 
 const isLoggedIn = computed(() => !!localStorage.getItem("userToken"));
 
@@ -155,6 +165,32 @@ const handleQuit = async () => {
     }
 };
 
+const toggleCart = () => {
+    if (!formation.value?.id) return;
+    if (isInCart.value) {
+        removeItemFromCart("formation", formation.value.id);
+        return;
+    }
+    addItemToCart(formation.value, "formation");
+};
+
+const contactOrganizer = () => {
+    if (!localStorage.getItem("userToken")) {
+        router.push("/connexion");
+        return;
+    }
+
+    const conversation = startConversation({
+        kind: "formateur",
+        targetId: formation.value?.id_formateur,
+        name: `${formation.value?.prenom_formateur || ""} ${formation.value?.nom_formateur || ""}`.trim() || "Formateur",
+        subject: formation.value?.titre,
+        contextId: formation.value?.id,
+        contextLabel: `Formation - ${formation.value?.titre}`
+    });
+    router.push({ path: "/messages", query: { conversation: conversation.id } });
+};
+
 onMounted(loadDetail);
 </script>
 
@@ -209,5 +245,17 @@ onMounted(loadDetail);
     font-size: 2rem;
     font-weight: 800;
     color: #2d6a4f;
+}
+
+.contact-button,
+.registration-card .btn-secondary,
+.registration-card .btn-main-action {
+    width: 100%;
+    justify-content: center;
+}
+
+.registration-card {
+    display: grid;
+    gap: 10px;
 }
 </style>

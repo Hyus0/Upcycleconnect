@@ -110,7 +110,16 @@
             <td>{{ formatDate(annonce.date_creation) }}</td>
             <td class="actions-cell">
               <button class="btn-view" type="button">Voir</button>
-              <RouterLink class="btn-modify" to="/profil/annonces">Contacter</RouterLink>
+              <button
+                :class="isInCartItem(annonce.id) ? 'btn-remove' : 'btn-modify'"
+                type="button"
+                @click="toggleCart(annonce)"
+              >
+                {{ isInCartItem(annonce.id) ? "Retirer" : "Ajouter au panier" }}
+              </button>
+              <button class="btn-view" type="button" @click="contactSeller(annonce)">
+                Contacter
+              </button>
             </td>
           </tr>
         </tbody>
@@ -120,11 +129,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
-import { RouterLink } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { RouterLink, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import { fetchAnnonces } from "../services/annoncesApi";
+import { addToCart, isInCart, onCartChange, removeFromCart } from "../services/cartService";
+import { startConversation } from "../services/messageService";
 
+const router = useRouter();
 const loading = ref(true);
 const source = ref("api");
 const annonces = ref([]);
@@ -178,6 +190,8 @@ const sourceLabel = computed(() =>
   source.value === "api" ? "Donnees issues de l'API annonces" : "Aucune donnee disponible pour le moment"
 );
 
+let stopCartSync = null;
+
 function displayValue(value) {
   return value === null || value === undefined || value === "" ? "NULL" : value;
 }
@@ -211,6 +225,35 @@ function formatPrice(value, type) {
   }).format(Number(value));
 }
 
+function isInCartItem(annonceId) {
+  return isInCart(annonceId);
+}
+
+function toggleCart(annonce) {
+  if (isInCartItem(annonce.id)) {
+    removeFromCart(annonce.id);
+    return;
+  }
+  addToCart(annonce);
+}
+
+function contactSeller(annonce) {
+  if (!localStorage.getItem("userToken")) {
+    router.push("/connexion");
+    return;
+  }
+
+  const conversation = startConversation({
+    kind: "vendeur",
+    targetId: annonce.id_vendeur,
+    name: annonce.vendeur || `Vendeur annonce #${annonce.id}`,
+    subject: annonce.titre,
+    contextId: annonce.id,
+    contextLabel: `Annonce - ${annonce.titre}`
+  });
+  router.push({ path: "/messages", query: { conversation: conversation.id } });
+}
+
 onMounted(async () => {
   loading.value = true;
   try {
@@ -222,6 +265,14 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+
+  stopCartSync = onCartChange(() => {
+    annonces.value = [...annonces.value];
+  });
+});
+
+onBeforeUnmount(() => {
+  stopCartSync?.();
 });
 </script>
 

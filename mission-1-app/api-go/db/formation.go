@@ -284,3 +284,28 @@ func QuitFormation(userID int, formationID int) error {
 
 	return nil
 }
+
+func GetUserFormations(userID int) ([]models.GetFormation, error) {
+	query := `
+		SELECT f.id, f.id_formateur, f.type, f.titre, f.description, f.capacite_max,
+		       f.date_debut, f.date_fin, f.statut, f.prix_unitaire, f.adresse, f.ville, f.code_postal
+		FROM FORMATION f
+		INNER JOIN FORMATION_INSCRIPTION fi ON f.id = fi.id_formation
+		WHERE fi.id_utilisateur = ?`
+
+	rows, err := Conn.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var formations []models.GetFormation
+	for rows.Next() {
+		var f models.GetFormation
+		rows.Scan(&f.ID, &f.ID_formateur, &f.Type, &f.Titre, &f.Description, &f.Capacite_max,
+			&f.Date_debut, &f.Date_fin, &f.Statut, &f.Prix_unitaire, &f.Adresse, &f.Ville, &f.CodePostal)
+		f.IsRegistered = true
+		formations = append(formations, f)
+	}
+	return formations, nil
+}

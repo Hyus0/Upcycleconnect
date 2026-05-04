@@ -848,6 +848,26 @@ func QuitEvenement(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Désinscription réussie"))
 }
+
+func GetPlanningHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	planning, err := db.GetUserPlanning(userID)
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération du planning", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(planning)
+}
+
 func CheckInscriptionEvenement(w http.ResponseWriter, r *http.Request) {
 	evenementID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || evenementID <= 0 {

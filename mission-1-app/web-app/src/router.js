@@ -52,6 +52,11 @@ const routes = [
         component: () => import("./pages/profilpages/Depots.vue"),
       },
       {
+        path: "planning",
+        name: "mon-planning",
+        component: () => import("./pages/profilpages/Planning.vue"),
+      },
+      {
         path: "informations",
         name: "mes-informations",
         component: () => import("./pages/profilpages/Infos.vue"),

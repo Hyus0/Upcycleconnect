@@ -157,7 +157,7 @@ const serviceChildren = [
   },
   {
     label: "Mon planning",
-    to: "/profil",
+    to: "/profil/planning",
     description: "Evenements et rendez-vous"
   },
   {

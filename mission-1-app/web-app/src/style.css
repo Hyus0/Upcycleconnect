@@ -619,13 +619,13 @@ button {
 }
 
 .tag-don {
-  background: #fff3e0;
-  color: #e8a030;
+background: #e6f4ea;
+  color: #1e7e34;
 }
 
 .tag-vente {
-  background-color: #e6f4ea;
-  color: #1e7e34;
+  background-color: #fff3e0;
+  color: #e8a030;
 }
 
 .tag-score {

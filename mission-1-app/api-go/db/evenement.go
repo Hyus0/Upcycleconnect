@@ -258,3 +258,43 @@ func IsUserInscritEvenement(userID int, evenementID int) (bool, error) {
 	}
 	return count > 0, nil
 }
+
+func GetUserEvenements(userID int) ([]models.Evenement, error) {
+	query := `
+		SELECT e.id, e.titre, e.description, e.adresse, e.ville, e.code_postal, e.date_evenement, e.type
+		FROM EVENEMENT e
+		INNER JOIN EVENEMENT_INSCRIPTION ei ON e.id = ei.id_evenement
+		WHERE ei.id_utilisateur = ?`
+
+	rows, err := Conn.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var evenements []models.Evenement
+	for rows.Next() {
+		var e models.Evenement
+		rows.Scan(&e.ID, &e.Titre, &e.Description, &e.Adresse, &e.Ville, &e.CodePostal, &e.DateEvenement, &e.Type)
+		evenements = append(evenements, e)
+	}
+	return evenements, nil
+}
+
+func GetUserPlanning(userID int) (models.UserPlanning, error) {
+	var planning models.UserPlanning
+
+	formations, err := GetUserFormations(userID)
+	if err != nil {
+		return planning, err
+	}
+
+	evenements, err := GetUserEvenements(userID)
+	if err != nil {
+		return planning, err
+	}
+
+	planning.Formations = formations
+	planning.Evenements = evenements
+	return planning, nil
+}

@@ -1433,3 +1433,55 @@ func CheckLikeStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{"liked": liked})
 }
+
+
+//Tips
+
+func GetTipByRoleHandler(w http.ResponseWriter, r *http.Request) {
+	role := r.PathValue("role")
+	
+	if role == "" {
+		http.Error(w, "Rôle non spécifié", http.StatusBadRequest)
+		return
+	}
+
+	tip, err := db.GetRandomTipByRole(role)
+	if err != nil {
+		messageErreur := fmt.Sprintf("Aucun conseil trouvé pour ce rôle : '%s'", role)
+		http.Error(w, messageErreur, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tip)
+}
+
+func GetAllTipsHandler(w http.ResponseWriter, r *http.Request) {
+	tips, err := db.GetAllTips()
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération des conseils", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tips)
+}
+
+func GetTipByIDHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	
+	if err != nil || id <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	tip, err := db.GetTipByID(id)
+	if err != nil {
+		http.Error(w, "Conseil introuvable", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tip)
+}

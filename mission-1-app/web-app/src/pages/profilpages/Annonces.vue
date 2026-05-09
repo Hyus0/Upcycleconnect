@@ -81,7 +81,7 @@
 
         <div v-if="annonces.length === 0" class="empty-state">
             <p>Vous n'avez pas encore d'annonces en cours.</p>
-            <router-link to="/profil/createAnnonce" class="btn-secondary">Créer ma première annonce</router-link>
+            <router-link to="/profil/createAnnonce" class="btn-secondary" style="text-decoration: none">Créer ma première annonce</router-link>
         </div>
     </div>
 </template>

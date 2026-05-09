@@ -162,7 +162,7 @@ const serviceChildren = [
   },
   {
     label: "Espace Conseils",
-    to: "/profil",
+    to: "/conseils",
     description: "Guides et astuces"
   }
 ];

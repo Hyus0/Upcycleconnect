@@ -11,6 +11,7 @@ import Forums from "./pages/Forums.vue";
 import Formations from "./pages/Formations.vue"
 import Evenements from "./pages/Evenements.vue"
 import Projets from "./pages/Projets.vue"
+import Conseils from "./pages/Conseils.vue"
 
 const routes = [
   { path: "/", component: Home },
@@ -21,6 +22,7 @@ const routes = [
   { path: "/formations", component: Formations },
   { path: "/evenements", component: Evenements },
   { path: "/projets", component: Projets },
+  { path: "/conseils", component: Conseils },
   {
     path: '/formations/:id',
     name: 'formation-detail',
@@ -30,6 +32,11 @@ const routes = [
     path: '/projets/:id',
     name: 'projet-detail',
     component: () => import('./pages/ProjetDetail.vue')
+  },
+  {
+    path: '/conseils/:id',
+    name: 'conseil-detail',
+    component: () => import('./pages/ConseilDetail.vue')
   },
   {
     path: "/profil",

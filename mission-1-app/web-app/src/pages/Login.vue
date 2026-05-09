@@ -199,8 +199,7 @@ async function handleLogin() {
             localStorage.setItem("userId", data.userId);
             localStorage.setItem("userPrenom", data.prenom);
             localStorage.setItem("userNom", data.nom);
-            
-            alert("Connecté avec succès !");
+            localStorage.setItem("userRole", data.role);
             router.push("/profil");
             return;
         } else {

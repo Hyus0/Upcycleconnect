@@ -85,7 +85,7 @@ func main() {
 	http.HandleFunc("PUT /users/{id}/password", app.ModifyUserPassword)
 	http.HandleFunc("GET /users/{id}/stats", app.GetUserStatsHandler)
 	http.HandleFunc("GET /user/planning/{id}", app.GetPlanningHandler)
-	
+
 	//Annonce
 	http.HandleFunc("GET /annonces", app.GetAllAnnonces)
 	http.HandleFunc("POST /annonces", app.CreateAnnonce)
@@ -133,6 +133,11 @@ func main() {
 	http.HandleFunc("POST /projets/{id}/quit", app.QuitProjet)
 	http.HandleFunc("POST /projets/{id}/like/{userId}", app.ToggleLike)
 	http.HandleFunc("GET /projets/{id}/like-status/{userId}", app.CheckLikeStatusHandler)
+
+	//tips
+	http.HandleFunc("GET /tips/role/{role}", app.GetTipByRoleHandler)
+	http.HandleFunc("GET /tips", app.GetAllTipsHandler)
+	http.HandleFunc("GET /tips/{id}", app.GetTipByIDHandler)
 
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))

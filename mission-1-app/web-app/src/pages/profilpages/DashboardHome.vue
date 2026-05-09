@@ -8,31 +8,43 @@
                     Voici un résumé de votre activité sur UpcycleConnect
                 </p>
             </div>
-            <router-link to="/profil/createAnnonce" class="btn-main-action">+ Déposer une annonce</router-link>
+            <router-link to="/profil/createAnnonce" class="btn-main-action"
+                >+ Déposer une annonce</router-link
+            >
         </header>
 
         <div class="stats-grid dashboard-stats">
             <div class="card card--score">
                 <p class="tag-score">UPCYCLING SCORE</p>
-                <div class="score-value">{{ stats.total_points || 0 }} <span>pts</span></div>
-                <p class="score-level">Niveau : {{ stats.niveau || 'Novice' }}</p>
+                <div class="score-value">
+                    {{ stats.total_points || 0 }} <span>pts</span>
+                </div>
+                <p class="score-level">
+                    Niveau : {{ stats.niveau || "Novice" }}
+                </p>
                 <div class="score-footer">
                     <div class="mini-stat">
-                        <strong>{{ stats.co2_total_evite_kg || 0 }} kg</strong><br />CO2 évité
+                        <strong>{{ stats.co2_total_evite_kg || 0 }} kg</strong
+                        ><br />CO2 évité
                     </div>
                     <div class="mini-stat">
-                        <strong>{{ stats.nb_objets_recycles || 0 }}</strong><br />Objets
+                        <strong>{{ stats.nb_objets_recycles || 0 }}</strong
+                        ><br />Objets
                     </div>
                     <div class="mini-stat">
-                        <strong>EUR {{ stats.ressources_economisees || 0 }}</strong><br />Économisé
+                        <strong
+                            >EUR {{ stats.ressources_economisees || 0 }}</strong
+                        ><br />Économisé
                     </div>
                 </div>
             </div>
-            
+
             <div class="card card--white">
                 <div class="card-num">{{ annoncesActivesCount }}</div>
                 <p class="text-dm">Annonces actives</p>
-                <span class="badge badge--green">{{ annoncesActivesCount > 0 ? "+1 ce mois" : "Aucune active" }}</span>
+                <span class="badge badge--green">{{
+                    annoncesActivesCount > 0 ? "+1 ce mois" : "Aucune active"
+                }}</span>
             </div>
 
             <div class="card card--white">
@@ -46,7 +58,11 @@
             <div class="section-header">
                 <h2>Mes dernières annonces</h2>
                 <div class="header-actions">
-                    <router-link to="/profil/createAnnonce" class="btn-main-action1">+ Nouvelle annonce</router-link>
+                    <router-link
+                        to="/profil/createAnnonce"
+                        class="btn-main-action1"
+                        >+ Nouvelle annonce</router-link
+                    >
                 </div>
             </div>
             <table class="data-table">
@@ -55,61 +71,107 @@
                         <th>OBJET</th>
                         <th>TYPE</th>
                         <th>STATUT PUBLICATION</th>
-                        <th>STATUT LOGISTIQUE</th> 
+                        <th>STATUT LOGISTIQUE</th>
                         <th>DATE</th>
                         <th>ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="annonce in annonces.slice(0, 4)" :key="annonce.id">
+                    <tr
+                        v-for="annonce in annonces.slice(0, 4)"
+                        :key="annonce.id"
+                    >
                         <td>
-                            <strong>{{ annonce.titre }}</strong><br>
-                            <small class="table-subtext">{{ annonce.type_materiau }}</small>
+                            <strong>{{ annonce.titre }}</strong
+                            ><br />
+                            <small class="table-subtext">{{
+                                annonce.type_materiau
+                            }}</small>
                         </td>
                         <td>
-                            <span :class="annonce.type === 'Don' ? 'tag-don' : 'tag-vente'">
-                                {{ annonce.type === 'Don' ? 'DON' : 'VENTE ' + annonce.prix + 'EUR' }}
+                            <span
+                                :class="
+                                    annonce.type === 'Don'
+                                        ? 'tag-don'
+                                        : 'tag-vente'
+                                "
+                            >
+                                {{
+                                    annonce.type === "Don"
+                                        ? "DON"
+                                        : "VENTE " + annonce.prix + "EUR"
+                                }}
                             </span>
                         </td>
                         <td>
-                            <span :class="annonce.est_valide === 'Valide' ? 'status-valid' : 'status-pending'">
-                                {{ annonce.est_valide === 'Valide' ? 'APPROUVÉE' : 'EN ATTENTE' }}
+                            <span
+                                :class="
+                                    annonce.est_valide === 'Valide'
+                                        ? 'status-valid'
+                                        : 'status-pending'
+                                "
+                            >
+                                {{
+                                    annonce.est_valide === "Valide"
+                                        ? "APPROUVÉE"
+                                        : "EN ATTENTE"
+                                }}
                             </span>
                         </td>
                         <td>
                             <span class="status-logistique">
-                                {{ annonce.statut || 'En attente' }}
+                                {{ annonce.statut || "En attente" }}
                             </span>
                         </td>
                         <td>{{ formatDate(annonce.date_creation) }}</td>
                         <td class="actions-cell">
-                            <button class="btn-view" @click="goToAnnonce(annonce.id)">Voir</button>
-                            <button 
-                                    v-if="annonce.est_valide === 'En attente'" 
-                                    class="btn-modify" 
-                                    @click="goToModify(annonce.id)"
+                            <button
+                                class="btn-view"
+                                @click="goToAnnonce(annonce.id)"
                             >
-                                    Modifier
+                                Voir
                             </button>
-                            <button class="btn-remove" @click="removeAnnonce(annonce.id)">Retirer</button>
+                            <button
+                                v-if="annonce.est_valide === 'En attente'"
+                                class="btn-modify"
+                                @click="goToModify(annonce.id)"
+                            >
+                                Modifier
+                            </button>
+                            <button
+                                class="btn-remove"
+                                @click="removeAnnonce(annonce.id)"
+                            >
+                                Retirer
+                            </button>
                         </td>
                     </tr>
                 </tbody>
             </table>
-            <div v-if="annonces.length === 0" class="state-card">Vous n'avez pas encore déposé d'annonces.</div>
+            <div v-if="annonces.length === 0" class="state-card">
+                Vous n'avez pas encore déposé d'annonces.
+            </div>
         </div>
 
         <div class="section-container planning-section">
             <div class="section-header">
                 <div>
                     <h2>Mon planning ({{ planningWeekLabel }})</h2>
-                    <p class="classic-text">Cliquez pour voir le calendrier complet.</p>
+                    <p class="classic-text">
+                        Cliquez pour voir le calendrier complet.
+                    </p>
                 </div>
-                <button class="btn-secondary" @click.stop="goToFullPlanning">Vue mensuelle</button>
+                <button class="btn-secondary" @click.stop="goToFullPlanning">
+                    Vue mensuelle
+                </button>
             </div>
 
             <div class="planning-week">
-                <div class="planning-week__weekday" v-for="day in compactWeekDays" :key="day.key">
+                <div
+                    class="planning-week__weekday"
+                    v-for="day in compactWeekDays"
+                    :key="day.key"
+                >
                     <span>{{ day.weekLabel }}</span>
                     <strong>{{ day.dayLabel }}</strong>
                 </div>
@@ -134,25 +196,47 @@
                 </div>
             </div>
 
-            <div v-if="calendarEntries.length === 0" class="state-card" style="margin-top: 1rem;">
-                Le planning se remplira dès que vous rejoindrez une formation ou un événement.
+            <div
+                v-if="calendarEntries.length === 0"
+                class="state-card"
+                style="margin-top: 1rem"
+            >
+                Le planning se remplira dès que vous rejoindrez une formation ou
+                un événement.
             </div>
         </div>
 
-        <!-- TIPS ET NOTIFICATIONS MIS À JOUR -->
         <div class="end-grid">
-            <div class="section-container-tips">
+            <div class="section-container-tips" v-if="tipDuJour">
                 <p class="tag-conseil">💡 Conseil du jour</p>
 
                 <div class="section-header">
-                    <h2>Transformer un vieux jean en sac</h2>
+                    <h2>{{ tipDuJour.titre }}</h2>
+                </div>
+                <p>{{ tipDuJour.description }}</p>
+
+                <router-link
+                    :to="{
+                        name: 'conseil-detail',
+                        params: { id: tipDuJour.id },
+                    }"
+                    class="btn-text-green"
+                    style="text-decoration: none"
+                >
+                    Lire la suite →
+                </router-link>
+            </div>
+            <div class="section-container-tips" v-else>
+                <p class="tag-conseil">💡 Conseil du jour</p>
+                <div class="section-header">
+                    <h2>En attente d'astuces...</h2>
                 </div>
                 <p>
-                    Apprenez à confectionner un sac tote en 30 minutes avec un jean usé.
-                    Matériel nécessaire : aiguille, fil, ciseaux.
+                    Restez à l'affût, de nouveaux conseils pour votre profil
+                    arrivent bientôt !
                 </p>
-                <button class="btn-text-green">Lire la suite →</button>
             </div>
+
             <div class="section-container-tips">
                 <p class="tag-notif">🔔 Notification</p>
 
@@ -160,8 +244,8 @@
                     <h2>Votre dépôt a été récupéré !</h2>
                 </div>
                 <p>
-                    La chaise vintage que vous avez déposée le 12 fév. a été récupérée par un artisan.
-                    +50 points Upcycling Score !
+                    La chaise vintage que vous avez déposée le 12 fév. a été
+                    récupérée par un artisan. +50 points Upcycling Score !
                 </p>
                 <button class="btn-text-green">Voir le projet →</button>
             </div>
@@ -179,6 +263,8 @@ const API_URL = "http://localhost:8081";
 const prenom = ref(localStorage.getItem("userPrenom") || "Invité");
 const annonces = ref([]);
 const calendarEntries = ref([]);
+const tipDuJour = ref(null);
+const userRole = ref(localStorage.getItem("userRole") || "Particulier");
 
 const stats = ref({
     total_points: 0,
@@ -191,18 +277,23 @@ const stats = ref({
 const getLocalISODate = (date) => {
     const d = new Date(date);
     const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
 };
 
-const annoncesActivesCount = computed(() =>
-    annonces.value.filter((a) => a.est_valide === "Valide" && a.statut === "Disponible").length
+const annoncesActivesCount = computed(
+    () =>
+        annonces.value.filter(
+            (a) => a.est_valide === "Valide" && a.statut === "Disponible",
+        ).length,
 );
 
 const nextEntryLabel = computed(() => {
     if (calendarEntries.value.length === 0) return "À venir";
-    return [...calendarEntries.value].sort((a, b) => a.date.localeCompare(b.date))[0].dateLabel;
+    return [...calendarEntries.value].sort((a, b) =>
+        a.date.localeCompare(b.date),
+    )[0].dateLabel;
 });
 
 const currentWeekStart = computed(() => {
@@ -215,7 +306,10 @@ const currentWeekStart = computed(() => {
 });
 
 const planningWeekLabel = computed(() =>
-    currentWeekStart.value.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
+    currentWeekStart.value.toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "long",
+    }),
 );
 
 const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -225,77 +319,140 @@ const compactWeekDays = computed(() =>
         const date = new Date(currentWeekStart.value);
         date.setDate(currentWeekStart.value.getDate() + index);
         const isoDate = getLocalISODate(date);
-        
+
         return {
             key: isoDate,
             weekLabel: weekDays[index].toUpperCase(),
             dayLabel: date.toLocaleDateString("fr-FR", { day: "numeric" }),
             dayNumber: date.getDate(),
             isToday: isoDate === getLocalISODate(new Date()),
-            entries: calendarEntries.value.filter((e) => e.date === isoDate)
+            entries: calendarEntries.value.filter((e) => e.date === isoDate),
         };
-    })
+    }),
 );
 
 const formatDate = (val) => {
     if (!val) return "NULL";
     const date = new Date(val);
-    return isNaN(date.getTime()) ? "NULL" : new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+    return isNaN(date.getTime())
+        ? "NULL"
+        : new Intl.DateTimeFormat("fr-FR", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+          }).format(date);
 };
 
-const goToAnnonce = (id) => router.push({ name: "see-annonce", params: { id } });
+const goToAnnonce = (id) =>
+    router.push({ name: "see-annonce", params: { id } });
+const goToModify = (id) =>
+    router.push({ name: "modification-annonce", params: { id } });
 const goToFullPlanning = () => router.push("/profil/planning");
 
 const removeAnnonce = async (id) => {
     if (!confirm("Voulez-vous vraiment retirer cette annonce ?")) return;
     try {
         const token = localStorage.getItem("userToken") || "";
-        const res = await fetch(`${API_URL}/annonces/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_URL}/annonces/${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) throw new Error("Erreur suppression");
         annonces.value = annonces.value.filter((a) => a.id !== id);
     } catch (e) {
-        alert("Suppression impossible pour le moment.");
+        console.error("Erreur suppression:", e);
     }
 };
 
 const loadCalendarEntries = async (id) => {
+    if (!id || id === "null") return;
     try {
         const token = localStorage.getItem("userToken") || "";
-        const res = await fetch(`${API_URL}/user/planning/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_URL}/user/planning/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) return;
-        
+
         const data = await res.json();
         let entries = [];
-        
+
         if (data && !Array.isArray(data)) {
-            const mapEntry = (arr, kind, dateKey) => (arr || []).map(item => {
-                const parsed = new Date(item[dateKey]);
-                if (isNaN(parsed.getTime())) return null;
-                return {
-                    id: `${kind}-${item.id}`,
-                    kind,
-                    title: item.titre,
-                    date: getLocalISODate(parsed),
-                    dateLabel: parsed.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
-                    timeLabel: parsed.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-                };
-            }).filter(Boolean);
-            
-            entries = [...mapEntry(data.formations, 'formation', 'date_debut'), ...mapEntry(data.evenements, 'event', 'date_evenement')];
+            const mapEntry = (arr, kind, dateKey) =>
+                (arr || [])
+                    .map((item) => {
+                        const parsed = new Date(item[dateKey]);
+                        if (isNaN(parsed.getTime())) return null;
+                        return {
+                            id: `${kind}-${item.id}`,
+                            kind,
+                            title: item.titre,
+                            date: getLocalISODate(parsed),
+                            dateLabel: parsed.toLocaleDateString("fr-FR", {
+                                day: "numeric",
+                                month: "short",
+                            }),
+                            timeLabel: parsed.toLocaleTimeString("fr-FR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            }),
+                        };
+                    })
+                    .filter(Boolean);
+
+            entries = [
+                ...mapEntry(data.formations, "formation", "date_debut"),
+                ...mapEntry(data.evenements, "event", "date_evenement"),
+            ];
         }
-        calendarEntries.value = entries.sort((a, b) => a.date.localeCompare(b.date));
+        calendarEntries.value = entries.sort((a, b) =>
+            a.date.localeCompare(b.date),
+        );
     } catch (e) {
-        console.error("Erreur planning", e);
+        console.error("Erreur chargement planning:", e);
+    }
+};
+
+const loadTipDuJour = async (role) => {
+    const safeRole = role || "Particulier";
+    try {
+        const res = await fetch(`${API_URL}/tips/role/${safeRole}`);
+        if (res.ok) {
+            tipDuJour.value = await res.json();
+        } else {
+            tipDuJour.value = null;
+        }
+    } catch (e) {
+        tipDuJour.value = null;
     }
 };
 
 onMounted(async () => {
-    const id = localStorage.getItem("userId");
-    if (!id) return;
-    const headers = { 'Authorization': `Bearer ${localStorage.getItem("userToken") || ""}` };
+    const rawId = localStorage.getItem("userId");
+
+    // Sécurité stricte sur l'ID
+    if (!rawId || rawId === "null" || rawId === "undefined") {
+        console.warn("Utilisateur non connecté ou ID invalide.");
+        return;
+    }
+
+    const id = parseInt(rawId, 10);
+    if (isNaN(id)) return;
+
+    const headers = {
+        Authorization: `Bearer ${localStorage.getItem("userToken") || ""}`,
+    };
+
+    // Vérification du rôle
+    let currentRole = localStorage.getItem("userRole");
+    if (!currentRole || currentRole === "null") {
+        currentRole = "Particulier";
+    }
+    userRole.value = currentRole;
 
     try {
-        const resStats = await fetch(`${API_URL}/users/${id}/stats`, { headers });
+        const resStats = await fetch(`${API_URL}/users/${id}/stats`, {
+            headers,
+        });
         if (resStats.ok) {
             const data = await resStats.json();
             stats.value = data;
@@ -304,17 +461,24 @@ onMounted(async () => {
                 window.dispatchEvent(new Event("auth-change"));
             }
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error("Erreur stats:", e);
+    }
 
     try {
-        const resAnnonces = await fetch(`${API_URL}/users/${id}/annonces`, { headers }); 
+        const resAnnonces = await fetch(`${API_URL}/users/${id}/annonces`, {
+            headers,
+        });
         if (resAnnonces.ok) {
             const data = await resAnnonces.json();
-            annonces.value = Array.isArray(data) ? data : [];
+            annonces.value = Array.isArray(data) ? data : data.annonces || [];
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error("Erreur annonces:", e);
+    }
 
     await loadCalendarEntries(id);
+    await loadTipDuJour(userRole.value);
 });
 </script>
 
@@ -332,7 +496,8 @@ onMounted(async () => {
     margin-bottom: 2rem;
 }
 
-.btn-main-action, .btn-main-action1 {
+.btn-main-action,
+.btn-main-action1 {
     display: inline-flex;
     align-items: center;
     background: #2d7a4f;
@@ -357,7 +522,7 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .state-card {
@@ -376,7 +541,7 @@ onMounted(async () => {
 }
 
 .dashboard-stats {
-    grid-template-columns: 1.4fr 0.8fr 0.8fr; 
+    grid-template-columns: 1.4fr 0.8fr 0.8fr;
 }
 
 @media (max-width: 920px) {
@@ -390,7 +555,7 @@ onMounted(async () => {
     padding: 1.5rem;
     border-radius: 12px;
     border: 1px solid #eee;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
 }
 
 .card--score {
@@ -443,7 +608,8 @@ onMounted(async () => {
     display: block;
 }
 
-.card-num, .card-num2 {
+.card-num,
+.card-num2 {
     font-size: 2.5rem;
     font-weight: bold;
     color: #1a1a1a;
@@ -459,6 +625,23 @@ onMounted(async () => {
     display: inline-block;
 }
 
+.btn-modify {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 10px;
+    transition: all 0.2s;
+}
+
+.btn-modify:hover {
+    background: #ffe8a1;
+    color: #664d03;
+}
+
 .btn-remove {
     background: #ffe5e5;
     border: 1px solid #ffcccc;
@@ -472,7 +655,7 @@ onMounted(async () => {
 }
 
 .btn-remove:hover {
-    background: #ffcccc; 
+    background: #ffcccc;
     color: #b71c1c;
 }
 
@@ -486,8 +669,14 @@ onMounted(async () => {
     text-transform: uppercase;
 }
 
-.badge--green { background: #eaf4ed; color: #2d7a4f; }
-.badge--orange { background: #fff3cd; color: #856404; }
+.badge--green {
+    background: #eaf4ed;
+    color: #2d7a4f;
+}
+.badge--orange {
+    background: #fff3cd;
+    color: #856404;
+}
 
 .table-subtext {
     display: block;
@@ -509,16 +698,13 @@ onMounted(async () => {
     background: #f0f0f0;
 }
 
-.btn-remove {
-    background: #FEE2E2;
-    border: none;
-    color: #dc3545;
+.btn-secondary {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    background: white;
     cursor: pointer;
-    margin-left: 10px;
-}
-
-.btn-remove:hover {
-    text-decoration: none;
+    font-weight: 600;
 }
 
 .planning-week {
@@ -567,8 +753,14 @@ onMounted(async () => {
     flex-direction: column;
 }
 
-.planning-entry--formation { background: #d1e7dd; color: #0f5132; }
-.planning-entry--event { background: #fff3cd; color: #856404; }
+.planning-entry--formation {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+.planning-entry--event {
+    background: #fff3cd;
+    color: #856404;
+}
 
 .end-grid {
     display: grid;
@@ -595,8 +787,8 @@ onMounted(async () => {
 }
 
 .tag-notif {
-    background: #FEF3C7;
-    color: #92400E; 
+    background: #fef3c7;
+    color: #92400e;
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
@@ -613,17 +805,17 @@ onMounted(async () => {
     font-size: 1rem;
     padding: 12px 20px;
     border-radius: 10px;
-    margin-top: 1.5rem; 
+    margin-top: 1.5rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    display: block; 
-    text-align: center; 
+    display: block;
+    text-align: center;
 }
 
 .btn-text-green:hover {
-    background: #d1e7dd; 
+    background: #d1e7dd;
     color: #1b4d31;
-    transform: translateY(-2px); 
+    transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(45, 122, 79, 0.15);
 }
 </style>

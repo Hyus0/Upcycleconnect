@@ -148,12 +148,12 @@ const inscriptionsEnCours = ref(new Set());
 const inscrit = ref(new Set());
 
 const isLoggedIn = computed(() => {
-    return !!localStorage.getItem("userToken");
+    return !!sessionStorage.getItem("userToken");
 });
 
 const userName = computed(() => {
-    const prenom = localStorage.getItem("userPrenom") || "";
-    const nom = localStorage.getItem("userNom") || "";
+    const prenom = sessionStorage.getItem("userPrenom") || "";
+    const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
@@ -194,7 +194,7 @@ const truncate = (text, max = 100) => {
 };
 
 const checkInscriptions = async (liste) => {
-    const userID = parseInt(localStorage.getItem("userId"));
+    const userID = parseInt(sessionStorage.getItem("userId"));
     if (!userID) return;
 
     await Promise.all(liste.map(async (e) => {
@@ -230,8 +230,8 @@ const fetchEvenements = async () => {
 };
 
 const inscrire = async (evenement) => {
-    const userID = parseInt(localStorage.getItem("userId"));
-    const token = localStorage.getItem("userToken");
+    const userID = parseInt(sessionStorage.getItem("userId"));
+    const token = sessionStorage.getItem("userToken");
 
     if (!userID || !token) {
         alert("Vous devez être connecté pour vous inscrire à un évènement.");
@@ -271,8 +271,8 @@ const inscrire = async (evenement) => {
 };
 
 const desinscrire = async (evenement) => {
-    const userID = parseInt(localStorage.getItem("userId"));
-    const token = localStorage.getItem("userToken");
+    const userID = parseInt(sessionStorage.getItem("userId"));
+    const token = sessionStorage.getItem("userToken");
 
     if (!userID || !token) return;
     if (inscriptionsEnCours.value.has(evenement.id)) return;

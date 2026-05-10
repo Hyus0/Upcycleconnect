@@ -183,7 +183,7 @@ const fetchCategories = async () => {
 };
 
 const fetchAnnonce = async () => {
-    const token = localStorage.getItem("userToken");
+    const token = sessionStorage.getItem("userToken");
     try {
         const res = await fetch(
             `http://localhost:8081/annonces/${route.params.id}`,
@@ -203,7 +203,7 @@ onMounted(async () => {
 
 const handleUpdate = async () => {
     submitting.value = true;
-    const token = localStorage.getItem("userToken");
+    const token = sessionStorage.getItem("userToken");
     try {
         const res = await fetch(
             `http://localhost:8081/annonces/${annonce.value.id}`,

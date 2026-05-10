@@ -13,6 +13,19 @@ import (
 	"upcycleconnect/api-go/passwordHashing"
 )
 
+//Stats
+
+func GetPlatformStatsHandler(w http.ResponseWriter, r *http.Request) {
+	stats, err := db.GetPlatformStats()
+	if err != nil {
+		http.Error(w, "Erreur lors du calcul des statistiques", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
+}
+
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Add("school", "esgi")
@@ -427,6 +440,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		"token":   randomToken,
 		"userId":  user.Id,
 		"prenom":  user.Prenom,
+		"role": user.Role,
 		"nom":     user.Nom,
 	})
 }
@@ -1484,4 +1498,67 @@ func GetTipByIDHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tip)
+}
+
+//Commentaire
+
+func GetAllCommentairesHandler(w http.ResponseWriter, r *http.Request) {
+	commentaires, err := db.GetAllCommentaires()
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération des commentaires", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(commentaires)
+}
+
+//Forum
+
+func GetForumsHandler(w http.ResponseWriter, r *http.Request) {
+	forums, err := db.GetAllForums()
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(forums)
+}
+
+func CreateTopicHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		UserID  int    `json:"user_id"`
+		SalonID int    `json:"salon_id"` 
+		Title   string `json:"title"`
+		Sujet   string `json:"sujet"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Erreur de format de requête", http.StatusBadRequest)
+		return
+	}
+	
+	err := db.CreateForumTopic(req.UserID, req.SalonID, req.Title, req.Sujet)
+	if err != nil {
+		http.Error(w, "Erreur lors de la création de la discussion", http.StatusInternalServerError)
+		return
+	}
+	
+	w.WriteHeader(http.StatusCreated)
+}
+
+func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		UserID  int    `json:"user_id"`
+		ForumID int    `json:"forum_id"`
+		Content string `json:"content"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	err := db.SendMessageForum(req.UserID, req.ForumID, req.Content)
+	if err != nil {
+		http.Error(w, "Erreur envoi", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }

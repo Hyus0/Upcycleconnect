@@ -114,7 +114,7 @@ const goToPlanning = (id) => {
 const removeAnnonce = async (id) => {
     if (!confirm("Voulez-vous vraiment retirer cette annonce ?")) return;
     
-    const token = localStorage.getItem("userToken");
+    const token = sessionStorage.getItem("userToken");
     
     try {
         const res = await fetch(`http://localhost:8081/annonces/${id}`, {
@@ -138,8 +138,8 @@ const removeAnnonce = async (id) => {
 };
 
 onMounted(async () => {
-    const id = localStorage.getItem("userId");
-    const token = localStorage.getItem("userToken");
+    const id = sessionStorage.getItem("userId");
+    const token = sessionStorage.getItem("userToken");
 
     if (!id || !token) return;
 

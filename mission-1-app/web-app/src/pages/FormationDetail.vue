@@ -185,12 +185,12 @@ const isRegistered = ref(false);
 const isLeaving = ref(false);
 
 const isLoggedIn = computed(() => {
-    return !!localStorage.getItem("userToken");
+    return !!sessionStorage.getItem("userToken");
 });
 
 const userName = computed(() => {
-    const prenom = localStorage.getItem("userPrenom") || "";
-    const nom = localStorage.getItem("userNom") || "";
+    const prenom = sessionStorage.getItem("userPrenom") || "";
+    const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
@@ -207,7 +207,8 @@ const formatDate = (d) => {
 
 const fetchDetail = async () => {
     const id = route.params.id;
-    const userId = localStorage.getItem("userId") || 0;
+    
+    const userId = sessionStorage.getItem("userId") || 0;
 
     try {
         const res = await fetch(
@@ -230,8 +231,8 @@ const viewProfile = (id) => {
 };
 
 const handleInscription = async () => {
-    const token = localStorage.getItem("userToken");
-    const userId = localStorage.getItem("userId");
+    const token = sessionStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
 
     if (!token || !userId) {
         alert("Vous devez être connecté pour vous inscrire.");
@@ -277,8 +278,8 @@ const handleQuit = async () => {
     if (!confirm("Voulez-vous vraiment vous désinscrire de cette formation ?"))
         return;
 
-    const token = localStorage.getItem("userToken");
-    const userId = localStorage.getItem("userId");
+    const token = sessionStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
 
     isLeaving.value = true;
     try {

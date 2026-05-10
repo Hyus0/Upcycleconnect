@@ -15,12 +15,12 @@ import { ref, computed } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
 
 const isLoggedIn = computed(() => {
-  return !!localStorage.getItem("userToken");
+  return !!sessionStorage.getItem("userToken");
 });
 
 const userName = computed(() => {
-  const prenom = localStorage.getItem("userPrenom") || "";
-  const nom = localStorage.getItem("userNom") || "";
+  const prenom = sessionStorage.getItem("userPrenom") || "";
+  const nom = sessionStorage.getItem("userNom") || "";
   
   return (prenom || nom) ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });

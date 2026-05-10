@@ -74,6 +74,10 @@ func main() {
 	// Legacy routes.
 	http.HandleFunc("GET /api/admin/user/{id}", app.GetUser)
 
+	//Stat
+
+	http.HandleFunc("GET /stats/platform", app.GetPlatformStatsHandler)
+	
 	//Utilisateur
 	http.HandleFunc("GET /users", app.GetAllUsers)
 	http.HandleFunc("POST /users", app.CreateUser)
@@ -138,6 +142,14 @@ func main() {
 	http.HandleFunc("GET /tips/role/{role}", app.GetTipByRoleHandler)
 	http.HandleFunc("GET /tips", app.GetAllTipsHandler)
 	http.HandleFunc("GET /tips/{id}", app.GetTipByIDHandler)
+
+	//commentaires
+	http.HandleFunc("GET /commentaires", app.GetAllCommentairesHandler)
+
+	//forums
+	http.HandleFunc("GET /forums", app.GetForumsHandler)
+	http.HandleFunc("POST /forums/message", app.SendMessageHandler)
+	http.HandleFunc("POST /forums/topic", app.CreateTopicHandler)
 
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))

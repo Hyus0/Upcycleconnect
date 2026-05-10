@@ -141,7 +141,7 @@ const errors = ref([]);
 const successMsg = ref("");
 
 const form = ref({
-  id_vendeur: parseInt(localStorage.getItem("userId")),
+  id_vendeur: parseInt(sessionStorage.getItem("userId")) || 0,
   id_categorie: "",
   titre: "",
   description: "",
@@ -178,7 +178,7 @@ const handleSubmit = async () => {
     errors.value = [];
     successMsg.value = "";
 
-    const token = localStorage.getItem("userToken");
+    const token = sessionStorage.getItem("userToken");
 
     try {
         const response = await fetch("http://localhost:8081/annonces", {

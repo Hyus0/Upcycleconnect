@@ -91,16 +91,16 @@ const loading = ref(true);
 
 const searchQuery = ref("");
 
-const userScore = ref(parseInt(localStorage.getItem("userScore")) || 0);
-const userRole = ref(localStorage.getItem("userRole") || "Particulier");
+const userScore = ref(parseInt(sessionStorage.getItem("userScore")) || 0);
+const userRole = ref(sessionStorage.getItem("userRole") || "Particulier");
 
 const isLoggedIn = computed(() => {
-    return !!localStorage.getItem("userToken");
+    return !!sessionStorage.getItem("userToken");
 });
 
 const userName = computed(() => {
-    const prenom = localStorage.getItem("userPrenom") || "";
-    const nom = localStorage.getItem("userNom") || "";
+    const prenom = sessionStorage.getItem("userPrenom") || "";
+    const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 

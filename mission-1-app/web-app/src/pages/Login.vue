@@ -43,18 +43,31 @@
                 </div>
 
                 <div class="login-testimonial">
-                    <p class="login-testimonial__text">
-                        "La simplicité de gestion de mes dépôts sur
-                        UpcycleConnect m'a permis de me concentrer sur ce que
-                        j'aime : créer."
-                    </p>
-                    <div class="login-testimonial__author">
-                        <div class="login-testimonial__avatar">ML</div>
-                        <div>
-                            <strong>Marie L.</strong>
-                            <span>Artisane ébéniste — Paris 11e</span>
+                    <transition name="fade" mode="out-in">
+                        <div v-if="currentComment" :key="currentComment.id">
+                            <p class="login-testimonial__text">
+                                "{{ currentComment.description }}"
+                            </p>
+                            <div class="login-testimonial__author">
+                                <div class="login-testimonial__avatar">
+                                    {{
+                                        currentComment.author
+                                            .charAt(0)
+                                            .toUpperCase()
+                                    }}
+                                </div>
+                                <div>
+                                    <strong>{{ currentComment.author }}</strong>
+                                    <span>Membre UpcycleConnect</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                        <div v-else key="loading">
+                            <p class="login-testimonial__text">
+                                Chargement des avis...
+                            </p>
+                        </div>
+                    </transition>
                 </div>
             </div>
         </div>
@@ -97,7 +110,12 @@
                             "
                         >
                             <label>Mot de passe</label>
-                            <router-link to="/connexion" class="login-right__link" style="font-size: 0.8rem">Oublié ?</router-link>
+                            <router-link
+                                to="/connexion"
+                                class="login-right__link"
+                                style="font-size: 0.8rem"
+                                >Oublié ?</router-link
+                            >
                         </div>
                         <input
                             type="password"
@@ -153,8 +171,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import {useRouter} from "vue-router";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 
 const router = useRouter();
@@ -163,8 +181,53 @@ const email = ref("");
 const motDePasse = ref("");
 const rememberMe = ref(false);
 const errorMessages = ref([]);
-const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
+
+const isLoggedIn = ref(!!sessionStorage.getItem("userToken"));
+
+const getUserRole = () => {
+    const role = sessionStorage.getItem("userRole");
+    if (!role || role === "null" || role === "undefined") {
+        return "Particulier";
+    }
+    return role;
+};
+const userRole = ref(getUserRole());
 const userName = ref("Marie Lambert");
+
+const commentaires = ref([]);
+const currentComment = ref(null);
+let intervalId = null;
+
+const pickRandomComment = () => {
+    if (commentaires.value.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * commentaires.value.length);
+    currentComment.value = commentaires.value[randomIndex];
+};
+
+const fetchCommentaires = async () => {
+    try {
+        const res = await fetch("http://localhost:8081/commentaires");
+        if (res.ok) {
+            commentaires.value = await res.json();
+            if (commentaires.value && commentaires.value.length > 0) {
+                pickRandomComment();
+                intervalId = setInterval(pickRandomComment, 3000);
+            }
+        }
+    } catch (error) {
+        console.error("Impossible de charger les commentaires", error);
+    }
+};
+
+onMounted(() => {
+    fetchCommentaires();
+});
+
+onUnmounted(() => {
+    if (intervalId) {
+        clearInterval(intervalId);
+    }
+});
 
 const isEmailInvalid = computed(() => {
     return email.value.length > 0 && !email.value.includes("@");
@@ -194,16 +257,18 @@ async function handleLogin() {
 
         if (response.ok) {
             if (data.token) {
-                localStorage.setItem("userToken", data.token);
+                sessionStorage.setItem("userToken", data.token);
             }
-            localStorage.setItem("userId", data.userId);
-            localStorage.setItem("userPrenom", data.prenom);
-            localStorage.setItem("userNom", data.nom);
-            localStorage.setItem("userRole", data.role);
+
+            sessionStorage.setItem("userId", data.userId || "");
+            sessionStorage.setItem("userPrenom", data.prenom || "");
+            sessionStorage.setItem("userNom", data.nom || "");
+            sessionStorage.setItem("userRole", data.role || "Particulier");
             router.push("/profil");
-            return;
         } else {
-            errorMessages.value = Array.isArray(data) ? data : [data.message || "Erreur de connexion"];
+            errorMessages.value = Array.isArray(data)
+                ? data
+                : [data.message || "Erreur de connexion"];
         }
     } catch (error) {
         console.error("Détail :", error);
@@ -216,7 +281,7 @@ async function handleLogin() {
 .login-page {
     display: flex;
     min-height: calc(100vh - 86px);
-    margin-top: -108px;
+    margin-top: -92px;
 }
 
 .login-left {
@@ -303,12 +368,23 @@ async function handleLogin() {
     margin-top: 4px;
 }
 
+/* BLOC COMMENTAIRE ET ANIMATION */
 .login-testimonial {
     margin-top: auto;
     padding: 20px 24px;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 120px; /* Evite que le bloc saute selon la taille du texte */
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 
 .login-testimonial__text {

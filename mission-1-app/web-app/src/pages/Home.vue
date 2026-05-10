@@ -44,32 +44,28 @@
                     <div class="hero-stats">
                         <div class="stat-item">
                             <h2 class="stat-number">
-                                {{ objets_evites
-                                }}<span class="text-accent">{{
-                                    objet_grandeur
-                                }}</span>
+                                {{ formatCO2(platformStats.co2_evite) }}<span class="text-accent">{{ uniteCO2 }}</span>
                             </h2>
-                            <p class="stat-label">CO₂ évité ce mois</p>
+                            <p class="stat-label">CO₂ évité au total</p>
                         </div>
+                        
                         <div class="stat-item">
                             <h2 class="stat-number">
-                                {{ objets_upcycle
-                                }}<span
-                                    class="text-accent"
-                                    v-if="objets_upcycle > 1"
-                                    >k+</span
-                                >
+                                {{ platformStats.objets_upcycles >= 1000 ? (platformStats.objets_upcycles / 1000).toFixed(1) : platformStats.objets_upcycles }}
+                                <span class="text-accent" v-if="platformStats.objets_upcycles >= 1000">k+</span>
                             </h2>
                             <p class="stat-label">Objets upcyclés</p>
                         </div>
+                        
                         <div class="stat-item">
                             <h2 class="stat-number">
-                                {{ artisans_partenaire }}
+                                {{ platformStats.artisans_actifs }}
                             </h2>
                             <p class="stat-label">Artisans partenaires</p>
                         </div>
+                        
                         <div class="stat-item">
-                            <h2 class="stat-number">{{ sites }}</h2>
+                            <h2 class="stat-number">{{ platformStats.sites_actifs }}</h2>
                             <p class="stat-label">Sites à Paris & IDF</p>
                         </div>
                     </div>
@@ -304,26 +300,61 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
 
+const API_URL = "http://localhost:8081";
+
 const isLoggedIn = computed(() => {
-  return !!localStorage.getItem("userToken");
+  return !!sessionStorage.getItem("userToken");
 });
 
 const userName = computed(() => {
-  const prenom = localStorage.getItem("userPrenom") || "";
-  const nom = localStorage.getItem("userNom") || "";
+  const prenom = sessionStorage.getItem("userPrenom") || "";
+  const nom = sessionStorage.getItem("userNom") || "";
   
   return (prenom || nom) ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
-const objets_evites = 2.4;
-const objet_grandeur= "t";
-const objets_upcycle= 8;
-const artisans_partenaire= 340;
-const sites= 7;
-const plateform_user= 12400;
+// Les variables réactives pour stocker les vraies données de la BDD
+const platformStats = ref({
+    co2_evite: 0,
+    objets_upcycles: 0,
+    artisans_actifs: 0,
+    sites_actifs: 7 // On garde 7 par défaut si on n'a pas la table SITE
+});
+
+// Fonction pour formater le CO2
+const formatCO2 = (kg) => {
+    if (kg >= 1000) {
+        return (kg / 1000).toFixed(1); // Retourne juste le chiffre (ex: 2.4)
+    }
+    return kg; // Retourne juste le chiffre
+};
+
+// L'unité de mesure associée au CO2 (t ou kg)
+const uniteCO2 = computed(() => {
+    if (platformStats.value.co2_evite >= 1000) {
+        return 't';
+    }
+    return 'kg';
+});
+
+// Fonction pour récupérer les vraies statistiques
+const fetchPlatformStats = async () => {
+    try {
+        const res = await fetch(`${API_URL}/stats/platform`);
+        if (res.ok) {
+            platformStats.value = await res.json();
+        }
+    } catch (e) {
+        console.error("Erreur chargement des statistiques :", e);
+    }
+};
+
+onMounted(() => {
+    fetchPlatformStats();
+});
 </script>
 
 <style>

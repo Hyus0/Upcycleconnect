@@ -73,7 +73,7 @@
           >
             <div class="forum-card__top">
               <strong>{{ forum.name }}</strong>
-              <span>{{ forum.topics.length }}</span>
+              <span>{{ forum.topics ? forum.topics.length : 0 }}</span>
             </div>
             <p>{{ forum.description }}</p>
             <small>{{ latestTopicLabel(forum) }}</small>
@@ -128,12 +128,12 @@
             >
               <button type="button" class="forum-topic__summary" @click="toggleTopic(topic.id)">
                 <div>
-                  <span class="forum-chip forum-chip--muted">{{ topic.tag }}</span>
+                  <span class="forum-chip forum-chip--muted">{{ topic.tag || "Discussion" }}</span>
                   <h3>{{ topic.title }}</h3>
                   <p>{{ topic.preview }}</p>
                 </div>
                 <div class="forum-topic__meta">
-                  <strong>{{ topic.messages.length }} msg</strong>
+                  <strong>{{ topic.messages ? topic.messages.length : 0 }} msg</strong>
                   <small>{{ topic.lastActivity }}</small>
                 </div>
               </button>
@@ -178,124 +178,60 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
 const router = useRouter();
-const userId = localStorage.getItem("userId") || "guest";
-const userPrenom = localStorage.getItem("userPrenom") || "";
-const userNom = localStorage.getItem("userNom") || "";
+const API_URL = "http://localhost:8081";
+
+const userId = sessionStorage.getItem("userId") || "guest";
+const userPrenom = sessionStorage.getItem("userPrenom") || "";
+const userNom = sessionStorage.getItem("userNom") || "";
 const userName = `${userPrenom} ${userNom}`.trim() || "Utilisateur";
-const storageKey = `upcycleconnect-forums-${userId}`;
-const isAuthenticated = computed(() => Boolean(localStorage.getItem("userToken") && localStorage.getItem("userId")));
 
-function buildDefaultForums() {
-  return [
-    {
-      id: "general",
-      name: "Entraide generale",
-      description: "Questions de demarrage, usages de la plateforme et entraide entre membres.",
-      topics: [
-        {
-          id: "general-bienvenue",
-          title: "Comment bien preparer sa premiere annonce ?",
-          tag: "Debutant",
-          preview: "Photos, description, etat de l'objet: les points a verifier avant publication.",
-          lastActivity: "Aujourd'hui",
-          messages: [
-            {
-              id: "general-bienvenue-1",
-              author: "Equipe UpcycleConnect",
-              role: "Moderation",
-              postedAt: "Aujourd'hui - 09:10",
-              content:
-                "Pensez a preciser l'etat de l'objet, sa matiere et sa disponibilite. Une annonce claire est validee plus vite."
-            },
-            {
-              id: "general-bienvenue-2",
-              author: "Marie Lambert",
-              role: "Particulier",
-              postedAt: "Aujourd'hui - 09:42",
-              content:
-                "Je confirme, ajouter 2 ou 3 photos nettes m'a aidee a recevoir des retours beaucoup plus rapidement."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "materiaux",
-      name: "Materiaux & recuperation",
-      description: "Trouver les bons flux, partager les pieces utiles et identifier les materiaux reutilisables.",
-      topics: [
-        {
-          id: "materiaux-bois",
-          title: "Quels objets en bois partent le plus vite ?",
-          tag: "Bois",
-          preview: "Retours d'experience sur les lots de meubles, chutes et planches a remettre en circulation.",
-          lastActivity: "Hier",
-          messages: [
-            {
-              id: "materiaux-bois-1",
-              author: "Atelier Renouveau",
-              role: "Artisan",
-              postedAt: "Hier - 18:20",
-              content:
-                "Les petites commodes, tabourets et plateaux de table trouvent vite preneur quand les dimensions sont indiquees."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "projets",
-      name: "Projets & transformations",
-      description: "Montrer ses creations, demander des avis et partager les avant/apres.",
-      topics: [
-        {
-          id: "projets-jean",
-          title: "Idees pour transformer un vieux jean en accessoire",
-          tag: "Textile",
-          preview: "Besoin d'inspirations simples a realiser a la maison ou en atelier.",
-          lastActivity: "Cette semaine",
-          messages: [
-            {
-              id: "projets-jean-1",
-              author: "Lea Dupont",
-              role: "Particulier",
-              postedAt: "Cette semaine - 14:05",
-              content:
-                "Le sac cabas marche tres bien, surtout si vous gardez les poches avant pour le cote pratique."
-            }
-          ]
-        }
-      ]
-    }
-  ];
-}
+const isAuthenticated = computed(() => Boolean(sessionStorage.getItem("userToken") && sessionStorage.getItem("userId")));
 
-function loadForums() {
-  const raw = localStorage.getItem(storageKey);
-  if (!raw) return buildDefaultForums();
-
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length ? parsed : buildDefaultForums();
-  } catch {
-    return buildDefaultForums();
-  }
-}
-
-const forums = ref(loadForums());
+const forums = ref([]);
 const search = ref("");
-const selectedForumId = ref(forums.value[0]?.id || "");
-const selectedTopicId = ref(forums.value[0]?.topics[0]?.id || "");
+const selectedForumId = ref("");
+const selectedTopicId = ref("");
 const showComposer = ref(false);
 const draftTopicTitle = ref("");
 const draftMessage = ref("");
 
+const fetchForums = async () => {
+  try {
+    const res = await fetch(`${API_URL}/forums`);
+    if (res.ok) {
+      forums.value = await res.json() || [];
+    }
+  } catch (error) {
+    console.error(error);
+  } finally {
+    if (forums.value.length === 0) {
+      forums.value = [{
+        id: "general",
+        name: "Discussions Générales",
+        description: "Toutes les discussions de la communauté",
+        topics: []
+      }];
+    }
+    
+    if (!selectedForumId.value) {
+      selectedForumId.value = forums.value[0].id;
+      if (forums.value[0].topics && forums.value[0].topics.length > 0) {
+        selectedTopicId.value = forums.value[0].topics[0].id;
+      }
+    }
+  }
+};
+
+onMounted(() => {
+  fetchForums();
+});
+
 const selectedForum = computed(() => forums.value.find((forum) => forum.id === selectedForumId.value) || null);
-const selectedTopic = computed(() => selectedForum.value?.topics.find((topic) => topic.id === selectedTopicId.value) || null);
+const selectedTopic = computed(() => selectedForum.value?.topics?.find((topic) => topic.id === selectedTopicId.value) || null);
 
 const filteredForums = computed(() => {
   const term = search.value.toLowerCase();
@@ -303,7 +239,8 @@ const filteredForums = computed(() => {
 
   return forums.value.filter((forum) => {
     const forumMatch = forum.name.toLowerCase().includes(term) || forum.description.toLowerCase().includes(term);
-    const topicMatch = forum.topics.some(
+    const topics = forum.topics || [];
+    const topicMatch = topics.some(
       (topic) => topic.title.toLowerCase().includes(term) || topic.preview.toLowerCase().includes(term)
     );
     return forumMatch || topicMatch;
@@ -311,7 +248,7 @@ const filteredForums = computed(() => {
 });
 
 const filteredTopics = computed(() => {
-  if (!selectedForum.value) return [];
+  if (!selectedForum.value || !selectedForum.value.topics) return [];
   const term = search.value.toLowerCase();
   if (!term) return selectedForum.value.topics;
 
@@ -319,28 +256,25 @@ const filteredTopics = computed(() => {
     (topic) =>
       topic.title.toLowerCase().includes(term) ||
       topic.preview.toLowerCase().includes(term) ||
-      topic.messages.some((message) => message.content.toLowerCase().includes(term))
+      (topic.messages || []).some((message) => message.content.toLowerCase().includes(term))
   );
 });
 
-const totalTopics = computed(() => forums.value.reduce((count, forum) => count + forum.topics.length, 0));
+const totalTopics = computed(() => forums.value.reduce((count, forum) => count + (forum.topics ? forum.topics.length : 0), 0));
 const totalMessages = computed(() =>
   forums.value.reduce(
-    (count, forum) => count + forum.topics.reduce((topicCount, topic) => topicCount + topic.messages.length, 0),
+    (count, forum) => count + (forum.topics ? forum.topics.reduce((topicCount, topic) => topicCount + (topic.messages ? topic.messages.length : 0), 0) : 0),
     0
   )
 );
 
-function persistForums() {
-  localStorage.setItem(storageKey, JSON.stringify(forums.value));
-}
-
 function latestTopicLabel(forum) {
-  if (!forum.topics.length) return "Aucune discussion";
+  if (!forum.topics || !forum.topics.length) return "Aucune discussion";
   return forum.topics[0].title;
 }
 
 function initialsFor(name) {
+  if (!name) return "?";
   return name
     .split(" ")
     .filter(Boolean)
@@ -357,7 +291,8 @@ function requireAuth() {
 
 function selectForum(forumId) {
   selectedForumId.value = forumId;
-  selectedTopicId.value = forums.value.find((forum) => forum.id === forumId)?.topics[0]?.id || "";
+  const forum = forums.value.find((f) => f.id === forumId);
+  selectedTopicId.value = (forum && forum.topics && forum.topics.length > 0) ? forum.topics[0].id : "";
   closeComposer();
 }
 
@@ -384,57 +319,53 @@ function closeComposer() {
   draftMessage.value = "";
 }
 
-function submitPost() {
-  if (!requireAuth() || !selectedForum.value || !draftMessage.value.trim()) return;
+async function submitPost() {
+  if (!requireAuth() || !selectedForum.value) return;
 
-  const now = new Date();
-  const formattedDate = now.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  const formattedTime = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  if (!draftMessage.value.trim()) {
+    alert("Veuillez écrire un message.");
+    return;
+  }
 
-  if (selectedTopic.value) {
-    selectedTopic.value.messages.push({
-      id: `msg-${Date.now()}`,
-      author: userName,
-      role: "Particulier",
-      postedAt: `${formattedDate} - ${formattedTime}`,
-      content: draftMessage.value.trim()
-    });
-    selectedTopic.value.lastActivity = "A l'instant";
-  } else {
-    if (draftTopicTitle.value.trim().length < 4) return;
+  const currentUserId = parseInt(sessionStorage.getItem("userId"), 10);
 
-    const newTopic = {
-      id: `topic-${Date.now()}`,
-      title: draftTopicTitle.value.trim(),
-      tag: "Discussion",
-      preview: draftMessage.value.trim().slice(0, 110),
-      lastActivity: "A l'instant",
-      messages: [
-        {
-          id: `msg-${Date.now()}-root`,
-          author: userName,
-          role: "Particulier",
-          postedAt: `${formattedDate} - ${formattedTime}`,
+  try {
+    if (selectedTopic.value) {
+      await fetch(`${API_URL}/forums/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: currentUserId,
+          forum_id: selectedTopic.value.id,
           content: draftMessage.value.trim()
-        }
-      ]
-    };
+        })
+      });
+    } else {
+      if (draftTopicTitle.value.trim().length < 4) {
+        alert("Le titre doit faire au moins 4 caractères.");
+        return;
+      }
+      
+      await fetch(`${API_URL}/forums/topic`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: currentUserId,
+          salon_id: selectedForum.value.id, 
+          title: draftTopicTitle.value.trim(),
+          sujet: draftMessage.value.trim() 
+        })
+      });
+    }
 
-    selectedForum.value.topics.unshift(newTopic);
-    selectedTopicId.value = newTopic.id;
+    closeComposer();
+    await fetchForums(); 
+
+  } catch (e) {
+    console.error(e);
+    alert("Erreur de connexion.");
   }
-
-  persistForums();
-  closeComposer();
 }
-
-watch(filteredForums, (nextForums) => {
-  if (!nextForums.length) return;
-  if (!nextForums.some((forum) => forum.id === selectedForumId.value)) {
-    selectedForumId.value = nextForums[0].id;
-    selectedTopicId.value = nextForums[0].topics[0]?.id || "";
-  }
-});
 </script>
 
 <style scoped>

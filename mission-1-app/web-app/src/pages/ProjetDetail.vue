@@ -158,11 +158,11 @@ const user_creator = ref([]);
 const isLiked = ref(false);
 const userScore = ref(0);
 
-const currentUserId = localStorage.getItem("userId") || 0;
-const isLoggedIn = computed(() => !!localStorage.getItem("userToken"));
+const currentUserId = sessionStorage.getItem("userId") || 0;
+const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {
-    const prenom = localStorage.getItem("userPrenom") || "";
-    const nom = localStorage.getItem("userNom") || "";
+    const prenom = sessionStorage.getItem("userPrenom") || "";
+    const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 

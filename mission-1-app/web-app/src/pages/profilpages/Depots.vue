@@ -275,8 +275,8 @@ const fetchSitesCache = async () => {
 };
 
 const fetchAnnonces = async () => {
-    const id = localStorage.getItem("userId");
-    const token = localStorage.getItem("userToken");
+    const id = sessionStorage.getItem("userId");
+    const token = sessionStorage.getItem("userToken");
     loading.value = true;
     try {
         const res = await fetch(`http://localhost:8081/users/${id}/annonces`, {
@@ -290,7 +290,7 @@ const fetchAnnonces = async () => {
 
 const fetchAndOpenSite = async (siteId) => {
     if (!siteId) return;
-    const token = localStorage.getItem("userToken");
+    const token = sessionStorage.getItem("userToken");
     try {
         const res = await fetch(`http://localhost:8081/site/${siteId}`, {
             headers: { Authorization: token },
@@ -311,7 +311,7 @@ const annulerFlux = async (id, statut) => {
     
     if (!confirm(`Voulez-vous vraiment ${actionLabel} ?`)) return;
 
-    const token = localStorage.getItem("userToken");
+    const token = sessionStorage.getItem("userToken");
 
     try {
         const res = await fetch(`http://localhost:8081/annonces/${id}/retirer`, {

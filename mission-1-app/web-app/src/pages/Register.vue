@@ -192,7 +192,7 @@ import SiteNavbar from "../components/SiteNavbar.vue";
 
 const router = useRouter();
 const accountType = ref("particulier");
-const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
+const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || sessionStorage.getItem("userToken")));
 const userName = ref("Marie Lambert");
 
 const errorMessages = ref([]);
@@ -230,13 +230,18 @@ async function handleSubmit() {
         return;
     }
 
+    let dbRole = "Particulier";
+    if (accountType.value === "pro") {
+        dbRole = "Prestataire";
+    }
+
     const userData = {
         prenom: prenom.value,
         nom: nom.value,
         mail: email.value,
         password: motDePasse.value,
         code_postal: codePostal.value,
-        role: "Particulier", 
+        role: dbRole, 
         id_langue: 1     
     };
     
@@ -248,7 +253,6 @@ async function handleSubmit() {
         });
 
         if (response.ok) {
-            alert("Compte créé avec succès");
             router.push("/connexion");
             return;
         } else {

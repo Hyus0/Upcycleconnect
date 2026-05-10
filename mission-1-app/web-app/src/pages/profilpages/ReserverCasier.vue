@@ -129,7 +129,7 @@ const selectedSiteName = computed(() => {
 });
 
 const fetchData = async () => {
-    const token = localStorage.getItem("userToken");
+    const token = sessionStorage.getItem("userToken");
     try {
         const resSites = await fetch("http://localhost:8081/sites", {
             headers: { Authorization: token },
@@ -150,7 +150,7 @@ const fetchData = async () => {
 const confirmReservation = async () => {
     submitting.value = true;
     errors.value = []; 
-    const token = localStorage.getItem("userToken");
+    const token = sessionStorage.getItem("userToken");
 
     try {
         const res = await fetch(`http://localhost:8081/annonces/${route.params.id}/reserver`, {

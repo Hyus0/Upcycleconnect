@@ -115,8 +115,8 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   if (to.matched.some((record) => record.meta.requiresAuth)) {
-    const id = localStorage.getItem("userId");
-    const token = localStorage.getItem("userToken");
+    const id = sessionStorage.getItem("userId");
+    const token = sessionStorage.getItem("userToken");
 
     if (!id || !token) {
       return next("/connexion");
@@ -134,7 +134,7 @@ router.beforeEach(async (to, from, next) => {
       if (data.isValid) {
         next();
       } else {
-        localStorage.clear();
+        sessionStorage.clear();
         next("/connexion");
       }
     } catch (error) {

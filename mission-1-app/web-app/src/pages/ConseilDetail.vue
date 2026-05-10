@@ -122,13 +122,13 @@ const API_URL = "http://localhost:8081";
 const tip = ref(null);
 const loading = ref(true);
 
-const userScore = ref(parseInt(localStorage.getItem("userScore")) || 0);
-const userRole = ref(localStorage.getItem("userRole") || "Particulier");
+const userScore = ref(parseInt(sessionStorage.getItem("userScore")) || 0);
+const userRole = ref(sessionStorage.getItem("userRole") || "Particulier");
 
-const isLoggedIn = computed(() => !!localStorage.getItem("userToken"));
+const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {
-    const prenom = localStorage.getItem("userPrenom") || "";
-    const nom = localStorage.getItem("userNom") || "";
+    const prenom = sessionStorage.getItem("userPrenom") || "";
+    const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 

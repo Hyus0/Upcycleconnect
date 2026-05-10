@@ -140,8 +140,8 @@ const errors = ref([]);
 const successMsg = ref("");
 
 onMounted(async () => {
-    const id = localStorage.getItem("userId");
-    const token = localStorage.getItem("userToken");
+    const id = sessionStorage.getItem("userId");
+    const token = sessionStorage.getItem("userToken");
 
     if (!id || !token) return;
 
@@ -176,8 +176,8 @@ const formatDate = (dateString) => {
 };
 
 const updateProfile = async () => {
-    const userId = localStorage.getItem("userId");
-    const token = localStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
+    const token = sessionStorage.getItem("userToken");
 
     errors.value = [];
     successMsg.value = "";

@@ -255,7 +255,7 @@ const loadCalendarEntries = async (id) => {
     try {
         const res = await fetch(`${API_URL}/user/planning/${id}`, {
             headers: {
-                Authorization: `Bearer ${localStorage.getItem("userToken") || ""}`,
+                Authorization: `Bearer ${sessionStorage.getItem("userToken") || ""}`,
             },
         });
 
@@ -283,7 +283,7 @@ const loadCalendarEntries = async (id) => {
 };
 
 onMounted(() => {
-    const id = localStorage.getItem("userId");
+    const id = sessionStorage.getItem("userId");
     if (id) loadCalendarEntries(id);
 });
 </script>

@@ -260,11 +260,11 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const API_URL = "http://localhost:8081";
 
-const prenom = ref(localStorage.getItem("userPrenom") || "Invité");
+const prenom = ref(sessionStorage.getItem("userPrenom") || "Invité");
 const annonces = ref([]);
 const calendarEntries = ref([]);
 const tipDuJour = ref(null);
-const userRole = ref(localStorage.getItem("userRole") || "Particulier");
+const userRole = ref(sessionStorage.getItem("userRole") || "Particulier");
 
 const stats = ref({
     total_points: 0,
@@ -352,7 +352,7 @@ const goToFullPlanning = () => router.push("/profil/planning");
 const removeAnnonce = async (id) => {
     if (!confirm("Voulez-vous vraiment retirer cette annonce ?")) return;
     try {
-        const token = localStorage.getItem("userToken") || "";
+        const token = sessionStorage.getItem("userToken") || "";
         const res = await fetch(`${API_URL}/annonces/${id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
@@ -367,7 +367,7 @@ const removeAnnonce = async (id) => {
 const loadCalendarEntries = async (id) => {
     if (!id || id === "null") return;
     try {
-        const token = localStorage.getItem("userToken") || "";
+        const token = sessionStorage.getItem("userToken") || "";
         const res = await fetch(`${API_URL}/user/planning/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
@@ -427,9 +427,8 @@ const loadTipDuJour = async (role) => {
 };
 
 onMounted(async () => {
-    const rawId = localStorage.getItem("userId");
+    const rawId = sessionStorage.getItem("userId");
 
-    // Sécurité stricte sur l'ID
     if (!rawId || rawId === "null" || rawId === "undefined") {
         console.warn("Utilisateur non connecté ou ID invalide.");
         return;
@@ -439,11 +438,10 @@ onMounted(async () => {
     if (isNaN(id)) return;
 
     const headers = {
-        Authorization: `Bearer ${localStorage.getItem("userToken") || ""}`,
+        Authorization: `Bearer ${sessionStorage.getItem("userToken") || ""}`,
     };
 
-    // Vérification du rôle
-    let currentRole = localStorage.getItem("userRole");
+    let currentRole = sessionStorage.getItem("userRole");
     if (!currentRole || currentRole === "null") {
         currentRole = "Particulier";
     }
@@ -457,7 +455,7 @@ onMounted(async () => {
             const data = await resStats.json();
             stats.value = data;
             if (data.total_points !== undefined) {
-                localStorage.setItem("userScore", String(data.total_points));
+                sessionStorage.setItem("userScore", String(data.total_points));
                 window.dispatchEvent(new Event("auth-change"));
             }
         }

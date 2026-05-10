@@ -113,7 +113,7 @@ const props = defineProps({
   },
   userScore: {
     type: [String, Number],
-    default: () => localStorage.getItem("userScore") || 0
+    default: () => sessionStorage.getItem("userScore") || 0
   },
   isAuthenticated: {
     type: Boolean,
@@ -240,7 +240,7 @@ function isGroupActive(group) {
 function handleLogout() {
   sessionStorage.removeItem("userToken");
   sessionStorage.removeItem("userId");
-  localStorage.removeItem("userToken");
+  sessionStorage.removeItem("userToken");
   router.push("/connexion");
 }
 </script>

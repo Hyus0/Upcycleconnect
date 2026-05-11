@@ -9,12 +9,14 @@
     />
     <ForumBoard />
   </main>
+  <SiteFooter />
 </template>
 
 <script setup>
 import { computed } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import ForumBoard from "../components/ForumBoard.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const isLoggedIn = computed(() => Boolean(sessionStorage.getItem("userToken")));
 const userScore = computed(() => sessionStorage.getItem("userScore") || 0);

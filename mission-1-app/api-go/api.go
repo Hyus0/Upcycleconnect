@@ -90,6 +90,14 @@ func main() {
 	http.HandleFunc("GET /users/{id}/stats", app.GetUserStatsHandler)
 	http.HandleFunc("GET /user/planning/{id}", app.GetPlanningHandler)
 
+	// Avis
+	http.HandleFunc("GET /users/{id}/avis", app.GetUserAvisHandler) 
+	http.HandleFunc("POST /users/{id}/avis", app.AddAvisHandler)
+
+	// Follow
+	http.HandleFunc("GET /users/{id}/follow/{userId}", app.GetFollowStatusHandler)
+	http.HandleFunc("POST /users/{id}/follow/{userId}", app.ToggleFollowHandler)
+
 	//Annonce
 	http.HandleFunc("GET /annonces", app.GetAllAnnonces)
 	http.HandleFunc("POST /annonces", app.CreateAnnonce)
@@ -97,6 +105,9 @@ func main() {
 	http.HandleFunc("PUT /annonces/{id}", app.ModifyAnnonce)
 	http.HandleFunc("DELETE /annonces/{id}", app.DeleteAnnonce)
 	http.HandleFunc("GET /users/{id}/annonces", app.GetUserAnnoncesHandler)
+	http.HandleFunc("GET /annonces/{id}/favori/{userId}", app.GetFavoriStatusHandler)
+	http.HandleFunc("POST /annonces/{id}/favori/{userId}", app.ToggleFavoriHandler)
+	
 	//Evenement
 	http.HandleFunc("GET /evenements", app.GetAllEvenements)
 	http.HandleFunc("GET /evenements/{id}", app.GetEvenement)

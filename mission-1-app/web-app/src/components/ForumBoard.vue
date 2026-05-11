@@ -145,12 +145,14 @@
                   class="forum-message"
                   :class="{ 'is-me': message.author === userName }"
                 >
-                  <div class="forum-message__avatar">
+                  <div class="forum-message__avatar clickable-user" @click="goToUserProfile(message.user_id || message.id_auteur)">
                     {{ initialsFor(message.author) }}
                   </div>
                   <div class="forum-message__body">
                     <div class="forum-message__meta">
-                      <strong>{{ message.author }}</strong>
+                      <strong class="clickable-user" @click="goToUserProfile(message.user_id || message.id_auteur)">
+                        {{ message.author }}
+                      </strong>
                       <span>{{ message.role }}</span>
                       <small>{{ message.postedAt }}</small>
                     </div>
@@ -271,6 +273,17 @@ const totalMessages = computed(() =>
 function latestTopicLabel(forum) {
   if (!forum.topics || !forum.topics.length) return "Aucune discussion";
   return forum.topics[0].title;
+}
+
+// FONCTION DE REDIRECTION CORRIGÉE AVEC DEBUG
+function goToUserProfile(targetId) {
+  console.log("Tentative de redirection vers l'utilisateur ID :", targetId);
+  if (targetId) {
+    router.push(`/user/${targetId}`);
+  } else {
+    alert("Impossible d'ouvrir le profil : l'ID de l'utilisateur n'est pas fourni par l'API.");
+    console.warn("L'ID de cet utilisateur est manquant dans l'API.");
+  }
 }
 
 function initialsFor(name) {
@@ -672,6 +685,23 @@ async function submitPost() {
   background: linear-gradient(180deg, #3e985f, #30794b);
   color: #ffffff;
   font-weight: 700;
+}
+
+/* NOUVEAU CSS : UTILISATEURS CLIQUABLES */
+.clickable-user {
+  cursor: pointer;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.clickable-user:hover {
+  opacity: 0.8;
+  color: #2c7e4f;
+  text-decoration: underline;
+  text-decoration-color: #2c7e4f;
+}
+
+.forum-message__avatar.clickable-user:hover {
+  text-decoration: none;
 }
 
 .forum-message__body {

@@ -66,8 +66,11 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 			date_creation, 
 			COALESCE(date_depot_effective, '0001-01-01 00:00:00'), 
 			COALESCE(date_recuperation_effective, '0001-01-01 00:00:00'),
-			type, ville, code_postal, adresse
+			type, ville, code_postal, adresse,
+			COALESCE(id_site, 0)
 		FROM ANNONCE
+		WHERE est_valide = 'Valide' AND statut = 'Disponible'
+		ORDER BY date_creation DESC
 	`
 
 	rows, err := Conn.Query(query)
@@ -85,7 +88,7 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 			&a.Titre, &a.Description, &a.TypeMateriau, &a.PoidsEstimeKg, &a.Prix,
 			&a.EtatObjet, &a.Statut, &a.EstValide, &a.CodePinDepot, &a.CodeBarreRetrait,
 			&a.DateCreation, &a.DateDepotEffective, &a.DateRecuperationEffective,
-			&a.Type, &a.Ville, &a.CodePostal, &a.Adresse,
+			&a.Type, &a.Ville, &a.CodePostal, &a.Adresse, &a.IdSite,
 		)
 		if err != nil {
 			fmt.Println("Erreur Scan GetAllAnnonces:", err)
@@ -93,7 +96,6 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 		}
 		annonces = append(annonces, a)
 	}
-
 	return annonces, nil
 }
 

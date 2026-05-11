@@ -108,12 +108,14 @@
             </div>
         </div>
     </main>
+    <SiteFooter />
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const route = useRoute();
 const router = useRouter();

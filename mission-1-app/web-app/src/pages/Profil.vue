@@ -8,11 +8,14 @@
     />
     <router-view />
   </main>
+  <SiteFooter />
+
 </template>
 
 <script setup>
 import { ref, computed } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const isLoggedIn = computed(() => {
   return !!sessionStorage.getItem("userToken");

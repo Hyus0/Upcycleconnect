@@ -133,11 +133,13 @@ gi<template>
             </div>
         </div>
     </main>
+    <SiteFooter />
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const evenements = ref([]);
 const loading = ref(true);

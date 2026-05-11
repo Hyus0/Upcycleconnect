@@ -100,7 +100,7 @@ const formatDate = (dateString) => {
 };
 
 const goToAnnonce = (id) => {
-    router.push({ name: 'see-annonce', params: { id: id } });
+    router.push({ name: 'annonce-detail', params: { id: id } });
 };
 
 const goToModify = (id) => {

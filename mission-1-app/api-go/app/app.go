@@ -1562,3 +1562,135 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 }
+
+//Favori
+
+func GetFavoriStatusHandler(w http.ResponseWriter, r *http.Request) {
+	idAnnonce, _ := strconv.Atoi(r.PathValue("id"))
+	userID, _ := strconv.Atoi(r.PathValue("userId"))
+
+	total, isFavorited, err := db.GetFavoriStatus(idAnnonce, userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"total":        total,
+		"is_favorited": isFavorited,
+	})
+}
+
+func ToggleFavoriHandler(w http.ResponseWriter, r *http.Request) {
+	idAnnonce, _ := strconv.Atoi(r.PathValue("id"))
+	userID, err := strconv.Atoi(r.PathValue("userId"))
+
+	if err != nil || userID <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = db.ToggleFavori(idAnnonce, userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	
+	w.WriteHeader(http.StatusOK)
+}
+
+//Avis
+
+func GetUserAvisHandler(w http.ResponseWriter, r *http.Request) {
+	idCibleStr := r.PathValue("id")
+	idCible, err := strconv.Atoi(idCibleStr)
+
+	if err != nil || idCible <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	avisList, err := db.GetAvisByCible(idCible)
+	if err != nil {
+		http.Error(w, "Erreur serveur lors de la récupération des avis", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(avisList)
+}
+
+func AddAvisHandler(w http.ResponseWriter, r *http.Request) {
+	idCibleStr := r.PathValue("id")
+	idCible, err := strconv.Atoi(idCibleStr)
+
+	if err != nil || idCible <= 0 {
+		http.Error(w, "ID utilisateur cible invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		IdAuteur    int    `json:"id_auteur"`
+		Note        int    `json:"note"`
+		Commentaire string `json:"commentaire"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Format de requête invalide", http.StatusBadRequest)
+		return
+	}
+
+	err = db.CreateAvis(req.IdAuteur, idCible, req.Note, req.Commentaire)
+	if err != nil {
+		http.Error(w, "Erreur lors de l'ajout de l'avis", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Avis ajouté avec succès"})
+}
+
+//Follow
+
+func GetFollowStatusHandler(w http.ResponseWriter, r *http.Request) {
+	idProfil, _ := strconv.Atoi(r.PathValue("id"))
+	idConnecte, _ := strconv.Atoi(r.PathValue("userId"))
+
+	followers, following, isFollowing, err := db.GetFollowStatus(idProfil, idConnecte)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"followers":    followers,
+		"following":    following, 
+		"is_following": isFollowing,
+	})
+}
+
+func ToggleFollowHandler(w http.ResponseWriter, r *http.Request) {
+	idSuivi, _ := strconv.Atoi(r.PathValue("id"))
+	idAbonne, err := strconv.Atoi(r.PathValue("userId"))
+
+	if err != nil || idAbonne <= 0 {
+		http.Error(w, "Vous devez être connecté", http.StatusUnauthorized)
+		return
+	}
+    
+    if idSuivi == idAbonne {
+        http.Error(w, "Vous ne pouvez pas vous suivre vous-même", http.StatusBadRequest)
+		return
+    }
+
+	err = db.ToggleFollowUser(idSuivi, idAbonne)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	
+	w.WriteHeader(http.StatusOK)
+}

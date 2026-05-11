@@ -17,12 +17,22 @@ const routes = [
   { path: "/", component: Home },
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
-  { path: "/annonces", component: Annonces },
+  { path: "/catalogue", component: Annonces },
   { path: "/forums", component: Forums },
   { path: "/formations", component: Formations },
   { path: "/evenements", component: Evenements },
   { path: "/projets", component: Projets },
   { path: "/conseils", component: Conseils },
+  {
+    path: '/annonce/:id',
+    name: 'annonce-detail',
+    component: () => import('./pages/AnnonceDetail.vue')
+  },
+  {
+    path: '/user/:id',
+    name: 'utilisateur-detail',
+    component: () => import('./pages/UtilisateurDetail.vue')
+  },
   {
     path: '/formations/:id',
     name: 'formation-detail',
@@ -82,11 +92,6 @@ const routes = [
         path: "modifyAnnonce/:id",
         name: "modification-annonce",
         component: () => import("./pages/profilpages/modifyAnnonce.vue"),
-      },
-      {
-        path: "seeAnnonce/:id",
-        name: "see-annonce",
-        component: () => import("./pages/profilpages/SeeAnnonce.vue"),
       },
       {
         path: "createAnnonce",

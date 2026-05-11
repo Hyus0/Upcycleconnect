@@ -17,6 +17,7 @@ type ForumTopic struct {
 
 type ForumMessage struct {
 	ID       int    `json:"id"`
+	UserID    int    `json:"user_id"`
 	Author   string `json:"author"`
 	Role     string `json:"role"`
 	Content  string `json:"content"`

@@ -128,6 +128,7 @@
             </div>
         </div>
     </main>
+    <SiteFooter />
 </template>
 
 <script setup>
@@ -135,6 +136,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const formations = ref([]);
 const loading = ref(true);

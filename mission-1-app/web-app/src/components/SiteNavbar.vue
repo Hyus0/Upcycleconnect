@@ -170,7 +170,7 @@ const serviceChildren = [
 const communityChildren = [
   {
     label: "Catalogue offres",
-    to: "/annonces",
+    to: "/catalogue",
     description: "Toutes les annonces publiques"
   },
   {

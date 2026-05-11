@@ -45,30 +45,34 @@ func GetAllForums() ([]models.ForumCategory, error) {
 	}
 
 	msgQuery := `
-		SELECT m.id, m.id_forum, m.contenu, m.date_envoi, u.prenom, u.nom, u.role 
-		FROM FORUM_MESSAGE m
-		JOIN UTILISATEUR u ON m.id_utilisateur = u.id
-		ORDER BY m.date_envoi ASC`
-	msgRows, err := Conn.Query(msgQuery)
-	if err != nil { 
-		return nil, err 
-	}
-	defer msgRows.Close()
+			SELECT m.id, m.id_forum, m.id_utilisateur, m.contenu, m.date_envoi, u.prenom, u.nom, u.role 
+			FROM FORUM_MESSAGE m
+			JOIN UTILISATEUR u ON m.id_utilisateur = u.id
+			ORDER BY m.date_envoi ASC`
+			
+		msgRows, err := Conn.Query(msgQuery)
+		if err != nil { 
+			return nil, err 
+		}
+		defer msgRows.Close()
 
-	for msgRows.Next() {
-		var m models.ForumMessage
-		var topicID int
-		var prenom, nom string
-		if err := msgRows.Scan(&m.ID, &topicID, &m.Content, &m.PostedAt, &prenom, &nom, &m.Role); err == nil {
-			m.Author = prenom + " " + nom
-			if topic, ok := topicsMap[topicID]; ok {
-				topic.Messages = append(topic.Messages, m)
-				topic.LastActivity = m.PostedAt
+		for msgRows.Next() {
+			var m models.ForumMessage
+			var topicID int
+			var prenom, nom string
+			
+			if err := msgRows.Scan(&m.ID, &topicID, &m.UserID, &m.Content, &m.PostedAt, &prenom, &nom, &m.Role); err == nil {
+				m.Author = prenom + " " + nom
+				if topic, ok := topicsMap[topicID]; ok {
+					topic.Messages = append(topic.Messages, m)
+					topic.LastActivity = m.PostedAt
+				}
+			} else {
+				println("Erreur de scan message:", err.Error())
 			}
 		}
-	}
 
-	return salons, nil
+		return salons, nil
 }
 
 func CreateForumTopic(userID int, salonID int, titre string, sujet string) error {

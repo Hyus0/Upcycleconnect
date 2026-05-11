@@ -76,12 +76,14 @@
             </div>
         </div>
     </main>
+    <SiteFooter />
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const API_URL = "http://localhost:8081";
 const router = useRouter();

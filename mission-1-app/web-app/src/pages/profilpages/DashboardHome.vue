@@ -344,7 +344,7 @@ const formatDate = (val) => {
 };
 
 const goToAnnonce = (id) =>
-    router.push({ name: "see-annonce", params: { id } });
+    router.push({ name: "annonce-detail", params: { id } });
 const goToModify = (id) =>
     router.push({ name: "modification-annonce", params: { id } });
 const goToFullPlanning = () => router.push("/profil/planning");

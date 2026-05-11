@@ -142,12 +142,14 @@
             </div>
         </main>
     </div>
+    <SiteFooter />
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -220,7 +222,6 @@ const checkLikeStatus = async () => {
 
 const toggleLike = async () => {
     if (!isLoggedIn.value) {
-        alert("Connectez-vous pour liker !");
         router.push("/connexion");
         return;
     }
@@ -239,7 +240,11 @@ const toggleLike = async () => {
 };
 
 const viewProfile = (id) => {
-    router.push({ name: "public-profile", params: { id } });
+    if (id) {
+        router.push(`/user/${id}`);
+    } else {
+        console.error("L'ID est manquant !");
+    }
 };
 
 onMounted(fetchDetail);

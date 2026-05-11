@@ -100,6 +100,7 @@
                                 class="link-btn"
                                 @click="viewProfile(formation.id_formateur)"
                             >
+                                Voir le profil expert
                             </button>
                         </div>
                     </div>
@@ -165,6 +166,7 @@
             </div>
         </div>
     </main>
+    <SiteFooter />
 </template>
 
 <script setup>
@@ -172,6 +174,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -227,7 +230,11 @@ const fetchDetail = async () => {
 };
 
 const viewProfile = (id) => {
-    router.push({ name: "public-profile", params: { id } });
+  if (id) {
+      router.push(`/user/${id}`);
+  } else {
+      console.error("L'ID est manquant !");
+  }
 };
 
 const handleInscription = async () => {
@@ -235,7 +242,6 @@ const handleInscription = async () => {
     const userId = sessionStorage.getItem("userId");
 
     if (!token || !userId) {
-        alert("Vous devez être connecté pour vous inscrire.");
         return router.push("/connexion");
     }
 
@@ -547,15 +553,6 @@ onMounted(fetchDetail);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-}
-.btn-secondary {
-    background: #f5f5f5;
-    color: #666;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
 }
 
 .btn-main-action.btn-registered {

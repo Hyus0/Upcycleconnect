@@ -11,27 +11,24 @@
             <header class="content-header">
                 <div class="header-left">
                     <p class="sidebar__category2">
-                        ACCUEIL > COMMUNAUTÉ > {{ projet?.titre }}
+                        ACCUEIL > COMMUNAUTÉ > PROJET
                     </p>
                     <h1 class="hero-title1">
                         {{ projet?.titre || "Chargement..." }}
                     </h1>
                     <div v-if="projet" class="project-sub-header">
-                        <p class="creation-date">
+                        <p class="classic-text">
                             Créé le {{ formatDateLong(projet.date_creation) }}
+                            <span class="dot-separator">•</span>
+                            {{ projet.nb_vues }} vues
+                            <span class="dot-separator">•</span>
+                            {{ projet.nb_likes }} likes
                         </p>
-                        <div class="stats-bar-meta">
-                            <span>{{ projet.nb_vues }} vues</span>
-                            <span class="dot">•</span>
-                            <span>{{ projet.nb_likes }} likes</span>
-                        </div>
                     </div>
                 </div>
-                <div class="header-actions">
-                    <button class="btn-secondary" @click="$router.back()">
-                        🠔 Retour
-                    </button>
-                </div>
+                <button class="btn-secondary" @click="$router.back()">
+                    🠔 Retour
+                </button>
             </header>
 
             <div v-if="loading" class="loading-state">
@@ -40,7 +37,7 @@
 
             <div v-else-if="projet?.id" class="split-layout">
                 <div class="left-column">
-                    <div class="info-card">
+                    <div class="form-card">
                         <div class="card-header-flex">
                             <h2 class="card-title">
                                 Histoire de la transformation
@@ -65,15 +62,19 @@
                                 <div
                                     v-for="(etape, index) in projet.etapes"
                                     :key="etape.id"
-                                    class="step-item-card"
+                                    class="step-card-clean"
                                 >
-                                    <div class="step-num-circle">
-                                        {{ index + 1 }}
+                                    <div class="step-header-clean">
+                                        <div class="step-number-wrapper">
+                                            <span class="step-number-badge">{{
+                                                index + 1
+                                            }}</span>
+                                            <span class="step-title-label">{{
+                                                etape.titre
+                                            }}</span>
+                                        </div>
                                     </div>
-                                    <div class="step-info">
-                                        <h4 class="step-title">
-                                            {{ etape.titre }}
-                                        </h4>
+                                    <div class="step-body-clean">
                                         <p class="step-desc">
                                             {{ etape.description }}
                                         </p>
@@ -90,8 +91,10 @@
                 </div>
 
                 <div class="right-column">
-                    <div class="info-card side-card">
-                        <h3>Organisateur de la session</h3>
+                    <div class="form-card side-card">
+                        <h2 class="card-title-side">
+                            Organisateur de la session
+                        </h2>
                         <div class="trainer-preview">
                             <div class="mini-avatar">
                                 {{ user_creator.prenom?.charAt(0)
@@ -112,8 +115,8 @@
                         </div>
                     </div>
 
-                    <div class="info-card side-card">
-                        <h3>Impact Écologique</h3>
+                    <div class="form-card side-card">
+                        <h2 class="card-title-side">Impact Écologique</h2>
                         <div class="data-row">
                             <span class="data-label">CO2 Évité :</span>
                             <span class="text-success"
@@ -128,10 +131,10 @@
                         </div>
                     </div>
 
-                    <div class="action-card">
+                    <div class="form-actions-card">
                         <button
                             @click="toggleLike"
-                            class="btn-main-action"
+                            class="btn-save"
                             :class="{ 'btn-liked-active': isLiked }"
                         >
                             <span v-if="isLiked">Projet liké</span>
@@ -179,12 +182,10 @@ const formatDateLong = (d) => {
 
 const fetchCreateur = async (id) => {
     try {
-        const res = await fetch(`http://localhost:8081/users/${id}`, {
-            method: "GET",
-        });
+        const res = await fetch(`http://localhost:8081/users/${id}`);
         if (res.ok) user_creator.value = await res.json();
     } catch (error) {
-        console.log("Erreur de récupération du créateur: ", error);
+        console.error("Erreur créateur: ", error);
     } finally {
         loading.value = false;
     }
@@ -243,7 +244,7 @@ const viewProfile = (id) => {
     if (id) {
         router.push(`/user/${id}`);
     } else {
-        console.error("L'ID est manquant !");
+        console.error("ID manquant");
     }
 };
 
@@ -261,102 +262,214 @@ onMounted(fetchDetail);
 
 .page-container {
     padding: 0 20px;
-    margin-top: 2rem;
 }
 
 .content-header {
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 2rem;
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: flex-start;
+    margin-bottom: 2rem;
 }
 
-.project-sub-header {
+.header-left {
     display: flex;
     flex-direction: column;
-    gap: 2px;
 }
 
-.creation-date {
-    font-size: 0.85rem;
-    color: #888;
+.sidebar__category2 {
+    font-size: 0.8rem;
+    color: #8fa396;
+    letter-spacing: 1px;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+}
+
+.hero-title1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem 0;
+    color: #1a1a1a;
+}
+
+.classic-text {
+    color: #666;
     margin: 0;
+    font-size: 0.95rem;
 }
 
-.stats-bar-meta {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #2d6a4f;
-    display: flex;
-    gap: 6px;
+.dot-separator {
+    margin: 0 4px;
+    color: #ccc;
+}
+
+.btn-secondary {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    font-weight: 500;
 }
 
 .split-layout {
     display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap: 1.5rem;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 2rem;
+    width: 100%;
 }
 
-.info-card {
-    background: white;
-    padding: 1.2rem;
-    border-radius: 12px;
+.right-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-card {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 16px;
     border: 1px solid #eee;
-    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 1rem;
 }
 
 .card-title {
-    font-size: 1.1rem;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a1a;
+}
+
+.type-badge {
+    background: #e9f5ed;
+    color: #2d7a4f;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.75rem;
     font-weight: 800;
 }
 
-.description-box {
-    background: #f9f9f9;
-    padding: 1rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    border: 1px solid #f0f0f0;
+/* BLOC DESCRIPTION */
+.description-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
 }
 
-.steps-timeline {
-    margin-top: 1rem;
+.info-label {
+    font-size: 0.85rem;
+    color: #2d7a4f;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.description-box {
+    background: #fcfcfc;
+    padding: 1.2rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    border: 1px solid #eee;
+    color: #333;
+}
+
+/* ETAPES DE FABRICATION */
+.steps-section {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.step-item-card {
+.steps-timeline {
     display: flex;
-    gap: 12px;
-    padding: 1rem;
-    background: #fff;
-    border-radius: 10px;
-    border: 1px solid #f0f0f0;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
-.step-num-circle {
+.step-card-clean {
+    background: #ffffff;
+    border: 1px solid #eee;
+    border-radius: 12px;
+}
+
+.step-header-clean {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px dashed #eee;
+    background: #fafafa;
+    border-radius: 12px 12px 0 0;
+}
+
+.step-number-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.step-number-badge {
+    background: #2d7a4f;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
     width: 24px;
     height: 24px;
-    background: #2d6a4f;
-    color: white;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    font-size: 0.75rem;
-    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.step-title-label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.step-body-clean {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.step-desc {
+    font-size: 0.95rem;
+    color: #444;
+    line-height: 1.5;
+    margin: 0;
 }
 
 .step-img {
     width: 100%;
-    border-radius: 6px;
-    max-height: 250px;
+    border-radius: 10px;
+    max-height: 350px;
     object-fit: cover;
-    margin-top: 10px;
+}
+
+/* PANNEAU DROIT ELEMENTS */
+.side-card {
+    padding: 1.5rem 2rem;
+    gap: 1rem;
+}
+
+.card-title-side {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a1a;
 }
 
 .trainer-preview {
@@ -368,7 +481,7 @@ onMounted(fetchDetail);
 .mini-avatar {
     width: 44px;
     height: 44px;
-    background: #2d6a4f;
+    background: #2d7a4f;
     color: white;
     border-radius: 50%;
     display: flex;
@@ -376,67 +489,84 @@ onMounted(fetchDetail);
     justify-content: center;
     font-weight: bold;
     font-size: 1rem;
+    text-transform: uppercase;
 }
 
 .trainer-name {
-    font-weight: 800;
-    margin: 0;
-    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 2px 0;
+    font-size: 0.95rem;
 }
 
 .link-btn {
     background: none;
     border: none;
-    color: #2d6a4f;
+    color: #2d7a4f;
     text-decoration: underline;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     padding: 0;
 }
 
 .data-row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.85rem;
-    margin-bottom: 8px;
+    align-items: center;
+    font-size: 0.95rem;
 }
 
-.btn-main-action {
-    width: 100%;
-    background: #2d6a4f;
+.data-label {
+    color: #666;
+}
+
+.text-success {
+    color: #2d7a4f;
+    font-weight: 700;
+}
+
+.status-badge {
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.form-actions-card {
+    margin-top: 0.2rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.btn-save {
+    background-color: #2d7a4f;
     color: white;
     padding: 1rem;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
     border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+}
+
+.btn-save:hover {
+    background-color: #246343;
 }
 
 .btn-liked-active {
-    background: #ff4d4d;
+    background-color: #ef4444;
+}
+.btn-liked-active:hover {
+    background-color: #dc2626;
 }
 
-.sidebar__category2 {
-    font-size: 0.7rem;
-    color: #aaa;
-    font-weight: 700;
-}
-
-.type-badge {
-    background: #e8f5e9;
-    color: #2d6a4f;
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.7rem;
-    font-weight: 800;
-}
-
-.info-label {
-    font-size: 0.7rem;
-    color: #999;
-    text-transform: uppercase;
-    font-weight: 700;
-    margin-bottom: 5px;
-    display: block;
+.loading-state {
+    text-align: center;
+    padding: 3rem;
+    color: #8fa396;
+    font-style: italic;
 }
 </style>

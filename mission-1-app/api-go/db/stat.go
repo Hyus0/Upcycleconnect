@@ -13,7 +13,7 @@ func GetPlatformStats() (models.PlatformStats, error) {
 		return stats, err
 	}
 
-	err = Conn.QueryRow("SELECT COALESCE(SUM(nb_objets_recycles), 0) FROM UPCYCLING_SCORE").Scan(&stats.ObjetsUpcycles)
+	err = Conn.QueryRow("SELECT COUNT(id) FROM ANNONCE WHERE statut = 'Recupere'").Scan(&stats.ObjetsUpcycles)
 	if err != nil && err != sql.ErrNoRows {
 		return stats, err
 	}

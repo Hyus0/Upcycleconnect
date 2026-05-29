@@ -19,41 +19,38 @@
                     Upcycle <span class="accent">Connect</span>
                 </div>
                 <h1 class="register-left__title">
-                    Rejoignez la <span class="accent">communauté</span><br />
-                    qui agit.
+                    {{ t.JoinThe || 'Rejoignez la ' }}<span class="accent">{{ t.Community || 'communauté' }}</span><br />
+                    {{ t.ThatActs || 'qui agit.' }}
                 </h1>
-                <p class="register-left__desc">
-                    Plus de 12 400 membres, 340 artisans et des <br />centaines
-                    de projets d'upcycling chaque mois. <br />Commencez
-                    gratuitement dès aujourd'hui.
+                
+                <p class="register-left__desc" v-html="t.RegisterDesc || 'Plus de 12 400 membres, 340 artisans et des <br />centaines de projets d\'upcycling chaque mois. <br />Commencez gratuitement dès aujourd\'hui.'">
                 </p>
 
                 <div class="register-left__stats">
                     <div class="stat">
                         <strong>2.4t</strong>
-                        <span>CO₂ évité / mois</span>
+                        <!-- On réutilise la traduction de la page connexion si tu l'as déjà, ou on met par défaut -->
+                        <span>{{ t.StatCO2Month || 'CO₂ évité / mois' }}</span>
                     </div>
                     <div class="stat">
                         <strong>8k+</strong>
-                        <span>Objets upcyclés</span>
+                        <span>{{ t.StatUpcycled || 'Objets upcyclés' }}</span>
                     </div>
                     <div class="stat">
                         <strong>340</strong>
-                        <span>Artisans actifs</span>
+                        <span>{{ t.StatArtisans || 'Artisans actifs' }}</span>
                     </div>
                 </div>
 
                 <div class="register-testimonial">
                     <p class="register-testimonial__text">
-                        "Grâce à UpcycleConnect, j'ai trouvé les matériaux
-                        parfaits pour mes créations. La plateforme a transformé
-                        mon activité d'artisan."
+                        {{ t.TestimonialText || '"Grâce à UpcycleConnect, j\'ai trouvé les matériaux parfaits pour mes créations. La plateforme a transformé mon activité d\'artisan."' }}
                     </p>
                     <div class="register-testimonial__author">
                         <div class="register-testimonial__avatar">ML</div>
                         <div>
                             <strong>Marie L.</strong>
-                            <span>Artisane ébéniste — Paris 11e</span>
+                            <span>{{ t.TestimonialAuthorRole || 'Artisane ébéniste — Paris 11e' }}</span>
                         </div>
                     </div>
                 </div>
@@ -70,15 +67,15 @@
                     Upcycle <span class="accent-green">Connect</span>
                 </div>
 
-                <h2 class="register-right__title">Créer un compte</h2>
+                <h2 class="register-right__title">{{ t.CreateAccountTitle || 'Créer un compte' }}</h2>
                 <p class="register-right__subtitle">
-                    Déjà membre ?
+                    {{ t.AlreadyMember || 'Déjà membre ?' }}
                     <router-link to="/connexion" class="register-right__link">
-                        Se connecter
+                        {{ t.LoginLink || 'Se connecter' }}
                     </router-link>
                 </p>
 
-                <p class="register-right__label">Je suis...</p>
+                <p class="register-right__label">{{ t.IAm || 'Je suis...' }}</p>
                 <div class="register-type">
                     <button
                         class="register-type__btn"
@@ -88,7 +85,7 @@
                         }"
                         @click="accountType = 'particulier'"
                     >
-                        🏠 <br />Particulier
+                        🏠 <br />{{ t.Individual || 'Particulier' }}
                     </button>
                     <button
                         class="register-type__btn"
@@ -98,13 +95,13 @@
                         @click="accountType = 'pro'"
                     >
                         🔨<br />
-                        Pro / Artisan
+                        {{ t.ProArtisan || 'Pro / Artisan' }}
                     </button>
                 </div>
 
                 <div class="register-row">
                     <div class="register-field">
-                        <label>Prénom</label>
+                        <label>{{ t.FirstName || 'Prénom' }}</label>
                         <input
                             type="text"
                             placeholder="Marie"
@@ -112,7 +109,7 @@
                         />
                     </div>
                     <div class="register-field">
-                        <label>Nom</label>
+                        <label>{{ t.LastName || 'Nom' }}</label>
                         <input
                             type="text"
                             placeholder="Lambert"
@@ -122,7 +119,8 @@
                 </div>
 
                 <div class="register-field">
-                    <label>Adresse e-mail</label>
+                    <!-- On réutilise la clé EmailLabel si elle existe, sinon on met par défaut -->
+                    <label>{{ t.EmailLabel || 'Adresse e-mail' }}</label>
                     <input
                         type="email"
                         placeholder="marie.lambert@exemple.fr"
@@ -132,7 +130,7 @@
                 </div>
 
                 <div class="register-field">
-                    <label>Mot de passe</label>
+                    <label>{{ t.PasswordLabel || 'Mot de passe' }}</label>
                     <input
                         type="password"
                         placeholder="••••••••••"
@@ -151,7 +149,7 @@
                 </div>
                 
                 <div class="register-field">
-                    <label>Code postal</label>
+                    <label>{{ t.ZipCode || 'Code postal' }}</label>
                     <input
                         type="text"
                         placeholder="75011"
@@ -163,23 +161,23 @@
                 <div class="register-cgu">
                     <input type="checkbox" id="cgu" v-model="cguAccepte" />
                     <label for="cgu">
-                        J'accepte les
-                        <router-link to="/" class="register-right__link">CGU</router-link> et la
+                        {{ t.IAcceptThe || "J'accepte les" }}
+                        <router-link to="/" class="register-right__link">{{ t.TOS || 'CGU' }}</router-link> {{ t.AndThe || 'et la' }}
                         <router-link to="/" class="register-right__link"
-                            >politique de confidentialité</router-link
+                            >{{ t.PrivacyPolicy || 'politique de confidentialité' }}</router-link
                         >
                     </label>
                 </div>
 
                 <button class="register-submit" @click="handleSubmit">
-                    Créer mon compte gratuitement →
+                    {{ t.CreateMyAccountFreeBtn || 'Créer mon compte gratuitement' }} →
                 </button>
 
                 <div class="register-separator">
-                    <span>ou</span>
+                    <span>{{ t.Or || 'ou' }}</span>
                 </div>
 
-                <button class="register-google">Continuer avec Google</button>
+                <button class="register-google">{{ t.ContinueWithGoogle || 'Continuer avec Google' }}</button>
             </div>
         </div>
     </div>
@@ -189,6 +187,9 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+
+import { useTraduction } from "../composables/useTraduction"; 
+const { t } = useTraduction();
 
 const router = useRouter();
 const accountType = ref("particulier");

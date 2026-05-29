@@ -687,6 +687,60 @@ func GetUserAnnoncesHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(annonces)
 }
 
+func AcheterAnnonceHandler(w http.ResponseWriter, r *http.Request) {
+	annonceID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "ID d'annonce invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		UserID int `json:"user_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
+
+	if req.UserID == 0 {
+		http.Error(w, "ID utilisateur manquant", http.StatusBadRequest)
+		return
+	}
+	err = db.AcheterAnnonce(annonceID, req.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Annonce achetée avec succès"})
+}
+
+func GetUserAchatsHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	achats, err := db.GetAchatsByUser(userID)
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération des achats", http.StatusInternalServerError)
+		return
+	}
+
+	if achats == nil {
+		achats = []models.Annonce{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(achats)
+}
+
+//Evenements
+
 func GetAllEvenements(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -1234,32 +1288,85 @@ type ReserveRequest struct {
 	SiteID int `json:"site_id"`
 }
 
-func ReserverCasier(w http.ResponseWriter, r *http.Request) {
+func ReserverCasierHandler(w http.ResponseWriter, r *http.Request) {
 	annonceID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "ID invalide", http.StatusBadRequest)
 		return
 	}
 
-	var req ReserveRequest
+	var req struct {
+		SiteID int `json:"site_id"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "JSON invalide", http.StatusBadRequest)
+		http.Error(w, "Données invalides", http.StatusBadRequest)
 		return
 	}
 
-	pin, err := db.ReserverUnCasier(annonceID, req.SiteID)
+	tokenDepot, err := db.ReserverUnCasier(annonceID, req.SiteID)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"pin":    pin,
-		"status": "success",
+		"message": "Casier réservé",
+		"token":   tokenDepot,
 	})
+}
+
+func DeposerObjetHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Token  string `json:"token"`
+		SiteID int    `json:"site_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
+
+	if req.Token == "" || req.SiteID == 0 {
+		http.Error(w, "Token ou Site manquant", http.StatusBadRequest)
+		return
+	}
+
+	tokenRetrait, err := db.DeposerObjet(req.Token, req.SiteID) 
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Objet déposé avec succès",
+		"token_retrait": tokenRetrait,
+	})
+}
+
+func RetireObjetCasierHandler(w http.ResponseWriter, r *http.Request) {
+	conteneurID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "ID conteneur invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Token manquant", http.StatusBadRequest)
+		return
+	}
+	err = db.RecupererObjet(req.Token, conteneurID) 
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Objet récupéré avec succès"})
 }
 
 func GetAllSites(w http.ResponseWriter, r *http.Request) {
@@ -1306,37 +1413,6 @@ func GetConteneurs(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(conteneurs)
-}
-
-func RetireObjetCasierHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	idAnnonce, err := strconv.Atoi(idStr)
-
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "ID d'annonce invalide",
-		})
-		return
-	}
-
-	err = db.RetireObjetCasier(idAnnonce)
-
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Impossible de libérer le casier : " + err.Error(),
-		})
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Succès : L'objet est retiré et le poids du site est mis à jour",
-	})
 }
 
 func GetAllProjets(w http.ResponseWriter, r *http.Request) {
@@ -1448,6 +1524,84 @@ func CheckLikeStatusHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"liked": liked})
 }
 
+func GetProjetsByUserHandler(w http.ResponseWriter, r *http.Request) {
+	userID, _ := strconv.Atoi(r.PathValue("id"))
+	projets, err := db.GetProjetsByUserId(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+    if projets == nil { projets = []models.ProjetUpcycling{} }
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(projets)
+}
+
+func CreateProjetHandler(w http.ResponseWriter, r *http.Request) {
+	var p models.ProjetUpcycling
+	
+	err := json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		http.Error(w, "Données JSON invalides : "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	projetID, err := db.CreateProjet(p)
+	if err != nil {
+		http.Error(w, "Erreur BDD projet : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	for _, etape := range p.Etapes {
+		etape.IdProjet = projetID 
+		
+		err := db.CreateEtape(etape)
+		if err != nil {
+			println("Erreur lors de l'insertion de l'étape ", etape.NumeroOrdre, ": ", err.Error())
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":    "success",
+		"message":   "Projet et étapes enregistrés avec succès",
+		"id_projet": projetID,
+	})
+}
+
+func DeleteProjetHandler(w http.ResponseWriter, r *http.Request) {
+	projetID, _ := strconv.Atoi(r.PathValue("id"))
+	err := db.DeleteProjet(projetID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func UpdateProjetHandler(w http.ResponseWriter, r *http.Request) {
+    idStr := r.PathValue("id")
+    projetID, err := strconv.Atoi(idStr)
+    if err != nil {
+        http.Error(w, "ID invalide", http.StatusBadRequest)
+        return
+    }
+
+    var p models.ProjetUpcycling
+    if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+        http.Error(w, "Données invalides", http.StatusBadRequest)
+        return
+    }
+
+    err = db.UpdateProjet(projetID, p)
+    if err != nil {
+        http.Error(w, "Erreur lors de la mise à jour : "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{"message": "Projet mis à jour avec succès"})
+}
 
 //Tips
 
@@ -1600,6 +1754,27 @@ func ToggleFavoriHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func GetMesFavorisHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	annonces, err := db.GetFavorisByUserId(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if annonces == nil {
+		annonces = []models.Annonce{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(annonces)
+}
+
 //Avis
 
 func GetUserAvisHandler(w http.ResponseWriter, r *http.Request) {
@@ -1692,5 +1867,204 @@ func ToggleFollowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	w.WriteHeader(http.StatusOK)
+}
+
+//Panier
+
+type AddPanierRequest struct {
+	TypeItem     string  `json:"type_item"`
+	ReferenceID  int     `json:"reference_id"`
+	PrixUnitaire float64 `json:"prix_unitaire"`
+}
+
+func GetPanierHandler(w http.ResponseWriter, r *http.Request) {
+	userID, _ := strconv.Atoi(r.PathValue("id"))
+
+	items, err := db.GetPanierByUserId(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+}
+
+func AddToPanierHandler(w http.ResponseWriter, r *http.Request) {
+	userID, _ := strconv.Atoi(r.PathValue("id"))
+
+	var req AddPanierRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
+
+	err := db.AddToPanier(userID, req.TypeItem, req.ReferenceID, req.PrixUnitaire)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(`{"message": "Ajouté au panier avec succès"}`))
+}
+
+func RemoveFromPanierHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("🗑️ Requête de suppression reçue !")
+
+	userIDStr := r.PathValue("id")
+	itemIDStr := r.PathValue("itemId")
+	
+	fmt.Printf("Données URL -> UserID: %s | ItemID: %s\n", userIDStr, itemIDStr)
+
+	userID, err1 := strconv.Atoi(userIDStr)
+	itemID, err2 := strconv.Atoi(itemIDStr)
+
+	if err1 != nil || err2 != nil {
+		fmt.Println("❌ Erreur : ID invalide dans l'URL")
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	err := db.RemoveFromPanier(itemID, userID)
+	if err != nil {
+		fmt.Println("❌ Erreur de suppression en DB :", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println("Article supprimé avec succès !")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Article supprimé"}`))
+}
+
+func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Requête de Checkout reçue !")
+	
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	commandeID, err := db.Checkout(userID)
+	if err != nil {
+		fmt.Println("❌ Erreur lors du Checkout :", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println("Commande validée ! ID :", commandeID)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":     "Commande créée avec succès",
+		"commande_id": commandeID,
+	})
+}
+
+//Notification
+func GetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	notifs, err := db.GetNotificationsByUser(userID)
+	if err != nil {
+		fmt.Println("Erreur récupération notifications:", err)
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	if notifs == nil {
+		notifs = []models.Notification{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(notifs)
+}
+
+func MarquerNotificationLueHandler(w http.ResponseWriter, r *http.Request) {
+	notifID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "ID notification invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		UserID int `json:"user_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
+
+	err = db.MarquerNotificationLue(notifID, req.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Notification lue"})
+}
+
+//Traduction
+func GetLanguesHandler(w http.ResponseWriter, r *http.Request) {
+	langues, err := db.GetLangues()
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération des langues", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(langues)
+}
+
+func GetTraductionsHandler(w http.ResponseWriter, r *http.Request) {
+	code := r.PathValue("code") 
+	if code == "" {
+		code = "fr"
+	}
+
+	traductions, err := db.GetTraductionsByCode(code)
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	if traductions == nil {
+		traductions = make(map[string]string)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(traductions)
+}
+
+func UpdateLangueHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		IDLangue int `json:"id_langue"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Requête invalide", http.StatusBadRequest)
+		return
+	}
+
+	err = db.UpdateLangueUtilisateur(userID, req.IDLangue)
+	if err != nil {
+		http.Error(w, "Erreur base de données", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }

@@ -99,7 +99,13 @@
 
           <div class="annonce-card__footer">
               <button class="btn-view btn-small" type="button" @click="goToAnnonce(annonce.id)">Voir</button>
-              <RouterLink class="btn-main-action btn-small" to="/profil/annonces">Contacter</RouterLink>
+              
+              <template v-if="parseInt(annonce.id_vendeur) === currentUserId">
+                <button class="btn-main-action btn-small" type="button" @click="modifierAnnonce(annonce.id)">Modifier</button>
+              </template>
+              <template v-else>
+                <RouterLink class="btn-main-action btn-small" to="/profil/annonces">Contacter</RouterLink>
+              </template>
           </div>
         </article>
       </div>
@@ -123,6 +129,12 @@ const annonces = ref([]);
 const API_URL = "http://localhost:8081";
 
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
+
+// NOUVEAU : On récupère l'ID de l'utilisateur connecté
+const currentUserId = computed(() => {
+  const storedId = sessionStorage.getItem("id") || sessionStorage.getItem("userId");
+  return Number(storedId) || 0;
+});
 
 const userName = computed(() => {
   const prenom = sessionStorage.getItem("userPrenom") || "";
@@ -159,6 +171,11 @@ const sourceLabel = computed(() =>
 function displayValue(value) {
   return value === null || value === undefined || value === "" ? "N/A" : value;
 }
+
+// CORRIGÉ : La fonction prend maintenant un ID en paramètre !
+const modifierAnnonce = (id) => {
+  router.push(`/profil/modifyAnnonce/${id}`);
+};
 
 function formatDate(value) {
   if (!value) return "N/A";

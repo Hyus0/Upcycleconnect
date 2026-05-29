@@ -14,7 +14,7 @@ type Annonce struct {
 	EtatObjet                 string     `json:"etat_objet"`
 	Statut                    string     `json:"statut"`
 	EstValide                 string     `json:"est_valide"`
-	CodePinDepot              *string     `json:"code_pin_depot"`
+	CodeBarreDepot              *string     `json:"code_barre_depot"`
 	IdSite       			  int    `json:"id_site"`
 	CodeBarreRetrait          *string     `json:"code_barre_retrait"`
 	DateCreation              *string `json:"date_creation,omitempty"`
@@ -24,4 +24,5 @@ type Annonce struct {
 	Ville                     string     `json:"ville"`
 	CodePostal                string     `json:"code_postal"`
 	Adresse                   string     `json:"adresse"`
+	DateAchat string `json:"date_achat"`
 }

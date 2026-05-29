@@ -157,6 +157,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+
 .btn-plan {
     background-color: #2d7a4f;
     color: white;

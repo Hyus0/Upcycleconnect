@@ -64,6 +64,31 @@ func GetAllProjets() ([]models.ProjetUpcycling, error) {
 	return projets, nil
 }
 
+func UpdateProjet(projetID int, p models.ProjetUpcycling) error {
+    tx, err := Conn.Begin()
+    if err != nil { return err }
+    defer tx.Rollback()
+
+    _, err = tx.Exec(`UPDATE PROJET_UPCYCLING SET titre=?, description_courte=?, visible_public=?, co2_evite_kg=? WHERE id=?`, 
+                     p.Titre, p.DescriptionCourte, p.VisiblePublic, p.Co2EviteKg, projetID)
+    if err != nil { 
+    	return err 
+    }
+    
+    _, err = tx.Exec("DELETE FROM ETAPE WHERE id_projet = ?", projetID)
+    if err != nil { 
+    	return err 
+    }
+
+    for _, e := range p.Etapes {
+        _, err = tx.Exec(`INSERT INTO ETAPE (id_projet, numero_ordre, titre, description, image_url) 
+                          VALUES (?, ?, ?, ?, ?)`, projetID, e.NumeroOrdre, e.Titre, e.Description, e.ImageUrl)
+        if err != nil { return err }
+    }
+
+    return tx.Commit()
+}
+
 func GetProjet(projetID int, userID int) (*models.ProjetUpcycling, error) {
 	if Conn == nil {
 		return nil, fmt.Errorf("connexion DB non initialisee")
@@ -90,7 +115,7 @@ func GetProjet(projetID int, userID int) (*models.ProjetUpcycling, error) {
 	if err == nil {
 		defer rows.Close()
 		for rows.Next() {
-			var e models.Etape
+			var e models.EtapeProjet
 			rows.Scan(&e.ID, &e.NumeroOrdre, &e.Titre, &e.Description, &e.ImageUrl)
 			p.Etapes = append(p.Etapes, e)
 		}
@@ -109,23 +134,45 @@ func CreateProjet(p models.ProjetUpcycling) (int, error) {
 	}
 
 	query := `INSERT INTO PROJET_UPCYCLING (
-		id_createur, titre, description_courte, co2_evite_kg, visible_public
-	) VALUES (?, ?, ?, ?, ?)`
+		id_createur, titre, description_courte, image_url, score_impact, co2_evite_kg, visible_public
+	) VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	result, err := Conn.Exec(
 		query,
 		p.IdCreateur,
 		p.Titre,
 		p.DescriptionCourte,
+		p.ImageUrl,
+		p.ScoreImpact,
 		p.Co2EviteKg,
 		p.VisiblePublic,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("CreateProjet: %v", err)
+		return 0, fmt.Errorf("CreateProjet error: %v", err)
 	}
 
 	lastID, _ := result.LastInsertId()
 	return int(lastID), nil
+}
+
+func CreateEtape(e models.EtapeProjet) error {
+	if Conn == nil {
+		return fmt.Errorf("connexion DB non initialisee")
+	}
+
+	query := `INSERT INTO ETAPE (
+		id_projet, numero_ordre, titre, description, image_url
+	) VALUES (?, ?, ?, ?, ?)`
+
+	_, err := Conn.Exec(
+		query,
+		e.IdProjet,
+		e.NumeroOrdre,
+		e.Titre,
+		e.Description,
+		e.ImageUrl,
+	)
+	return err
 }
 
 func ModifyProjet(id int, p models.ProjetUpcycling) error {
@@ -264,4 +311,27 @@ func IncrementVue(projetID int, userID int, ipAddress string) error {
 	_, err = Conn.Exec("UPDATE PROJET_UPCYCLING SET nb_vues = nb_vues + 1 WHERE id = ?", projetID)
 
 	return err
+}
+
+func GetProjetsByUserId(userID int) ([]models.ProjetUpcycling, error) {
+	query := `SELECT id, id_createur, titre, description_courte, image_url, score_impact, co2_evite_kg, nb_vues, nb_likes, visible_public, date_creation 
+              FROM PROJET_UPCYCLING 
+			  WHERE id_createur = ? 
+			  ORDER BY date_creation DESC`
+	
+    rows, err := Conn.Query(query, userID)
+	if err != nil { 
+		return nil, err 
+	}
+	defer rows.Close()
+
+	var projets []models.ProjetUpcycling
+	for rows.Next() {
+		var p models.ProjetUpcycling
+		err := rows.Scan(&p.ID, &p.IdCreateur, &p.Titre, &p.DescriptionCourte, &p.ImageUrl, &p.ScoreImpact, &p.Co2EviteKg, &p.NbVues, &p.NbLikes, &p.VisiblePublic, &p.DateCreation)
+		if err == nil {
+			projets = append(projets, p)
+		}
+	}
+	return projets, nil
 }

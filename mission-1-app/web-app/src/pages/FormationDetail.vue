@@ -1,5 +1,4 @@
 <template>
-    
     <main class="page-container">
         <SiteNavbar
             :is-authenticated="isLoggedIn"
@@ -135,22 +134,27 @@
 
                 <div class="card registration-card">
                     <button
-                        @click="handleInscription"
+                        @click="formation.prix_unitaire > 0 ? handleAddToCart() : handleInscription()"
                         class="btn-main-action"
                         :class="{ 'btn-registered': isRegistered }"
                         :disabled="
                             isRegistered ||
                             formation.statut !== 'Ouvert' ||
-                            isRegistering
+                            isRegistering ||
+                            isAddingToCart
                         "
                     >
                         <span v-if="isRegistered">✓ Déjà inscrit</span>
                         <span v-else>
-                            {{
-                                formation.statut === "Ouvert"
-                                    ? "Réserver ma place"
-                                    : "❌ Complet"
-                            }}
+                            <template v-if="formation.statut !== 'Ouvert'">
+                                ❌ Complet
+                            </template>
+                            <template v-else-if="formation.prix_unitaire > 0">
+                                🛒 Ajouter au panier
+                            </template>
+                            <template v-else>
+                                Réserver ma place (Gratuit)
+                            </template>
                         </span>
                     </button>
 
@@ -181,6 +185,7 @@ const router = useRouter();
 
 const loading = ref(true);
 const isRegistering = ref(false);
+const isAddingToCart = ref(false); // NOUVEAU: Etat du bouton panier
 const formation = ref(null);
 const userScore = ref(0); 
 
@@ -210,7 +215,6 @@ const formatDate = (d) => {
 
 const fetchDetail = async () => {
     const id = route.params.id;
-    
     const userId = sessionStorage.getItem("userId") || 0;
 
     try {
@@ -237,6 +241,49 @@ const viewProfile = (id) => {
   }
 };
 
+// --- NOUVEAU : AJOUT AU PANIER ---
+const handleAddToCart = async () => {
+    const token = sessionStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
+
+    if (!token || !userId) {
+        return router.push("/connexion");
+    }
+
+    isAddingToCart.value = true;
+
+    try {
+        const res = await fetch(`http://localhost:8081/users/${userId}/panier`, {
+            method: "POST",
+            headers: {
+                // Utilise Authorization: Bearer ou juste le token selon ton middleware Go
+                Authorization: `Bearer ${token}`, 
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                type_item: "Formation",
+                reference_id: parseInt(formation.value.id),
+                prix_unitaire: parseFloat(formation.value.prix_unitaire),
+            }),
+        });
+
+        if (res.ok) {
+            alert("Formation ajoutée à votre panier ! 🛒");
+            // Optionnel : rediriger l'utilisateur vers son panier
+            // router.push("/panier"); 
+        } else {
+            const errorMsg = await res.text();
+            alert("Erreur lors de l'ajout au panier : " + errorMsg);
+        }
+    } catch (error) {
+        console.error("Erreur panier :", error);
+        alert("Impossible de joindre le serveur.");
+    } finally {
+        isAddingToCart.value = false;
+    }
+};
+
+// --- INSCRIPTION DIRECTE (Gratuit) ---
 const handleInscription = async () => {
     const token = sessionStorage.getItem("userToken");
     const userId = sessionStorage.getItem("userId");
@@ -561,16 +608,5 @@ onMounted(fetchDetail);
     cursor: default;
     transform: none;
     box-shadow: none;
-}
-
-.btn-modify {
-    background: #e8f5e9;
-    color: #2d6a4f;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-left: 10px;
 }
 </style>

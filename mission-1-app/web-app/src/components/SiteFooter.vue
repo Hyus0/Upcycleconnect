@@ -7,40 +7,38 @@
             Upcycle<span class="navbar__logo--accent">Connect</span>
           </div>
           <p class="footer-description">
-            La plateforme de référence pour l'upcycling en France et
-            en Europe. Rejoignez une communauté engagée pour
-            l'économie circulaire.
+            {{ t.FooterDesc || "La plateforme de référence pour l'upcycling en France et en Europe. Rejoignez une communauté engagée pour l'économie circulaire." }}
           </p>
         </div>
 
         <div class="footer-links-wrapper">
           <div class="footer-column">
-            <h4>PLATEFORME</h4>
+            <h4>{{ t.FooterCol1 || 'PLATEFORME' }}</h4>
             <ul>
-              <li><router-link to="/#processus">Comment ça marche</router-link></li>
-              <li><router-link to="/annonces">Annonces</router-link></li>
-              <li><router-link to="/profil">Tableau de bord</router-link></li>
-              <li><router-link to="/profil/annonces">Mes annonces</router-link></li>
+              <li><router-link to="/#processus">{{ t.FooterHowItWorks || 'Comment ça marche' }}</router-link></li>
+              <li><router-link to="/annonces">{{ t.FooterAds || 'Annonces' }}</router-link></li>
+              <li><router-link to="/profil">{{ t.FooterDashboard || 'Tableau de bord' }}</router-link></li>
+              <li><router-link to="/profil/annonces">{{ t.FooterMyAds || 'Mes annonces' }}</router-link></li>
             </ul>
           </div>
 
           <div class="footer-column">
-            <h4>PROFESSIONNELS</h4>
+            <h4>{{ t.FooterCol2 || 'PROFESSIONNELS' }}</h4>
             <ul>
-              <li><router-link to="/inscription">Offres d'abonnement</router-link></li>
-              <li><router-link to="/profil/depots">Conteneurs</router-link></li>
-              <li><router-link to="/profil/annonces">Projets upcycling</router-link></li>
-              <li><router-link to="/inscription">Publicité</router-link></li>
+              <li><router-link to="/inscription">{{ t.FooterSubOffers || "Offres d'abonnement" }}</router-link></li>
+              <li><router-link to="/profil/depots">{{ t.FooterContainers || 'Conteneurs' }}</router-link></li>
+              <li><router-link to="/profil/annonces">{{ t.FooterProjects || 'Projets upcycling' }}</router-link></li>
+              <li><router-link to="/inscription">{{ t.FooterAdvertising || 'Publicité' }}</router-link></li>
             </ul>
           </div>
 
           <div class="footer-column">
-            <h4>ENTREPRISE</h4>
+            <h4>{{ t.FooterCol3 || 'ENTREPRISE' }}</h4>
             <ul>
-              <li><router-link to="/">À propos</router-link></li>
-              <li><router-link to="/">Nos sites</router-link></li>
-              <li><router-link to="/">Blog</router-link></li>
-              <li><router-link to="/connexion">Contact</router-link></li>
+              <li><router-link to="/">{{ t.FooterAbout || 'À propos' }}</router-link></li>
+              <li><router-link to="/">{{ t.FooterLocations || 'Nos sites' }}</router-link></li>
+              <li><router-link to="/">{{ t.FooterBlog || 'Blog' }}</router-link></li>
+              <li><router-link to="/connexion">{{ t.FooterContact || 'Contact' }}</router-link></li>
             </ul>
           </div>
         </div>
@@ -51,14 +49,19 @@
       <div class="footer-bottom">
         <p>© 2026 UpcycleConnect — AlterNext · ESGI 2A</p>
         <div class="footer-legal">
-          <router-link to="/">Mentions légales</router-link>
-          <router-link to="/">CGU</router-link>
-          <router-link to="/">RGPD</router-link>
+          <router-link to="/">{{ t.FooterLegal || 'Mentions légales' }}</router-link>
+          <router-link to="/">{{ t.FooterTOS || 'CGU' }}</router-link>
+          <router-link to="/">{{ t.FooterGDPR || 'RGPD' }}</router-link>
         </div>
       </div>
     </div>
   </footer>
 </template>
+
+<script setup>
+import { useTraduction } from "../composables/useTraduction";
+const { t } = useTraduction();
+</script>
 
 <style scoped>
 

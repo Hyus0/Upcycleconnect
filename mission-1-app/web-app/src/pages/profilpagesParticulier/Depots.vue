@@ -20,7 +20,7 @@
     <div v-else class="section-container">
         <div class="dash-block">
             <h2 class="block-title">
-                📦 ANNONCES À PLANIFIER
+                ANNONCES À PLANIFIER
                 <span class="badge">{{ aPlanifier.length }}</span>
             </h2>
             <table class="data-table">
@@ -71,7 +71,7 @@
 
         <div class="dash-block">
             <h2 class="block-title">
-                🔑 FLUX ACTIFS <span class="badge">{{ actifs.length }}</span>
+                FLUX ACTIFS <span class="badge">{{ actifs.length }}</span>
             </h2>
             <table class="data-table table-active">
                 <thead>
@@ -101,11 +101,24 @@
                             </div>
                         </td>
                         <td>
-                            <span
-                                class="pin-badge"
-                                v-if="item.code_pin_depot"
-                                >{{ item.code_pin_depot }}</span
+                            <div
+                                v-if="
+                                    item.code_barre_retrait ||
+                                    item.code_barre_depot
+                                "
+                                class="token-cell clickable"
+                                @click.stop.prevent="
+                                    showToken(
+                                        item.code_barre_retrait
+                                            ? item.code_barre_retrait
+                                            : item.code_barre_depot,
+                                    )
+                                "
                             >
+                                <span class="pin-badge">
+                                    {{ truncateToken(item.code_barre_depot) }}
+                                </span>
+                            </div>
                             <span v-else>---</span>
                         </td>
                         <td>
@@ -141,7 +154,7 @@
 
         <div class="dash-block history-bg">
             <div class="flex-between">
-                <h2 class="block-title">📜 HISTORIQUE</h2>
+                <h2 class="block-title">HISTORIQUE</h2>
                 <div class="search-mini">
                     <input
                         type="text"
@@ -155,29 +168,54 @@
                     <tr>
                         <th>OBJET</th>
                         <th>SITE</th>
-                        <th>STATUT FINAL</th>
+                        <th class="text-center">STATUT FINAL</th>
                         <th class="text-right">DATE</th>
+                        <th class="text-center">FACTURE</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="item in filteredHistory" :key="item.id">
-                        <td>{{ item.titre }}</td>
+                        <td>
+                            <strong>{{ item.titre }}</strong>
+                        </td>
                         <td>
                             <small>{{
                                 sitesCache[item.id_site] || "Site inconnu"
                             }}</small>
                         </td>
-                        <td>
+                        <td class="text-center">
                             <span
                                 :class="[
                                     'status-neutral',
                                     item.statut.toLowerCase(),
                                 ]"
-                                >{{ item.statut }}</span
                             >
+                                {{ item.statut }}
+                            </span>
                         </td>
                         <td class="text-right small-date">
-                            {{ formatDate(item.updated_at) }}
+                            <span v-if="item.statut === 'Recupere'">
+                                {{
+                                    formatDate(item.date_recuperation_effective)
+                                }}
+                            </span>
+                            <span v-else-if="item.statut === 'Depose'">
+                                {{ formatDate(item.date_depot_effective) }}
+                            </span>
+                            <span v-else>
+                                {{ formatDate(item.updated_at) }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <button
+                                v-if="item.statut === 'Recupere'"
+                                class="btn-facture"
+                                @click="telechargerFacture(item.id)"
+                                title="Télécharger la facture PDF"
+                            >
+                                Télécharger le PDF
+                            </button>
+                            <span v-else class="empty-cell">-</span>
                         </td>
                     </tr>
                 </tbody>
@@ -224,6 +262,34 @@
             </button>
         </div>
     </div>
+    <div
+        v-if="selectedToken"
+        class="modal-overlay"
+        @click.self="selectedToken = null"
+    >
+        <div class="site-modal">
+            <div class="modal-header">
+                <h3>Votre Token Sécurisé</h3>
+                <button class="close-btn" @click="selectedToken = null">
+                    ×
+                </button>
+            </div>
+            <div class="modal-content">
+                <p class="info-text">
+                    Présentez ce code unique au niveau du conteneur sécurisé :
+                </p>
+                <div class="token-box">
+                    {{ selectedToken }}
+                </div>
+            </div>
+            <button
+                class="btn-main-action modal-close-btn"
+                @click="selectedToken = null"
+            >
+                Fermer
+            </button>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -236,9 +302,10 @@ const sitesCache = ref({});
 const loading = ref(true);
 const searchQuery = ref("");
 const selectedSite = ref(null);
+const selectedToken = ref(null);
 
 const aPlanifier = computed(() =>
-    annonces.value.filter((a) => a.statut === "Disponible"),
+    annonces.value.filter((a) => a.statut === "Paye"),
 );
 const actifs = computed(() =>
     annonces.value.filter((a) => ["Reserve", "Depose"].includes(a.statut)),
@@ -252,11 +319,18 @@ const filteredHistory = computed(() => {
     );
 });
 
+const telechargerFacture = (idAnnonce) => {
+    alert(
+        `Génération de la facture pour l'objet #${idAnnonce} en cours...\n(À connecter avec le backend Go 🚀)`,
+    );
+};
+
 const formatDate = (d) => {
     if (!d || d.startsWith("0001")) return "...";
     return new Date(d).toLocaleDateString("fr-FR", {
         day: "numeric",
         month: "short",
+        year: "numeric",
     });
 };
 
@@ -272,6 +346,15 @@ const fetchSitesCache = async () => {
     } catch (e) {
         console.error(e);
     }
+};
+
+const truncateToken = (token) => {
+    if (!token) return "";
+    return token.length > 10 ? token.substring(0, 10) + "..." : token;
+};
+
+const showToken = (token) => {
+    selectedToken.value = token;
 };
 
 const fetchAnnonces = async () => {
@@ -307,27 +390,32 @@ const planifier = (id) =>
     router.push({ name: "reserve-casier", params: { id } });
 
 const annulerFlux = async (id, statut) => {
-    const actionLabel = statut === "Reserve" ? "annuler la réservation" : "retirer l'objet";
-    
+    const actionLabel =
+        statut === "Reserve" ? "annuler la réservation" : "retirer l'objet";
+
     if (!confirm(`Voulez-vous vraiment ${actionLabel} ?`)) return;
 
     const token = sessionStorage.getItem("userToken");
 
     try {
-        const res = await fetch(`http://localhost:8081/annonces/${id}/retirer`, {
-            method: "POST",
-            headers: { 
-                "Authorization": token,
-                "Content-Type": "application/json"
-            }
-        });
+        const res = await fetch(
+            `http://localhost:8081/annonces/${id}/retirer`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: token,
+                    "Content-Type": "application/json",
+                },
+            },
+        );
 
         if (res.ok) {
-            alert(statut === "Reserve" 
-                ? "Réservation annulée et casier libéré." 
-                : "Objet retiré. L'annonce est de nouveau disponible !"
+            alert(
+                statut === "Reserve"
+                    ? "Réservation annulée et casier libéré."
+                    : "Objet retiré. L'annonce est de nouveau disponible !",
             );
-            
+
             fetchAnnonces();
         } else {
             const error = await res.text();
@@ -451,15 +539,20 @@ onMounted(() => {
     font-size: 0.8rem;
 }
 
-.site-cell.clickable {
+.site-cell.clickable,
+.token-cell.clickable {
     cursor: pointer;
     padding: 4px;
     border-radius: 6px;
     transition: background 0.2s;
+    display: inline-block;
 }
-.site-cell.clickable:hover {
+
+.site-cell.clickable:hover,
+.token-cell.clickable:hover {
     background: #f0f7f3;
 }
+
 .site-cell small {
     color: #2d6a4f;
     font-weight: bold;
@@ -560,5 +653,63 @@ onMounted(() => {
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 0.7rem;
+}
+
+.text-center {
+    text-align: center !important;
+}
+.text-right {
+    text-align: right !important;
+}
+.small-date {
+    font-family: monospace;
+    color: #666;
+    font-size: 0.85rem;
+}
+.empty-cell {
+    color: #ccc;
+    font-weight: bold;
+}
+
+.btn-facture {
+    background-color: #f0f4f1;
+    color: #2d7a4f;
+    border: 1px solid #2d7a4f;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-facture:hover {
+    background-color: #2d7a4f;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(45, 122, 79, 0.2);
+}
+
+.info-text {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.token-box {
+    background: #f0f4f1;
+    padding: 1.5rem;
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 0.95rem;
+    color: #1a1a1a;
+    word-break: break-all;
+    border: 1px dashed #2d6a4f;
+    text-align: center;
+    letter-spacing: 1px;
+    line-height: 1.5;
 }
 </style>

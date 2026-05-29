@@ -4,49 +4,293 @@ import (
 	"fmt"
 	"database/sql"
 	"upcycleconnect/api-go/models"
-	"math/rand"
-	"time"
+	"crypto/rand"
+	"math/big"
 )
 
+func generateSecureToken(length int) (string, error) {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	result := make([]byte, length)
+	
+	for i := range result {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			return "", err
+		}
+		result[i] = charset[num.Int64()]
+	}
+	return string(result), nil
+}
+
 func ReserverUnCasier(annonceID int, siteID int) (string, error) {
-    var poidsAnnonce float64
-    err := Conn.QueryRow("SELECT poids_estime_kg FROM ANNONCE WHERE id = ?", annonceID).Scan(&poidsAnnonce)
-    if err != nil {
-        return "", fmt.Errorf("impossible de trouver le poids de l'annonce")
-    }
+	var poidsAnnonce float64
+	err := Conn.QueryRow("SELECT poids_estime_kg FROM ANNONCE WHERE id = ?", annonceID).Scan(&poidsAnnonce)
+	if err != nil {
+		return "", fmt.Errorf("impossible de trouver le poids de l'annonce")
+	}
 
-    query := `
-        SELECT c.id FROM CASIER c
-        JOIN CONTENEUR co ON c.id_conteneur = co.id
-        WHERE co.id_site = ? 
-        AND c.statut = 'Libre' 
-        AND co.statut = 'Operationnel'
-        AND (co.niveau_remplissage + ?) <= co.capacite_max_kg
-        LIMIT 1`
+	query := `
+		SELECT c.id FROM CASIER c
+		JOIN CONTENEUR co ON c.id_conteneur = co.id
+		WHERE co.id_site = ? 
+		AND c.statut = 'Libre' 
+		AND co.statut = 'Operationnel'
+		AND (co.niveau_remplissage + ?) <= co.capacite_max_kg
+		LIMIT 1`
 
-    var casierID int
-    err = Conn.QueryRow(query, siteID, poidsAnnonce).Scan(&casierID)
-    if err != nil {
-        return "", fmt.Errorf("Site complet ou limite de poids atteinte")
-    }
+	var casierID int
+	err = Conn.QueryRow(query, siteID, poidsAnnonce).Scan(&casierID)
+	if err != nil {
+		return "", fmt.Errorf("site complet ou limite de poids atteinte")
+	}
 
-    rand.Seed(time.Now().UnixNano())
-    pin := fmt.Sprintf("%06d", rand.Intn(1000000))
+	tokenDepot, err := generateSecureToken(20)
+	if err != nil {
+		return "", err
+	}
 
-    _, err = Conn.Exec("UPDATE CASIER SET statut = 'Reserve' WHERE id = ?", casierID)
-    if err != nil {
-        return "", err
-    }
+	tx, err := Conn.Begin()
+	if err != nil { return "", err }
 
-    _, err = Conn.Exec(`
-        UPDATE ANNONCE SET 
-            id_casier = ?, 
-            id_site = ?, 
-            code_pin_depot = ?, 
-            statut = 'Reserve' 
-        WHERE id = ?`, casierID, siteID, pin, annonceID)
+	_, err = tx.Exec("UPDATE CASIER SET statut = 'Reserve' WHERE id = ?", casierID)
+	if err != nil { tx.Rollback(); return "", err }
 
-    return pin, err
+	_, err = tx.Exec(`
+		UPDATE ANNONCE SET 
+			id_casier = ?, id_site = ?, code_barre_depot = ?, statut = 'Reserve' 
+		WHERE id = ?`, casierID, siteID, tokenDepot, annonceID)
+	if err != nil { tx.Rollback(); return "", err }
+
+	return tokenDepot, tx.Commit()
+}
+
+func DeposerObjet(codeBarreDepot string, siteID int) (string, error) {
+	var annonceID, conteneurID int
+	var poids float64
+	
+	var acheteurID int
+	var titreObjet, nomSite string
+	
+	err := Conn.QueryRow(`
+		SELECT a.id, c.id_conteneur, a.poids_estime_kg, a.id_acheteur, a.titre, s.nom
+		FROM ANNONCE a
+		JOIN CASIER c ON a.id_casier = c.id
+		JOIN SITE s ON a.id_site = s.id
+		WHERE a.code_barre_depot = ? 
+		AND a.id_site = ? 
+		AND a.statut = 'Reserve'`, codeBarreDepot, siteID).Scan(&annonceID, &conteneurID, &poids, &acheteurID, &titreObjet, &nomSite)
+	
+	if err != nil {
+		return "", fmt.Errorf("token invalide ou mauvaise borne") 
+	}
+
+	tokenRetrait, err := generateSecureToken(100)
+	if err != nil { return "", err }
+
+	tx, err := Conn.Begin()
+	if err != nil { return "", err }
+
+	_, err = tx.Exec("UPDATE CONTENEUR SET niveau_remplissage = niveau_remplissage + ? WHERE id = ?", poids, conteneurID)
+	if err != nil { 
+		tx.Rollback()
+		return "", err 
+	}
+
+	_, err = tx.Exec(`
+		UPDATE ANNONCE SET 
+			statut = 'Depose', 
+			date_depot_effective = NOW(),
+			code_barre_retrait = ?
+		WHERE id = ?`, tokenRetrait, annonceID)
+	if err != nil { 
+		tx.Rollback()
+		return "", err 
+	}
+
+	titreNotif := "Votre objet est disponible!"
+	messageNotif := fmt.Sprintf(
+		"Bonne nouvelle ! Le vendeur a déposé votre objet '%s' au site '%s'. Vous pouvez aller le récupérer dès maintenant.", 
+		titreObjet, 
+		nomSite,
+	)
+	
+	err = CreerNotification(acheteurID, "Alerte", titreNotif, messageNotif)
+	if err != nil {
+		tx.Rollback()
+		return "", fmt.Errorf("erreur lors de la notification acheteur : %v", err)
+	}
+
+	return tokenRetrait, tx.Commit()
+}
+
+func AcheterAnnonce(annonceID int, acheteurID int) error {
+	var prenomAcheteur string
+	err := Conn.QueryRow("SELECT prenom FROM UTILISATEUR WHERE id = ?", acheteurID).Scan(&prenomAcheteur)
+	if err != nil {
+		return fmt.Errorf("l'acheteur avec l'ID %d n'existe pas", acheteurID)
+	}
+
+	var vendeurID int
+	var titreAnnonce string
+	err = Conn.QueryRow("SELECT id_vendeur, titre FROM ANNONCE WHERE id = ? AND statut = 'Disponible'", annonceID).Scan(&vendeurID, &titreAnnonce)
+	if err != nil {
+		return fmt.Errorf("cette annonce n'est plus disponible ou n'existe pas")
+	}
+
+	tx, err := Conn.Begin()
+	if err != nil {
+		return err
+	}
+
+	query := `
+		UPDATE ANNONCE 
+		SET id_acheteur = ?, statut = 'Paye', date_achat = NOW() 
+		WHERE id = ? AND statut = 'Disponible'`
+	
+	res, err := tx.Exec(query, acheteurID, annonceID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		tx.Rollback()
+		return fmt.Errorf("cette annonce n'est plus disponible ou n'existe pas")
+	}
+
+	titreNotif := fmt.Sprintf("Votre '%s' a été vendu", titreAnnonce)
+	messageNotif := fmt.Sprintf("%s a acheté votre objet. Réservez un casier dès maintenant pour aller le déposer !", prenomAcheteur)
+
+	_, err = tx.Exec(`
+		INSERT INTO NOTIFICATION (id_utilisateur, type, titre, message) 
+		VALUES (?, 'Alerte', ?, ?)`, 
+		vendeurID, titreNotif, messageNotif)
+	
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("erreur lors de la création de la notification : %v", err)
+	}
+
+	return tx.Commit()
+}
+
+func RecupererObjet(codeBarreRetrait string, siteID int) error {
+	var annonceID, idCasier, idConteneur int
+	var poids float64
+	
+	var idVendeur int
+	// Utilisation de sql.NullInt64 au cas où id_acheteur est NULL en base de données
+	var idAcheteur sql.NullInt64 
+	var titreAnnonce string
+	var dbSiteID int // Pour vérifier le site
+
+	// 1. On enlève "AND a.id_site = ?" pour faire la vérification en Go et avoir une erreur précise
+	err := Conn.QueryRow(`
+		SELECT a.id, a.poids_estime_kg, a.id_casier, c.id_conteneur, a.id_vendeur, a.id_acheteur, a.titre, a.id_site
+		FROM ANNONCE a 
+		JOIN CASIER c ON a.id_casier = c.id 
+		WHERE a.code_barre_retrait = ? AND a.statut = 'Depose'`, 
+		codeBarreRetrait).Scan(&annonceID, &poids, &idCasier, &idConteneur, &idVendeur, &idAcheteur, &titreAnnonce, &dbSiteID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("code-barres invalide ou objet déjà récupéré")
+		}
+		return fmt.Errorf("erreur base de données : %v", err)
+	}
+
+	// 2. Vérification intelligente du site
+	if dbSiteID != siteID {
+		return fmt.Errorf("vous êtes à la mauvaise borne ! Cet objet vous attend au site n°%d", dbSiteID)
+	}
+
+	tx, err := Conn.Begin()
+	if err != nil { return err }
+
+	_, err = tx.Exec("UPDATE CONTENEUR SET niveau_remplissage = niveau_remplissage - ? WHERE id = ?", poids, idConteneur)
+	if err != nil { tx.Rollback(); return err }
+
+	_, err = tx.Exec("UPDATE CASIER SET statut = 'Libre' WHERE id = ?", idCasier)
+	if err != nil { tx.Rollback(); return err }
+
+	_, err = tx.Exec(`
+		UPDATE ANNONCE SET 
+			statut = 'Recupere', 
+			date_recuperation_effective = NOW(),
+			code_barre_retrait = NULL,
+			code_barre_depot = NULL
+		WHERE id = ?`, annonceID)
+	if err != nil { tx.Rollback(); return err }
+
+	// Calcul des points
+	co2Evite := poids * 1.5            
+	ressourcesEco := poids * 0.8       
+	pointsGagnes := 25 + int(poids*5)
+	
+	// Mise à jour Score Vendeur
+	_, err = tx.Exec(`
+		UPDATE UPCYCLING_SCORE 
+		SET ressources_economisees = ressources_economisees + ?,
+		    co2_total_evite_kg = co2_total_evite_kg + ?,
+		    nb_objets_recycles = nb_objets_recycles + 1,
+		    total_points = total_points + ?
+		WHERE id_utilisateur = ?
+	`, ressourcesEco, co2Evite, pointsGagnes, idVendeur)
+
+	if err != nil { 
+		tx.Rollback()
+		return fmt.Errorf("erreur lors de la mise à jour du score vendeur: %v", err) 
+	}
+
+	// Mise à jour Score Acheteur (Seulement s'il y a bien un acheteur valide)
+	if idAcheteur.Valid && idAcheteur.Int64 > 0 {
+		_, err = tx.Exec(`
+			UPDATE UPCYCLING_SCORE 
+			SET ressources_economisees = ressources_economisees + ?,
+			    co2_total_evite_kg = co2_total_evite_kg + ?,
+			    nb_objets_recycles = nb_objets_recycles + 1,
+			    total_points = total_points + ?
+			WHERE id_utilisateur = ?
+		`, ressourcesEco, co2Evite, pointsGagnes, idAcheteur.Int64)
+
+		if err != nil { 
+			tx.Rollback()
+			return fmt.Errorf("erreur lors de la mise à jour du score acheteur: %v", err) 
+		}
+	}
+
+	// Notification Vendeur
+	titreNotifVendeur := fmt.Sprintf("Votre '%s' a été récupéré!", titreAnnonce)
+	messageNotifVendeur := "L'acheteur a récupéré votre objet au point de collecte. Votre Upcycling Score a été mis à jour, merci pour votre geste éco-responsable!"
+
+	_, err = tx.Exec(`
+		INSERT INTO NOTIFICATION (id_utilisateur, type, titre, message) 
+		VALUES (?, 'Message', ?, ?)`, 
+		idVendeur, titreNotifVendeur, messageNotifVendeur)
+	
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("erreur lors de la création de la notification vendeur : %v", err)
+	}
+
+	// Notification Acheteur
+	if idAcheteur.Valid && idAcheteur.Int64 > 0 {
+		titreNotifAcheteur := fmt.Sprintf("Vous avez récupéré '%s' !", titreAnnonce)
+		messageNotifAcheteur := "Félicitations pour cette acquisition ! Vous avez évité l'achat de neuf et gagné des points pour votre Upcycling Score."
+
+		_, err = tx.Exec(`
+			INSERT INTO NOTIFICATION (id_utilisateur, type, titre, message) 
+			VALUES (?, 'Message', ?, ?)`, 
+			idAcheteur.Int64, titreNotifAcheteur, messageNotifAcheteur)
+		
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("erreur lors de la création de la notification acheteur : %v", err)
+		}
+	}
+
+	return tx.Commit()
 }
 
 func GetAllSites() ([]models.Site, error) {
@@ -165,7 +409,7 @@ func RetireObjetCasier(idAnnonce int) error {
             statut = 'Disponible', 
             id_casier = NULL, 
             id_site = NULL, 
-            code_pin_depot = NULL 
+            code_barre_depot = NULL 
         WHERE id = ?`, idAnnonce)
     if err != nil {
         tx.Rollback()

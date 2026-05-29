@@ -1,94 +1,98 @@
 <template>
-    <header class="content-header">
-        <div class="header-left">
-            <p class="sidebar__category2">ACCUEIL > DEPOTS > RÉSERVER</p>
-            <h1 class="hero-title1">CHOISIR UN POINT DE COLLECTE</h1>
-            <p class="classic-text">Sélectionnez le site de dépôt idéal pour votre objet.</p>
-            <div v-if="errors.length > 0" class="error-box">
-                <ul style="margin: 0; padding-left: 20px;">
-                    <li v-for="(err, index) in errors" :key="index">{{ err }}</li>
-                </ul>
-            </div>
-            <div v-if="successMsg" class="success-box">
-                {{ successMsg }}
-            </div>
-        </div>
-        <button class="btn-secondary" @click="$router.back()">🠔 Annuler</button>
-    </header>
-
-    <div v-if="loading" class="loading-state">Recherche des sites...</div>
-
-    <div v-else class="section-container">
-        <div class="split-layout">
-            <div class="left-column">
-                <div class="search-container">
-                    <input 
-                        type="text" 
-                        v-model="searchQuery" 
-                        placeholder="Rechercher une ville ou un nom de site..."
-                        class="search-input"
-                    >
+    <div class="layout-wrapper">
+        <header class="content-header">
+            <div class="header-left">
+                <p class="sidebar__category2">ACCUEIL > DEPOTS > RÉSERVER</p>
+                <h1 class="hero-title1">CHOISIR UN POINT DE COLLECTE</h1>
+                <p class="classic-text">Sélectionnez le site de dépôt idéal pour votre objet.</p>
+                
+                <div v-if="errors.length > 0" class="error-box">
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li v-for="(err, index) in errors" :key="index">{{ err }}</li>
+                    </ul>
                 </div>
 
-                <div class="sites-list-vertical">
-                    <div
-                        v-for="site in filteredSites"
-                        :key="site.id"
-                        class="site-item"
-                        :class="{ 'selected-item': selectedSiteId === site.id }"
-                        @click="selectedSiteId = site.id"
-                    >
-                        <div class="item-body">
-                            <div class="item-header">
-                                <span class="mini-type">{{ site.type }}</span>
-                                <h3 class="mini-name">{{ site.nom }}</h3>
-                            </div>
-                            <p class="mini-addr">📍 {{ site.adresse }}, {{ site.ville }} ({{ site.code_postal }})</p>
-                        </div>
-                        <div class="selection-status">
-                            <div class="custom-radio"></div>
-                        </div>
-                    </div>
-                    <p v-if="filteredSites.length === 0" class="empty-text">Aucun site ne correspond à votre recherche.</p>
+                <div v-if="successMsg" class="success-box">
+                    {{ successMsg }}
                 </div>
             </div>
+            <button class="btn-secondary" @click="$router.back()">🠔 Annuler</button>
+        </header>
 
-            <div class="right-column">
-                <div class="status-card sticky-card">
-                    <h3 class="card-title">Résumé de la réservation</h3>
+        <div v-if="loading" class="loading-state">Recherche des sites...</div>
 
-                    <div v-if="annonce" class="annonce-preview-box">
-                        <label class="field-label">OBJET À DÉPOSER</label>
-                        <p class="preview-titre">{{ annonce.titre }}</p>
-                        <div class="preview-tags">
-                            <span class="tag-sm">{{ annonce.type }}</span>
-                            <span class="tag-sm">{{ annonce.ville }}</span>
-                        </div>
-                    </div>
-
-                    <div class="recap-section">
-                        <label class="field-label">POINT DE COLLECTE</label>
-                        <div v-if="selectedSiteId" class="selected-detail-box">
-                            <p class="selected-site-name">{{ selectedSiteName }}</p>
-                            <p class="selected-site-addr">
-                                {{ sites.find(s => s.id === selectedSiteId)?.adresse }}<br>
-                                {{ sites.find(s => s.id === selectedSiteId)?.code_postal }} {{ sites.find(s => s.id === selectedSiteId)?.ville }}
-                            </p>
-                        </div>
-                        <div v-else class="warning-alert">
-                            Veuillez sélectionner un site dans la liste de gauche pour continuer.
-                        </div>
-                    </div>
-
-                    <div class="action-footer">
-                        <button
-                            class="btn-main-action full-width"
-                            :disabled="!selectedSiteId || submitting"
-                            @click="confirmReservation"
+        <div v-else class="section-container">
+            <div class="split-layout">
+                <div class="left-column">
+                    <div class="search-container">
+                        <input 
+                            type="text" 
+                            v-model="searchQuery" 
+                            placeholder="Rechercher une ville ou un nom de site..."
+                            class="search-input"
                         >
-                            {{ submitting ? "Traitement..." : "Confirmer la réservation" }}
-                        </button>
-                        <p class="info-note">Un code PIN vous sera attribué pour l'ouverture du casier.</p>
+                    </div>
+
+                    <div class="sites-list-vertical">
+                        <div
+                            v-for="site in filteredSites"
+                            :key="site.id"
+                            class="site-item"
+                            :class="{ 'selected-item': selectedSiteId === site.id }"
+                            @click="selectedSiteId = site.id"
+                        >
+                            <div class="item-body">
+                                <div class="item-header">
+                                    <span class="mini-type">{{ site.type }}</span>
+                                    <h3 class="mini-name">{{ site.nom }}</h3>
+                                </div>
+                                <p class="mini-addr">📍 {{ site.adresse }}, {{ site.ville }} ({{ site.code_postal }})</p>
+                            </div>
+                            <div class="selection-status">
+                                <div class="custom-radio"></div>
+                            </div>
+                        </div>
+                        <p v-if="filteredSites.length === 0" class="empty-text">Aucun site ne correspond à votre recherche.</p>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <div class="status-card sticky-card">
+                        <h3 class="card-title">Résumé de la réservation</h3>
+
+                        <div v-if="annonce" class="annonce-preview-box">
+                            <label class="field-label">OBJET À DÉPOSER</label>
+                            <p class="preview-titre">{{ annonce.titre }}</p>
+                            <div class="preview-tags">
+                                <span class="tag-sm">{{ annonce.type }}</span>
+                                <span class="tag-sm">{{ annonce.ville }}</span>
+                            </div>
+                        </div>
+
+                        <div class="recap-section">
+                            <label class="field-label">POINT DE COLLECTE</label>
+                            <div v-if="selectedSiteId" class="selected-detail-box">
+                                <p class="selected-site-name">{{ selectedSiteName }}</p>
+                                <p class="selected-site-addr">
+                                    {{ sites.find(s => s.id === selectedSiteId)?.adresse }}<br>
+                                    {{ sites.find(s => s.id === selectedSiteId)?.code_postal }} {{ sites.find(s => s.id === selectedSiteId)?.ville }}
+                                </p>
+                            </div>
+                            <div v-else class="warning-alert">
+                                Veuillez sélectionner un site dans la liste de gauche pour continuer.
+                            </div>
+                        </div>
+
+                        <div class="action-footer">
+                            <button
+                                class="btn-main-action full-width"
+                                :disabled="!selectedSiteId || submitting"
+                                @click="confirmReservation"
+                            >
+                                {{ submitting ? "Traitement..." : "Confirmer la réservation" }}
+                            </button>
+                            <p class="info-note">Un code PIN vous sera attribué pour l'ouverture du casier.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -168,15 +172,16 @@ const confirmReservation = async () => {
                 router.push("/profil/depots");
             }, 2000);   
         } else {
-            const data = await res.json();
-            errors.value.push(data.error || "Erreur inconnue");
+            // CORRECTION ICI : Si Go renvoie du texte brut (http.Error), on le lit correctement avec text()
+            const txtError = await res.text();
+            errors.value.push(txtError || "Erreur lors de la réservation");
 
             setTimeout(() => {
                 errors.value = [];
             }, 5000);
         }
     } catch (e) {
-        errors.value.push("Serveur injoignable");
+        errors.value.push("Le serveur est injoignable.");
         setTimeout(() => { errors.value = [] }, 5000);
     } finally {
         submitting.value = false;
@@ -285,13 +290,13 @@ onMounted(fetchData);
     border-radius: 50%;
 }
 
+/* --- STYLE UNIQUE HARMONISÉ DEPUIS LA PAGE LOGIN --- */
 .error-box {
-    background-color: #fef2f2;
-    border-left: 4px solid #ef4444;
-    color: #b91c1c;
-    padding: 1rem;
+    color: #e74c3c;
+    background: #fdeaea;
+    padding: 12px;
+    border-radius: 4px;
     margin: 1rem 0;
-    border-radius: 8px;
     font-size: 0.9rem;
 }
 

@@ -19,26 +19,24 @@
                     Upcycle <span class="accent">Connect</span>
                 </div>
                 <h1 class="login-left__title">
-                    Heureux de vous <span class="accent">revoir</span>.
+                    {{ t.WelcomeBackLeft || 'Heureux de vous ' }}<span class="accent">{{ t.WelcomeBackAccent || 'revoir' }}</span>.
                 </h1>
                 <p class="login-left__desc">
-                    Connectez-vous pour retrouver vos annonces, vos projets en
-                    cours et continuer à faire grandir la communauté de
-                    l'upcycling.
+                    {{ t.LoginDesc || "Connectez-vous pour retrouver vos annonces, vos projets en cours et continuer à faire grandir la communauté de l'upcycling." }}
                 </p>
 
                 <div class="login-left__stats">
                     <div class="stat">
                         <strong>2.4t</strong>
-                        <span>CO₂ évité / mois</span>
+                        <span>{{ t.StatCO2Month || 'CO₂ évité / mois' }}</span>
                     </div>
                     <div class="stat">
                         <strong>8k+</strong>
-                        <span>Objets upcyclés</span>
+                        <span>{{ t.StatUpcycled || 'Objets upcyclés' }}</span>
                     </div>
                     <div class="stat">
                         <strong>340</strong>
-                        <span>Artisans actifs</span>
+                        <span>{{ t.StatArtisans || 'Artisans actifs' }}</span>
                     </div>
                 </div>
 
@@ -58,13 +56,13 @@
                                 </div>
                                 <div>
                                     <strong>{{ currentComment.author }}</strong>
-                                    <span>Membre UpcycleConnect</span>
+                                    <span>{{ t.MemberUpcycle || 'Membre UpcycleConnect' }}</span>
                                 </div>
                             </div>
                         </div>
                         <div v-else key="loading">
                             <p class="login-testimonial__text">
-                                Chargement des avis...
+                                {{ t.LoadingReviews || 'Chargement des avis...' }}
                             </p>
                         </div>
                     </transition>
@@ -82,17 +80,17 @@
                     Upcycle <span class="accent-green">Connect</span>
                 </div>
 
-                <h2 class="login-right__title">Bon retour parmi nous</h2>
+                <h2 class="login-right__title">{{ t.WelcomeBackRight || 'Bon retour parmi nous' }}</h2>
                 <p class="login-right__subtitle">
-                    Pas encore membre ?
+                    {{ t.NotMemberYet || 'Pas encore membre ?' }}
                     <router-link to="/inscription" class="login-right__link">
-                        Créer un compte gratuitement
+                        {{ t.CreateAccountFree || 'Créer un compte gratuitement' }}
                     </router-link>
                 </p>
 
                 <form @submit.prevent="handleLogin">
                     <div class="login-field">
-                        <label>Adresse e-mail</label>
+                        <label>{{ t.EmailLabel || 'Adresse e-mail' }}</label>
                         <input
                             type="email"
                             placeholder="marie.lambert@exemple.fr"
@@ -109,12 +107,12 @@
                                 align-items: center;
                             "
                         >
-                            <label>Mot de passe</label>
+                            <label>{{ t.PasswordLabel || 'Mot de passe' }}</label>
                             <router-link
                                 to="/connexion"
                                 class="login-right__link"
                                 style="font-size: 0.8rem"
-                                >Oublié ?</router-link
+                                >{{ t.ForgotPwd || 'Oublié ?' }}</router-link
                             >
                         </div>
                         <input
@@ -131,7 +129,7 @@
                             id="remember"
                             v-model="rememberMe"
                         />
-                        <label for="remember">Se souvenir de moi</label>
+                        <label for="remember">{{ t.RememberMe || 'Se souvenir de moi' }}</label>
                     </div>
 
                     <div
@@ -156,12 +154,12 @@
                     </div>
 
                     <button type="submit" class="login-submit">
-                        Se connecter →
+                        {{ t.LoginBtn || 'Se connecter' }} →
                     </button>
                 </form>
 
                 <div class="login-separator">
-                    <span>ou continuer avec</span>
+                    <span>{{ t.OrContinueWith || 'ou continuer avec' }}</span>
                 </div>
 
                 <button class="login-google">Google</button>
@@ -174,6 +172,9 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+
+import { useTraduction } from "../composables/useTraduction"; 
+const { t } = useTraduction();
 
 const router = useRouter();
 

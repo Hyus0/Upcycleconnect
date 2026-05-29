@@ -27,8 +27,10 @@
 
         <div v-else class="profile-container">
             <section class="profile-header-card">
-                <div class="profile-banner"></div>
-
+                <div 
+                    class="profile-banner" 
+                    :style="{ backgroundImage: `url(${basicBanner})`, backgroundSize: 'cover', backgroundPosition: 'center' }"
+                ></div>
                 <div class="profile-info-wrapper">
                     <div class="profile-top-row">
                         <img
@@ -311,6 +313,9 @@ import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 import imageParDefaut from "../components/upcycling-concept.jpg";
 
+import basicBanner from "../components/basicBanner.jpg";
+import basicAvatar from "../components/basicAvatar.png";
+
 const route = useRoute();
 const router = useRouter();
 const API_URL = "http://localhost:8081";
@@ -329,8 +334,7 @@ const followingCount = ref(0);
 const newAvis = ref({ note: 5, commentaire: "" });
 const isSubmittingAvis = ref(false);
 
-const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-
+const defaultAvatar = basicAvatar;
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const currentUserId = computed(() => {
     const storedId =
@@ -359,7 +363,6 @@ const getStarFillPercentage = (n, rating) => {
     return "0%";
 };
 
-// Vérifier si l'utilisateur a déjà commenté
 const hasAlreadyCommented = computed(() => {
     if (!avisList.value || !currentUserId.value) return false;
     return avisList.value.some(
@@ -398,7 +401,6 @@ const goToUser = (id) => {
     }
 };
 
-// Actions API
 const toggleFollow = async () => {
     if (!isLoggedIn.value)
         return alert("Veuillez vous connecter pour suivre ce membre.");
@@ -559,7 +561,6 @@ watch(() => route.params.id, loadProfile);
 
 .profile-banner {
     height: 180px;
-    background: linear-gradient(135deg, #2d7a4f, #9bcbae);
 }
 
 .profile-info-wrapper {

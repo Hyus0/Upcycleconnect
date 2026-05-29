@@ -10,18 +10,13 @@
             <section class="page-background">
                 <div class="hero-content">
                     <button class="active-plateform">
-                        Plateforme active · {{ plateform_user }}+ membres
+                        {{ t.ActivePlatform || 'Plateforme active' }} · {{ plateform_user }}+ {{ t.Members || 'membres' }}
                     </button>
 
                     <h1 class="hero-title">
                         Upcycle<span class="text-accent">Connect</span>
                     </h1>
-                    <p class="hero-subtitle">
-                        UpcycleConnect réunit particuliers, artisans et
-                        entreprises autour<br />
-                        de l'upcycling. Déposez, échangez, transformez — et
-                        mesurez<br />
-                        votre impact environnemental.
+                    <p class="hero-subtitle" v-html="t.HeroSubtitle || 'UpcycleConnect réunit particuliers, artisans et entreprises autour<br />de l\'upcycling. Déposez, échangez, transformez — et mesurez<br />votre impact environnemental.'">
                     </p>
 
                     <div class="hero-buttons">
@@ -29,13 +24,13 @@
                             class="btn btn--primary"
                             @click="$router.push('/inscription')"
                         >
-                            ♻ Commencer gratuitement
+                            ♻ {{ t.StartFree || 'Commencer gratuitement' }}
                         </button>
                         <button
                             class="btn btn--outline"
                             @click="$router.push('/profil')"
                         >
-                            Je suis professionnel →
+                            {{ t.ImaPro || 'Je suis professionnel' }} →
                         </button>
                     </div>
 
@@ -46,7 +41,7 @@
                             <h2 class="stat-number">
                                 {{ formatCO2(platformStats.co2_evite) }}<span class="text-accent">{{ uniteCO2 }}</span>
                             </h2>
-                            <p class="stat-label">CO₂ évité au total</p>
+                            <p class="stat-label">{{ t.CO2Avoided || 'CO₂ évité au total' }}</p>
                         </div>
                         
                         <div class="stat-item">
@@ -54,19 +49,19 @@
                                 {{ platformStats.objets_upcycles >= 1000 ? (platformStats.objets_upcycles / 1000).toFixed(1) : platformStats.objets_upcycles }}
                                 <span class="text-accent" v-if="platformStats.objets_upcycles >= 1000">k+</span>
                             </h2>
-                            <p class="stat-label">Objets upcyclés</p>
+                            <p class="stat-label">{{ t.UpcycledObjects || 'Objets upcyclés' }}</p>
                         </div>
                         
                         <div class="stat-item">
                             <h2 class="stat-number">
                                 {{ platformStats.artisans_actifs }}
                             </h2>
-                            <p class="stat-label">Artisans partenaires</p>
+                            <p class="stat-label">{{ t.PartnerArtisans || 'Artisans partenaires' }}</p>
                         </div>
                         
                         <div class="stat-item">
                             <h2 class="stat-number">{{ platformStats.sites_actifs }}</h2>
-                            <p class="stat-label">Sites à Paris & IDF</p>
+                            <p class="stat-label">{{ t.SitesIDF || 'Sites à Paris & IDF' }}</p>
                         </div>
                     </div>
                 </div>
@@ -74,88 +69,66 @@
 
             <section class="all-you-need-part">
                 <div class="alyn-container">
-                    <p class="subtitle">FONCTIONNALITÉS</p>
-                    <h1>
-                        Tout ce dont vous<br />
-                        avez besoin
-                    </h1>
-                    <p class="hero-subtitle1">
-                        Une plateforme complète pour donner une seconde vie à
-                        vos objets, du<br />
-                        dépôt jusqu'à la création finale.
-                    </p>
+                    <p class="subtitle">{{ t.FeaturesSub || 'FONCTIONNALITÉS' }}</p>
+                    <h1 v-html="t.AllYouNeed || 'Tout ce dont vous<br />avez besoin'"></h1>
+                    <p class="hero-subtitle1" v-html="t.FeaturesDesc || 'Une plateforme complète pour donner une seconde vie à vos objets, du<br />dépôt jusqu\'à la création finale.'"></p>
                     <section class="features-section">
                         <div class="features-grid">
                             <div class="feature-card">
                                 <div class="feature-icon-box">📢</div>
                                 <h3 class="feature-title">
-                                    Annonces intelligentes
+                                    {{ t.SmartAdsTitle || 'Annonces intelligentes' }}
                                 </h3>
                                 <p class="feature-description">
-                                    Publiez vos dons ou ventes avec photos,
-                                    catégorie et localisation. Les artisans
-                                    reçoivent des alertes personnalisées selon
-                                    leurs besoins.
+                                    {{ t.SmartAdsDesc || 'Publiez vos dons ou ventes avec photos, catégorie et localisation. Les artisans reçoivent des alertes personnalisées selon leurs besoins.' }}
                                 </p>
                             </div>
 
                             <div class="feature-card">
                                 <div class="feature-icon-box">📦</div>
                                 <h3 class="feature-title">
-                                    Conteneurs sécurisés
+                                    {{ t.SecureContainersTitle || 'Conteneurs sécurisés' }}
                                 </h3>
                                 <p class="feature-description">
-                                    Demandez un code-barres pour déposer votre
-                                    objet dans l'un de nos 30+ conteneurs à
-                                    Paris et en IDF. Simple, rapide, sécurisé.
+                                    {{ t.SecureContainersDesc || 'Demandez un code-barres pour déposer votre objet dans l\'un de nos 30+ conteneurs à Paris et en IDF. Simple, rapide, sécurisé.' }}
                                 </p>
                             </div>
 
                             <div class="feature-card">
                                 <div class="feature-icon-box">🌿</div>
-                                <h3 class="feature-title">Upcycling Score</h3>
+                                <h3 class="feature-title">{{ t.UpcyclingScoreTitle || 'Upcycling Score' }}</h3>
                                 <p class="feature-description">
-                                    Chaque action compte. Visualisez en temps
-                                    réel le CO₂ évité, les ressources
-                                    économisées et votre contribution à
-                                    l'économie circulaire.
+                                    {{ t.UpcyclingScoreDesc || 'Chaque action compte. Visualisez en temps réel le CO₂ évité, les ressources économisées et votre contribution à l\'économie circulaire.' }}
                                 </p>
                             </div>
 
                             <div class="feature-card">
                                 <div class="feature-icon-box">🎓</div>
                                 <h3 class="feature-title">
-                                    Formations & Ateliers
+                                    {{ t.TrainingWorkshopsTitle || 'Formations & Ateliers' }}
                                 </h3>
                                 <p class="feature-description">
-                                    Apprenez les techniques d'upcycling avec nos
-                                    formateurs experts. Cours en ligne et
-                                    ateliers en présentiel dans nos 7 sites.
+                                    {{ t.TrainingWorkshopsDesc || 'Apprenez les techniques d\'upcycling avec nos formateurs experts. Cours en ligne et ateliers en présentiel dans nos 7 sites.' }}
                                 </p>
                             </div>
 
                             <div class="feature-card">
                                 <div class="feature-icon-box">🗓️</div>
                                 <h3 class="feature-title">
-                                    Planning personnel
+                                    {{ t.PersonalScheduleTitle || 'Planning personnel' }}
                                 </h3>
                                 <p class="feature-description">
-                                    Gérez vos inscriptions, formations, dépôts
-                                    et événements depuis un calendrier
-                                    centralisé et synchronisable.
+                                    {{ t.PersonalScheduleDesc || 'Gérez vos inscriptions, formations, dépôts et événements depuis un calendrier centralisé et synchronisable.' }}
                                 </p>
                             </div>
 
                             <div class="feature-card">
                                 <div class="feature-icon-box">🤝</div>
                                 <h3 class="feature-title">
-                                    Communauté vivante
+                                    {{ t.LivingCommunityTitle || 'Communauté vivante' }}
                                 </h3>
                                 <p class="feature-description">
-                                    Forums, événements, conseils et projets
-                                    partagés. Rejoignez une communauté de
-                                    passionnés qui agissent pour
-                                    l'environnement.
+                                    {{ t.LivingCommunityDesc || 'Forums, événements, conseils et projets partagés. Rejoignez une communauté de passionnés qui agissent pour l\'environnement.' }}
                                 </p>
                             </div>
                         </div>
@@ -165,45 +138,41 @@
 
             <section id="processus" class="processus-part">
                 <div class="processus-container">
-                    <p class="subtitle">PROCESSUS</p>
-                    <h1>Comment ça marche ?</h1>
+                    <p class="subtitle">{{ t.ProcessSub || 'PROCESSUS' }}</p>
+                    <h1>{{ t.HowItWorks || 'Comment ça marche ?' }}</h1>
 
                     <section class="how-it-works">
                         <div class="steps-container">
                             <div class="steps-line"></div>
                             <div class="step-item">
                                 <div class="step-number">1</div>
-                                <h3>Déposez une annonce</h3>
+                                <h3>{{ t.Step1Title || 'Déposez une annonce' }}</h3>
                                 <p>
-                                    Photographiez et décrivez l'objet à donner
-                                    ou vendre sur la plateforme.
+                                    {{ t.Step1Desc || 'Photographiez et décrivez l\'objet à donner ou vendre sur la plateforme.' }}
                                 </p>
                             </div>
 
                             <div class="step-item">
                                 <div class="step-number">2</div>
-                                <h3>Validation</h3>
+                                <h3>{{ t.Step2Title || 'Validation' }}</h3>
                                 <p>
-                                    Notre équipe valide votre objet et vous
-                                    envoie un code-barres d'accès.
+                                    {{ t.Step2Desc || 'Notre équipe valide votre objet et vous envoie un code-barres d\'accès.' }}
                                 </p>
                             </div>
 
                             <div class="step-item">
                                 <div class="step-number">3</div>
-                                <h3>Dépôt en conteneur</h3>
+                                <h3>{{ t.Step3Title || 'Dépôt en conteneur' }}</h3>
                                 <p>
-                                    Déposez l'objet dans le conteneur le plus
-                                    proche grâce à votre code-barres.
+                                    {{ t.Step3Desc || 'Déposez l\'objet dans le conteneur le plus proche grâce à votre code-barres.' }}
                                 </p>
                             </div>
 
                             <div class="step-item">
                                 <div class="step-number">4</div>
-                                <h3>Seconde vie !</h3>
+                                <h3>{{ t.Step4Title || 'Seconde vie !' }}</h3>
                                 <p>
-                                    Un artisan récupère l'objet et lui donne une
-                                    nouvelle vie.
+                                    {{ t.Step4Desc || 'Un artisan récupère l\'objet et lui donne une nouvelle vie.' }}
                                 </p>
                             </div>
                         </div>
@@ -214,12 +183,11 @@
             <section class="ready-part">
                 <div class="ready-container">
                     <h1 class="hero-title1">
-                        Prêt à agir pour<br />
-                        <span class="navbar__logo--accent">la planète ?</span>
+                        {{ t.ReadyAct || 'Prêt à agir pour' }}<br />
+                        <span class="navbar__logo--accent">{{ t.ThePlanet || 'la planète ?' }}</span>
                     </h1>
                     <p class="hero-subtitle1">
-                        Rejoignez les {{ plateform_user }} membres qui donnent
-                        une seconde vie à leurs objets chaque jour.
+                        {{ t.ReadyDesc1 || 'Rejoignez les' }} {{ plateform_user }} {{ t.ReadyDesc2 || 'membres qui donnent une seconde vie à leurs objets chaque jour.' }}
                     </p>
 
                     <div class="hero-buttons">
@@ -227,13 +195,13 @@
                             class="btn btn--primary"
                             @click="$router.push('/inscription')"
                         >
-                            Créer mon compte gratuit
+                            {{ t.CreateFreeAccount || 'Créer mon compte gratuit' }}
                         </button>
                         <button
                             class="btn btn--outline"
                             @click="$router.push('/annonces')"
                         >
-                            Voir les annonces
+                            {{ t.ViewAds || 'Voir les annonces' }}
                         </button>
                     </div>
                 </div>
@@ -246,8 +214,10 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import SiteNavbar from "../components/SiteNavbar.vue";
-
 import SiteFooter from "../components/SiteFooter.vue";
+
+import { useTraduction } from "../composables/useTraduction"; 
+const { t } = useTraduction();
 
 const API_URL = "http://localhost:8081";
 
@@ -262,23 +232,20 @@ const userName = computed(() => {
   return (prenom || nom) ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
-// Les variables réactives pour stocker les vraies données de la BDD
 const platformStats = ref({
     co2_evite: 0,
     objets_upcycles: 0,
     artisans_actifs: 0,
-    sites_actifs: 7 // On garde 7 par défaut si on n'a pas la table SITE
+    sites_actifs: 7 
 });
 
-// Fonction pour formater le CO2
 const formatCO2 = (kg) => {
     if (kg >= 1000) {
-        return (kg / 1000).toFixed(1); // Retourne juste le chiffre (ex: 2.4)
+        return (kg / 1000).toFixed(1); 
     }
-    return kg; // Retourne juste le chiffre
+    return kg; 
 };
 
-// L'unité de mesure associée au CO2 (t ou kg)
 const uniteCO2 = computed(() => {
     if (platformStats.value.co2_evite >= 1000) {
         return 't';
@@ -286,7 +253,6 @@ const uniteCO2 = computed(() => {
     return 'kg';
 });
 
-// Fonction pour récupérer les vraies statistiques
 const fetchPlatformStats = async () => {
     try {
         const res = await fetch(`${API_URL}/stats/platform`);
@@ -576,6 +542,14 @@ html {
 .footer-container {
     max-width: 1300px;
     margin: 0 auto;
+}
+
+.ready-part .hero-title1 {
+    color: #ffffff;
+}
+
+.ready-part .hero-subtitle1 {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .footer-main-content {

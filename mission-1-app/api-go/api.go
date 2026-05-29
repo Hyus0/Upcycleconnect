@@ -107,6 +107,8 @@ func main() {
 	http.HandleFunc("GET /users/{id}/annonces", app.GetUserAnnoncesHandler)
 	http.HandleFunc("GET /annonces/{id}/favori/{userId}", app.GetFavoriStatusHandler)
 	http.HandleFunc("POST /annonces/{id}/favori/{userId}", app.ToggleFavoriHandler)
+	http.HandleFunc("GET /users/{id}/favoris", app.GetMesFavorisHandler)
+	http.HandleFunc("GET /users/{id}/achats", app.GetUserAchatsHandler)
 	
 	//Evenement
 	http.HandleFunc("GET /evenements", app.GetAllEvenements)
@@ -139,8 +141,10 @@ func main() {
 	http.HandleFunc("GET /site/{id}", app.GetSiteHandler)
 	http.HandleFunc("GET /sites/{id}/conteneurs", app.GetConteneurs)
 	http.HandleFunc("POST /annonces/{id}/retirer", app.RetireObjetCasierHandler)
-	http.HandleFunc("POST /annonces/{id}/reserver", app.ReserverCasier)
-
+	http.HandleFunc("POST /annonces/{id}/acheter", app.AcheterAnnonceHandler)
+	http.HandleFunc("POST /annonces/{id}/reserver", app.ReserverCasierHandler)
+	http.HandleFunc("POST /depot", app.DeposerObjetHandler)
+	
 	//Projets
 	http.HandleFunc("GET /projets", app.GetAllProjets)
 	http.HandleFunc("GET /projet/{id}", app.GetProjet)
@@ -148,7 +152,11 @@ func main() {
 	http.HandleFunc("POST /projets/{id}/quit", app.QuitProjet)
 	http.HandleFunc("POST /projets/{id}/like/{userId}", app.ToggleLike)
 	http.HandleFunc("GET /projets/{id}/like-status/{userId}", app.CheckLikeStatusHandler)
-
+	http.HandleFunc("GET /users/{id}/projets", app.GetProjetsByUserHandler)
+	http.HandleFunc("DELETE /projets/{id}", app.DeleteProjetHandler)
+	http.HandleFunc("POST /projets", app.CreateProjetHandler)
+	http.HandleFunc("PUT /projets/{id}", app.UpdateProjetHandler)
+	
 	//tips
 	http.HandleFunc("GET /tips/role/{role}", app.GetTipByRoleHandler)
 	http.HandleFunc("GET /tips", app.GetAllTipsHandler)
@@ -162,6 +170,21 @@ func main() {
 	http.HandleFunc("POST /forums/message", app.SendMessageHandler)
 	http.HandleFunc("POST /forums/topic", app.CreateTopicHandler)
 
+	//panier
+	http.HandleFunc("GET /users/{id}/panier", app.GetPanierHandler)
+	http.HandleFunc("POST /users/{id}/panier", app.AddToPanierHandler)
+	http.HandleFunc("DELETE /users/{id}/panier/{itemId}", app.RemoveFromPanierHandler)
+	http.HandleFunc("POST /users/{id}/checkout", app.CheckoutHandler)
+
+	//notification
+	http.HandleFunc("GET /users/{id}/notifications", app.GetNotificationsHandler)
+	http.HandleFunc("POST /notifications/{id}/read", app.MarquerNotificationLueHandler)
+
+	//traduction
+	http.HandleFunc("GET /langues", app.GetLanguesHandler)
+	http.HandleFunc("GET /traductions/{code}", app.GetTraductionsHandler)
+	http.HandleFunc("PUT /users/{id}/langue", app.UpdateLangueHandler)
+	
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))
 }

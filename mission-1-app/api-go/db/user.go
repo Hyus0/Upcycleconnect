@@ -217,9 +217,9 @@ func GetUserStats(userId int) (*models.UserStats, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s.Points > 500 {
+	if s.Points > 1500 {
 		s.Niveau = "Héro 🌿"
-	} else if s.Points > 200 {
+	} else if s.Points > 600 {
 		s.Niveau = "Protecteur 🍃"
 	} else {
 		s.Niveau = "Débutant 🌱"

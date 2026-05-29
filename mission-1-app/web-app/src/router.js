@@ -8,10 +8,12 @@ import Home from "./pages/Home.vue";
 import Annonces from "./pages/Annonces.vue";
 import Forums from "./pages/Forums.vue";
 
-import Formations from "./pages/Formations.vue"
-import Evenements from "./pages/Evenements.vue"
-import Projets from "./pages/Projets.vue"
-import Conseils from "./pages/Conseils.vue"
+import Formations from "./pages/Formations.vue";
+import Evenements from "./pages/Evenements.vue";
+import Projets from "./pages/Projets.vue";
+import Conseils from "./pages/Conseils.vue";
+import Panier from "./pages/PanierDetail.vue";
+import ClaimObjet from "./pages/ClaimObjet.vue";
 
 const routes = [
   { path: "/", component: Home },
@@ -23,6 +25,7 @@ const routes = [
   { path: "/evenements", component: Evenements },
   { path: "/projets", component: Projets },
   { path: "/conseils", component: Conseils },
+  { path: "/panier", component: Panier },
   {
     path: '/annonce/:id',
     name: 'annonce-detail',
@@ -49,6 +52,18 @@ const routes = [
     component: () => import('./pages/ConseilDetail.vue')
   },
   {
+    path: "/deposer",
+    name: "deposer-objet",
+    component: () => import('./pages/DropObjet.vue'),
+    meta: { requiresRole: "Salarie" }
+  },
+  {
+    path: "/claim",
+    name: "recuperer-objet",
+    component: () => import('./pages/ClaimObjet.vue'),
+    meta: { requiresRole: "Salarie" }
+  },
+  {
     path: "/profil",
     component: Profil,
     meta: { requiresAuth: true },
@@ -56,53 +71,130 @@ const routes = [
       {
         path: "",
         name: "dashboard",
-        component: () => import("./pages/profilpages/DashboardHome.vue"),
-      },
-      {
-        path: "annonces",
-        name: "mes-annonces",
-        component: () => import("./pages/profilpages/Annonces.vue"),
-      },
-      {
-        path: "depots",
-        name: "mes-depots",
-        component: () => import("./pages/profilpages/Depots.vue"),
+        component: () => {
+          const role = sessionStorage.getItem("userRole");
+          if (role === "Prestataire") return import('./pages/profilpagesPrestataire/DashboardHome.vue');
+          if (role === "Salarie") return import('./pages/profilpagesSalarie/DashboardHome.vue');
+          return import('./pages/profilpagesParticulier/DashboardHome.vue');
+        }
       },
       {
         path: "planning",
         name: "mon-planning",
-        component: () => import("./pages/profilpages/Planning.vue"),
+        component: () => {
+          const role = sessionStorage.getItem("userRole");
+          if (role === "Prestataire") return import('./pages/profilpagesPrestataire/Planning.vue');
+          if (role === "Salarie") return import('./pages/profilpagesSalarie/Planning.vue');
+          return import('./pages/profilpagesParticulier/Planning.vue');
+        }
       },
       {
         path: "informations",
         name: "mes-informations",
-        component: () => import("./pages/profilpages/Infos.vue"),
+        component: () => {
+          const role = sessionStorage.getItem("userRole");
+          if (role === "Prestataire") return import('./pages/profilpagesPrestataire/Infos.vue');
+          if (role === "Salarie") return import('./pages/profilpagesSalarie/Infos.vue');
+          return import('./pages/profilpagesParticulier/Infos.vue');
+        }
+      },
+      {
+        path: "factures",
+        name: "mes-factures",
+        component: () => {
+          const role = sessionStorage.getItem("userRole");
+          if (role === "Prestataire") return import('./pages/profilpagesPrestataire/Factures.vue');
+          return import('./pages/profilpagesParticulier/Factures.vue');
+        }
       },
       {
         path: "forums",
         name: "mes-forums",
-        component: () => import("./pages/profilpages/Forums.vue"),
+        component: () => {
+          const role = sessionStorage.getItem("userRole");
+          if (role === "Salarie") return import('./pages/profilpagesSalarie/Forums.vue');
+          return import('./pages/profilpagesParticulier/Forums.vue');
+        }
       },
       {
         path: "password",
         name: "modification-password",
-        component: () => import("./pages/profilpages/ChangePassword.vue"),
+        component: () => {
+          const role = sessionStorage.getItem("userRole");
+          if (role === "Prestataire") return import('./pages/profilpagesPrestataire/ChangePassword.vue');
+          if (role === "Salarie") return import('./pages/profilpagesSalarie/ChangePassword.vue');
+          return import('./pages/profilpagesParticulier/ChangePassword.vue');
+        }
+      },
+      
+      {
+        path: "annonces",
+        name: "mes-annonces",
+        component: () => import('./pages/profilpagesParticulier/Annonces.vue'),
+        meta: { requiresRole: "Particulier" }
+      },
+      {
+        path: "depots",
+        name: "mes-depots",
+        component: () => import('./pages/profilpagesParticulier/Depots.vue'),
+        meta: { requiresRole: "Particulier" }
       },
       {
         path: "modifyAnnonce/:id",
         name: "modification-annonce",
-        component: () => import("./pages/profilpages/modifyAnnonce.vue"),
+        component: () => import('./pages/profilpagesParticulier/modifyAnnonce.vue'),
+        meta: { requiresRole: "Particulier" }
       },
       {
         path: "createAnnonce",
         name: "create-annonce",
-        component: () => import("./pages/profilpages/CreateAnnonce.vue"),
+        component: () => import('./pages/profilpagesParticulier/CreateAnnonce.vue'),
+        meta: { requiresRole: "Particulier" }
       },
       {
         path: "reserveCasier/:id",
         name: "reserve-casier",
-        component: () => import("./pages/profilpages/ReserverCasier.vue"),
+        component: () => import('./pages/profilpagesParticulier/ReserverCasier.vue'),
+        meta: { requiresRole: "Particulier" }
       },
+
+      // --- SPÉCIFIQUES AUX PRESTATAIRES ---
+      {
+        path: "favoris",
+        name: "annonce-like",
+        component: () => import("./pages/profilpagesPrestataire/AnnoncesLike.vue"),
+        meta: { requiresRole: "Prestataire" }
+      },
+      {
+        path: "recuperations",
+        name: "objet-recuperation",
+        component: () => import("./pages/profilpagesPrestataire/ObjetRecuperation.vue"),
+        meta: { requiresRole: "Prestataire" }
+      },
+      {
+        path: "projets",
+        name: "mes-projet",
+        component: () => import("./pages/profilpagesPrestataire/Projets.vue"),
+        meta: { requiresRole: "Prestataire" }
+      },
+      {
+        path: "modifyProjet/:id",
+        name: "modify-projet",
+        component: () => import("./pages/profilpagesPrestataire/ModifyProjet.vue"),
+        meta: { requiresRole: "Prestataire" }
+      },
+      {
+        path: "createProjet",
+        name: "create-projet",
+        component: () => import("./pages/profilpagesPrestataire/CreateProjet.vue"),
+        meta: { requiresRole: "Prestataire" }
+      },
+      {
+        path: "abonnement",
+        name: "mon-abonnement",
+        component: () => import("./pages/profilpagesPrestataire/Abonnement.vue"),
+        meta: { requiresRole: "Prestataire" }
+      }
     ],
   },
 ];
@@ -119,10 +211,12 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  if (to.matched.some((record) => record.meta.requiresAuth)) {
-    const id = sessionStorage.getItem("userId");
-    const token = sessionStorage.getItem("userToken");
+  const token = sessionStorage.getItem("userToken");
+  const id = sessionStorage.getItem("userId");
+  const userRole = sessionStorage.getItem("userRole");
 
+  // 1. Vérification d'authentification globale
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!id || !token) {
       return next("/connexion");
     }
@@ -132,22 +226,33 @@ router.beforeEach(async (to, from, next) => {
         `http://localhost:8081/check-session?id=${id}`,
         {
           headers: { Authorization: token },
-        },
+        }
       );
       const data = await response.json();
 
-      if (data.isValid) {
-        next();
-      } else {
+      if (!data.isValid) {
         sessionStorage.clear();
-        next("/connexion");
+        return next("/connexion");
       }
     } catch (error) {
-      next("/");
+      return next("/");
     }
-  } else {
-    next();
   }
+
+  // 2. Vérification stricte des autorisations de rôle
+  const requiredRole = to.matched.find(record => record.meta.requiresRole)?.meta.requiresRole;
+  
+  if (requiredRole && userRole !== requiredRole) {
+    console.warn(`Accès refusé ! Rôle attendu : ${requiredRole}, Rôle actuel : ${userRole}`);
+    
+    if (userRole === "Prestataire" || userRole === "Salarie" || userRole === "Particulier") {
+      return next("/profil"); 
+    } else {
+      return next("/"); 
+    }
+  }
+
+  next();
 });
 
 export default router;

@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"upcycleconnect/api-go/models"
 )
 
 func GetFavoriStatus(idAnnonce int, idUtilisateur int) (int, bool, error) {
@@ -50,4 +51,29 @@ func ToggleFavori(idAnnonce int, idUtilisateur int) error {
 	}
 
 	return err
+}
+
+func GetFavorisByUserId(userID int) ([]models.Annonce, error) {
+	query := `
+		SELECT a.id, a.id_vendeur, a.titre, a.description, a.prix, a.type, a.ville, a.code_postal, a.date_creation
+		FROM ANNONCE a
+		INNER JOIN FAVORIS f ON a.id = f.id_annonce
+		WHERE f.id_utilisateur = ?
+		ORDER BY f.date_ajout DESC
+	`
+
+	rows, err := Conn.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var annonces []models.Annonce
+	for rows.Next() {
+		var a models.Annonce
+		if err := rows.Scan(&a.ID, &a.IdVendeur, &a.Titre, &a.Description, &a.Prix, &a.Type, &a.Ville, &a.CodePostal, &a.DateCreation); err == nil {
+			annonces = append(annonces, a)
+		}
+	}
+	return annonces, nil
 }

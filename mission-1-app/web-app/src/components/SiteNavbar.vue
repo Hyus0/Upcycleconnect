@@ -11,9 +11,10 @@
             <span class="site-navbar__avatar">{{ userInitials }}</span>
             <span class="site-navbar__account-text">
               <strong>{{ userName }}</strong>
-              <small>{{ userRole }} · Score {{ userScore }} pts</small>
+              <small>{{ activeUserRole }} · Score {{ userScore }} pts</small>
             </span>
           </button>
+          
           <div class="nav-menu__panel nav-menu__panel--account">
             <RouterLink to="/profil/informations" class="nav-menu__item">
               <span>Compte</span>
@@ -23,6 +24,16 @@
               <span>Activite</span>
               <small>Score, planning et resume</small>
             </RouterLink>
+            <RouterLink to="/profil/factures" class="nav-menu__item">
+              <span>Factures</span>
+              <small>Historique d'achats et reçus</small>
+            </RouterLink>
+            
+            <RouterLink v-if="activeUserRole === 'Prestataire'" to="/profil/abonnement" class="nav-menu__item">
+              <span>Abonnement</span>
+              <small>Gestion du forfait pro et alertes</small>
+            </RouterLink>
+
             <button class="nav-menu__item nav-menu__item--danger" type="button" @click="handleLogout">
               <span>Se deconnecter</span>
               <small>Fermer la session locale</small>
@@ -33,7 +44,7 @@
 
       <nav class="site-navbar__links" aria-label="Navigation principale">
         <div
-          v-for="group in navGroups"
+          v-for="group in dynamicNavGroups"
           :key="group.label"
           class="nav-menu"
           :class="{ 'is-active': isGroupActive(group) }"
@@ -73,7 +84,10 @@
       </nav>
 
       <div class="site-navbar__actions" v-if="isAuthenticated">
-        <RouterLink class="site-navbar__button site-navbar__button--primary" to="/profil/annonces">
+        <RouterLink class="site-navbar__button site-navbar__button--primary" to="/panier">
+        Panier
+        </RouterLink>
+        <RouterLink v-if="activeUserRole !== 'Prestataire'" class="site-navbar__button site-navbar__button--primary" to="/profil/annonces">
           + Deposer
         </RouterLink>
       </div>
@@ -86,17 +100,89 @@
           S'inscrire
         </RouterLink>
       </div>
+      <div class="nav-menu site-navbar__langue">
+        <button class="site-navbar__link site-navbar__link--button" type="button" aria-haspopup="true">
+            {{ currentLangCode.toUpperCase() }}
+            <span class="site-navbar__chevron">⌄</span>
+        </button>
+        
+        <div class="nav-menu__panel nav-menu__panel--lang">
+            <button 
+            v-for="langue in langues" 
+            :key="langue.id" 
+            class="nav-menu__item nav-menu__item--lang"
+            @click="changerLangue(langue)"
+            type="button"
+            >
+            <span>{{ langue.code.toUpperCase() }}</span>
+            </button>
+        </div>
+        </div>
     </div>
   </header>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import logoSrc from "./logo_texte.png";
 
 const route = useRoute();
 const router = useRouter();
+
+const API_URL = "http://localhost:8081";
+
+const langues = ref([]);
+const currentLangCode = ref(localStorage.getItem("langCode") || "fr");
+const t = ref({});
+
+const fetchLangues = async () => {
+  try {
+    const res = await fetch(`${API_URL}/langues`);
+    if (res.ok) langues.value = await res.json();
+  } catch (e) { console.error(e); }
+};
+
+const fetchTraductions = async (code) => {
+  try {
+    const res = await fetch(`${API_URL}/traductions/${code}`);
+    if (res.ok) t.value = await res.json();
+  } catch (e) { console.error(e); }
+};
+
+const changerLangue = async (langue) => {
+  if (!langue) return;
+  
+  if (document.activeElement) {
+    document.activeElement.blur();
+  }
+
+  currentLangCode.value = langue.code;
+  localStorage.setItem("langCode", langue.code);
+  localStorage.setItem("langId", langue.id);
+  await fetchTraductions(langue.code);
+
+  window.dispatchEvent(new Event("lang-changed"));
+
+  if (props.isAuthenticated) {
+    const userId = sessionStorage.getItem("userId");
+    if (userId) {
+      fetch(`${API_URL}/users/${userId}/langue`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${sessionStorage.getItem("userToken")}`
+        },
+        body: JSON.stringify({ id_langue: langue.id })
+      }).catch(e => console.error(e));
+    }
+  }
+};
+
+onMounted(() => {
+  fetchLangues();
+  fetchTraductions(currentLangCode.value);
+});
 
 const props = defineProps({
   variant: {
@@ -121,7 +207,11 @@ const props = defineProps({
   }
 });
 
-const dashboardChildren = [
+const activeUserRole = computed(() => {
+  return sessionStorage.getItem("userRole") || props.userRole;
+});
+
+const dashboardChildrenParticulier = [
   {
     label: "Vue d'ensemble",
     to: "/profil",
@@ -141,6 +231,34 @@ const dashboardChildren = [
     label: "Informations",
     to: "/profil/informations",
     description: "Profil, adresse et preferences"
+  }
+];
+
+const dashboardChildrenPrestataire = [
+  {
+    label: "Vue d'ensemble",
+    to: "/profil",
+    description: "Récupération objets en conteneurs"
+  },
+  {
+    label: "Récupérer des objets",
+    to: "/profil/recuperations",
+    description: "Objets et matériaux en attente de récupération"
+  },
+  {
+    label: "Mes annonces likées",
+    to: "/profil/favoris",
+    description: "Objets et matériaux sauvegardés"
+  },
+  {
+    label: "Mes projets",
+    to: "/profil/projets",
+    description: "Créations et vitrine d'upcycling"
+  },
+  {
+    label: "Informations",
+    to: "/profil/informations",
+    description: "Profil pro et informations"
   }
 ];
 
@@ -181,7 +299,7 @@ const communityChildren = [
   {
     label: "Projets Upcycling",
     to: "/projets",
-    description: "Rejoignez des initiatives de création collective"
+    description: "Rejoignez des initiatives de création"
   },
   {
     label: "Evenements",
@@ -190,20 +308,44 @@ const communityChildren = [
   }
 ];
 
-const navGroups = [
+const objetsChildren = [
   {
-    label: "Tableau de bord",
-    children: dashboardChildren
+    label: "Depot Objet",
+    to: "/deposer",
+    description: "Déposez vos objets"
   },
   {
-    label: "Services",
-    children: serviceChildren
+    label: "Récupérer Objet",
+    to: "/claim",
+    description: "Récupérez vos objets"
   },
-  {
-    label: "Communaute",
-    children: communityChildren
-  }
 ];
+
+const dynamicNavGroups = computed(() => {
+  const groups = [
+    {
+      label: "Tableau de bord",
+      children: activeUserRole.value === "Prestataire" ? dashboardChildrenPrestataire : dashboardChildrenParticulier
+    },
+    {
+      label: "Services",
+      children: serviceChildren
+    },
+    {
+      label: "Communaute",
+      children: communityChildren
+    }
+  ];
+
+  if (activeUserRole.value === "Salarie") {
+    groups.push({
+      label: "Réclamer ou Retirer un objet", 
+      children: objetsChildren
+    });
+  }
+
+  return groups;
+});
 
 const userInitials = computed(() =>
   props.userName
@@ -240,7 +382,42 @@ function isGroupActive(group) {
 function handleLogout() {
   sessionStorage.removeItem("userToken");
   sessionStorage.removeItem("userId");
-  sessionStorage.removeItem("userToken");
+  sessionStorage.removeItem("userRole"); 
   router.push("/connexion");
 }
 </script>
+
+<style>
+.site-navbar__right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.site-navbar__langue {
+  position: relative;
+  margin-left: 10px;
+}
+
+.nav-menu__panel--lang {
+  min-width: 60px; 
+  right: 0 !important; 
+  left: auto !important; 
+  transform: none !important; 
+  padding: 5px;
+}
+
+.nav-menu__panel--lang {
+  width: 60px !important;      
+  min-width: 0 !important;    
+  right: 0 !important;
+  left: auto !important;
+  transform: none !important;
+  padding: 5px;
+}
+
+.nav-menu__item--lang:hover {
+  background: #f0f7f3;
+  border-radius: 6px;
+}
+</style>

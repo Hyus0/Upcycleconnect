@@ -22,7 +22,8 @@ func GetAllEvenements() ([]models.Evenement, error) {
 			code_postal,
 			date_creation,
 			date_evenement,
-			type
+			type,
+			id_createur
 		FROM EVENEMENT
 	`
 
@@ -45,6 +46,7 @@ func GetAllEvenements() ([]models.Evenement, error) {
 			&e.DateCreation,
 			&e.DateEvenement,
 			&e.Type,
+			&e.Id_createur,
 		)
 		if err != nil {
 			return nil, err
@@ -74,7 +76,8 @@ func GetEvenement(id int) (*models.Evenement, error) {
 			code_postal,
 			date_creation,
 			date_evenement,
-			type
+			type,
+			id_createur
 		FROM EVENEMENT
 		WHERE id = ?
 	`
@@ -92,6 +95,7 @@ func GetEvenement(id int) (*models.Evenement, error) {
 		&e.DateCreation,
 		&e.DateEvenement,
 		&e.Type,
+		&e.Id_createur,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -116,8 +120,9 @@ func CreateEvenement(e models.Evenement) error {
 			ville,
 			code_postal,
 			date_evenement,
-			type
-		) VALUES (?, ?, ?, ?, ?, ?, ?)
+			type,
+			id_createur
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := Conn.Exec(
@@ -129,6 +134,7 @@ func CreateEvenement(e models.Evenement) error {
 		e.CodePostal,
 		e.DateEvenement,
 		e.Type,
+		e.Id_createur,
 	)
 	if err != nil {
 		return fmt.Errorf("CreateEvenement: %v", err)

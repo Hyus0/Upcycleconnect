@@ -76,7 +76,6 @@
             </div>
         </div>
 
-        <!-- MODAL DÉTAIL D'UNE ENTRÉE (Pop-up) -->
         <div
             v-if="selectedEntry"
             class="planning-modal"
@@ -221,7 +220,7 @@ const goToEntryRoute = (entry) => {
         });
     } else if (entry.kind === "event") {
         router.push({
-            name: "EvenementDetail",
+            name: "evenement-detail",
             params: { id: entry.originalId },
         });
     }

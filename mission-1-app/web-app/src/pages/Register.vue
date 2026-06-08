@@ -28,20 +28,24 @@
 
                 <div class="register-left__stats">
                     <div class="stat">
-                        <strong>2.4t</strong>
-                        <!-- On réutilise la traduction de la page connexion si tu l'as déjà, ou on met par défaut -->
+                        <strong>
+                          {{ stats.co2_evite_mois >= 1000 
+                             ? (stats.co2_evite_mois / 1000).toFixed(1) + 't' 
+                             : stats.co2_evite_mois.toFixed(0) + 'kg' 
+                          }}
+                        </strong>
                         <span>{{ t.StatCO2Month || 'CO₂ évité / mois' }}</span>
                     </div>
                     <div class="stat">
-                        <strong>8k+</strong>
+                        <strong>{{ stats.objets_upcycles >= 1000 ? Math.floor(stats.objets_upcycles/1000) + 'k+' : stats.objets_upcycles }}</strong>
                         <span>{{ t.StatUpcycled || 'Objets upcyclés' }}</span>
                     </div>
                     <div class="stat">
-                        <strong>340</strong>
+                        <strong>{{ stats.artisans_actifs }}</strong>
                         <span>{{ t.StatArtisans || 'Artisans actifs' }}</span>
                     </div>
                 </div>
-
+                
                 <div class="register-testimonial">
                     <p class="register-testimonial__text">
                         {{ t.TestimonialText || '"Grâce à UpcycleConnect, j\'ai trouvé les matériaux parfaits pour mes créations. La plateforme a transformé mon activité d\'artisan."' }}
@@ -119,7 +123,6 @@
                 </div>
 
                 <div class="register-field">
-                    <!-- On réutilise la clé EmailLabel si elle existe, sinon on met par défaut -->
                     <label>{{ t.EmailLabel || 'Adresse e-mail' }}</label>
                     <input
                         type="email"
@@ -148,14 +151,25 @@
                     </ul>
                 </div>
                 
-                <div class="register-field">
-                    <label>{{ t.ZipCode || 'Code postal' }}</label>
-                    <input
-                        type="text"
-                        placeholder="75011"
-                        v-model="codePostal"
-                        :class="{ 'input--error': isPostalCodeInvalid }"
-                    />
+                <div class="register-row">
+                    <div class="register-field">
+                        <label>{{ t.ZipCode || 'Code postal' }}</label>
+                        <input
+                            type="text"
+                            placeholder="75011"
+                            v-model="codePostal"
+                            :class="{ 'input--error': isPostalCodeInvalid }"
+                        />
+                    </div>
+
+                    <div class="register-field">
+                        <label>{{ t.BirthDate || 'Date de naissance' }}</label>
+                        <input
+                            type="date"
+                            v-model="dateNaissance"
+                            :class="{ 'input--error': isUnderage }"
+                        />
+                    </div>
                 </div>
 
                 <div class="register-cgu">
@@ -184,7 +198,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 
@@ -203,7 +217,18 @@ const nom = ref("");
 const email = ref("");
 const motDePasse = ref("");
 const codePostal = ref("");
+const dateNaissance = ref("");
 const cguAccepte = ref(false);
+
+const stats = ref({
+    co2_evite_mois: 0,
+    objets_upcycles: 0,
+    artisans_actifs: 0
+});
+
+const commentaires = ref([]);
+const currentComment = ref(null);
+let intervalId = null;
 
 const isEmailInvalid = computed(() => {
     return email.value.length > 0 && !email.value.includes("@");
@@ -217,20 +242,52 @@ const isPostalCodeInvalid = computed(() => {
     );
 });
 
+const isUnderage = computed(() => {
+    if (!dateNaissance.value) return false; 
+
+    const birthDate = new Date(dateNaissance.value);
+    const today = new Date();
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    return age < 18;
+});
+
+const fetchStats = async () => {
+    try {
+        const res = await fetch("http://localhost:8081/stats/platform");
+        if (res.ok) {
+            stats.value = await res.json();
+        }
+    } catch (e) {
+        console.error("Erreur stats:", e);
+    }
+};
+
 async function handleSubmit() {
     errorMessages.value = [];
     
     if (!prenom.value.trim() || !nom.value.trim() || !email.value.trim() || 
-        !motDePasse.value.trim() || !codePostal.value.trim()) {
-        errorMessages.value = ["Il manque des informations."];
+        !motDePasse.value.trim() || !codePostal.value.trim() || !dateNaissance.value) {
+        errorMessages.value = ["Il manque des informations (n'oubliez pas la date de naissance)."];
         return;
+    }
+
+    if (isUnderage.value) {
+      errorMessages.value = ["Vous devez avoir au moins 18 ans pour vous inscrire."];
+      return;
     }
     
     if (!cguAccepte.value) {
         errorMessages.value = ["Veuillez accepter les CGU pour continuer."];
         return;
     }
-
+    
     let dbRole = "Particulier";
     if (accountType.value === "pro") {
         dbRole = "Prestataire";
@@ -242,6 +299,7 @@ async function handleSubmit() {
         mail: email.value,
         password: motDePasse.value,
         code_postal: codePostal.value,
+        date_naissance: dateNaissance.value,
         role: dbRole, 
         id_langue: 1     
     };
@@ -275,6 +333,33 @@ async function handleSubmit() {
         }
     }
 }
+
+const pickRandomComment = () => {
+    if (commentaires.value.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * commentaires.value.length);
+    currentComment.value = commentaires.value[randomIndex];
+};
+
+const fetchCommentaires = async () => {
+    try {
+        const res = await fetch("http://localhost:8081/commentaires");
+        if (res.ok) {
+            commentaires.value = await res.json();
+            if (commentaires.value && commentaires.value.length > 0) {
+                pickRandomComment();
+                intervalId = setInterval(pickRandomComment, 25000);
+            }
+        }
+    } catch (error) {
+        console.error("Impossible de charger les commentaires", error);
+    }
+};
+
+onMounted(() => {
+  fetchCommentaires();
+  fetchStats();
+});
+
 </script>
 
 <style scoped>

@@ -24,5 +24,6 @@ type Annonce struct {
 	Ville                     string     `json:"ville"`
 	CodePostal                string     `json:"code_postal"`
 	Adresse                   string     `json:"adresse"`
-	DateAchat string `json:"date_achat"`
+	DateAchat 				  string `json:"date_achat"`
+	Image                     string  `json:"image"`
 }

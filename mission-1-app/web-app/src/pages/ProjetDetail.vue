@@ -97,9 +97,16 @@
                         </h2>
                         <div class="trainer-preview">
                             <div class="mini-avatar">
-                                {{ user_creator.prenom?.charAt(0)
-                                }}{{ user_creator.nom?.charAt(0) }}
-                            </div>
+                                <div class="mini-avatar">
+                                    <img 
+                                        v-if="user_creator.image_profil" 
+                                        :src="user_creator.image_profil" 
+                                        class="mini-avatar-img" 
+                                    />
+                                    <span v-else>
+                                        {{ user_creator.prenom?.charAt(0) }}{{ user_creator.nom?.charAt(0) }}
+                                    </span>
+                                </div>                       </div>
                             <div>
                                 <p class="trainer-name">
                                     {{ user_creator.prenom }}
@@ -490,6 +497,13 @@ onMounted(fetchDetail);
     font-weight: bold;
     font-size: 1rem;
     text-transform: uppercase;
+    overflow: hidden;
+}
+
+.mini-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .trainer-name {

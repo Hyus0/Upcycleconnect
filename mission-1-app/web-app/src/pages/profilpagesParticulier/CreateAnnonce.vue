@@ -33,6 +33,23 @@
           <textarea v-model="form.description" rows="6" placeholder="Décrivez l'état, les dimensions, les éventuels défauts..."></textarea>
         </div>
 
+        <div class="form-group">
+          <label>Photo de l'annonce</label>
+          <div class="upload-controls">
+            <div 
+                class="image-preview" 
+                :style="{ backgroundImage: 'url(' + (imagePreview || defaultImage) + ')' }"
+            ></div>
+            <label for="annonce-image" class="btn-import">Importer</label>
+            <input 
+                id="annonce-image" 
+                type="file" 
+                accept="image/png, image/jpeg, image/jpg" 
+                @change="handleImageUpload" 
+                hidden 
+            />
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>Catégorie</label>
@@ -121,7 +138,7 @@
         <div class="form-actions-card">
           <button type="button" class="btn-cancel" @click="$router.back()">Annuler</button>
           <button type="submit" class="btn-save" :disabled="loading">
-            {{ loading ? 'Publication...' : 'Publier l\'annonce ✓' }}
+            {{ loading ? 'Publication...' : 'Publier l\'annonce' }}
           </button>
         </div>
       </div>
@@ -132,6 +149,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+// Importe l'image par défaut (assure-toi que le chemin est correct)
+import imageParDefaut from "../../components/upcycling-concept.jpg"; 
 
 const router = useRouter();
 const loading = ref(false);
@@ -139,6 +158,11 @@ const categories = ref([]);
 
 const errors = ref([]);
 const successMsg = ref("");
+
+// Variables pour l'image
+const defaultImage = imageParDefaut;
+const imageFile = ref(null);
+const imagePreview = ref(null);
 
 const form = ref({
   id_vendeur: parseInt(sessionStorage.getItem("userId")) || 0,
@@ -153,7 +177,8 @@ const form = ref({
   ville: "",
   code_postal: "",
   adresse: "",
-  statut: "Disponible"
+  statut: "Disponible",
+  image: "" // Nouveau champ au cas où, mais c'est surtout Go qui va gérer ça
 });
 
 onMounted(async () => {
@@ -165,6 +190,15 @@ onMounted(async () => {
   }
 });
 
+// Gérer l'upload de l'image (prévisualisation)
+const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        imageFile.value = file;
+        imagePreview.value = URL.createObjectURL(file);
+    }
+};
+
 const validateFrontend = () => {
   errors.value = [];
   if (form.value.titre.length < 5) errors.value.push("Le titre doit faire au moins 5 caractères.");
@@ -174,6 +208,8 @@ const validateFrontend = () => {
 };
 
 const handleSubmit = async () => {
+    if (!validateFrontend()) return; // On ajoute la validation
+
     loading.value = true;
     errors.value = [];
     successMsg.value = "";
@@ -181,6 +217,7 @@ const handleSubmit = async () => {
     const token = sessionStorage.getItem("userToken");
 
     try {
+        // 1. On crée d'abord l'annonce (JSON)
         const response = await fetch("http://localhost:8081/annonces", {
             method: "POST",
             headers: {
@@ -191,6 +228,29 @@ const handleSubmit = async () => {
         });
 
         if (response.ok) {
+            const data = await response.json();
+            // Attention : Go renvoie souvent l'ID en majuscule (ID) ou minuscule (id), à vérifier selon ton code Go.
+            const annonceId = data.id || data.ID; 
+
+            // 2. Si on a sélectionné une image et qu'on a bien reçu l'ID de l'annonce, on l'envoie (FormData)
+            if (imageFile.value && annonceId) {
+                const formData = new FormData();
+                formData.append("image", imageFile.value); // "image" correspond au nom attendu par r.FormFile("image") en Go
+
+                const imgResponse = await fetch(`http://localhost:8081/annonces/${annonceId}/image`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": token
+                        // Ne pas mettre de Content-Type, fetch va générer un "multipart/form-data" automatiquement
+                    },
+                    body: formData
+                });
+                
+                if(!imgResponse.ok){
+                     console.error("L'annonce a été créée mais l'upload de l'image a échoué.");
+                }
+            }
+
             successMsg.value = "Annonce créée avec succès !";
             setTimeout(() => {
                 router.push("/profil/annonces");
@@ -361,6 +421,46 @@ textarea {
   right: 1rem;
   font-weight: bold;
   color: #888;
+}
+
+.upload-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 5px;
+}
+
+.image-preview {
+    width: 100%;
+    max-width: 200px;
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 12px;
+    border: 1px dashed #dcdfdc;
+    background-color: #f1f3f2;
+}
+
+.btn-import {
+    background: #f0f4f1;
+    color: #2d7a4f;
+    border: 1px solid #2d7a4f;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-import:hover {
+    background: #2d7a4f;
+    color: #ffffff;
+}
+
+.btn-import:active {
+    transform: scale(0.95);
 }
 
 .btn-save {

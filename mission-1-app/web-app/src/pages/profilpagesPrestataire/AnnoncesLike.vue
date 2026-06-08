@@ -30,9 +30,9 @@
         <article v-for="annonce in favoris" :key="annonce.id" class="annonce-card">
           <div class="annonce-card__image-wrapper" @click="goToAnnonce(annonce.id)">
             <img 
-              :src="annonce.imageUrl || defaultImage" 
-              alt="Image de l'annonce" 
-              class="annonce-card__image" 
+                :src="(annonce.image && annonce.image.trim() !== '') ? annonce.image : imageParDefaut" 
+                alt="Image de l'annonce" 
+                class="annonce-card__image" 
             />
             <div class="annonce-card__badges">
               <span :class="annonce.type === 'Vente' ? 'badge badge--orange' : 'badge badge--green'">
@@ -70,7 +70,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import defaultImage from "../../components/upcycling-concept.jpg";
+import imageParDefaut from "../../components/upcycling-concept.jpg";
 
 const router = useRouter();
 const API_URL = "http://localhost:8081";
@@ -249,14 +249,19 @@ onMounted(fetchFavoris);
 .annonce-card__image-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 4/3; 
   background-color: #f0f4f1;
+  overflow: hidden;
 }
 
 .annonce-card__image {
+  position: absolute; 
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; 
+  object-position: center; 
 }
 
 .annonce-card__badges {

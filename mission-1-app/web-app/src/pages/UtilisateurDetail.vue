@@ -29,16 +29,15 @@
             <section class="profile-header-card">
                 <div 
                     class="profile-banner" 
-                    :style="{ backgroundImage: `url(${basicBanner})`, backgroundSize: 'cover', backgroundPosition: 'center' }"
+                    :style="{ backgroundImage: `url(${user.banniere || basicBanner})`, backgroundSize: 'cover', backgroundPosition: 'center' }"
                 ></div>
                 <div class="profile-info-wrapper">
                     <div class="profile-top-row">
                         <img
-                            :src="user.photo_url || defaultAvatar"
+                            :src="user.image_profil || defaultAvatar"
                             alt="Avatar utilisateur"
                             class="profile-thumbnail"
                         />
-
                         <div class="action-buttons-wrapper">
                             <button
                                 v-if="currentUserId !== user.id"
@@ -46,7 +45,7 @@
                                 :class="{ 'is-following': isFollowing }"
                                 @click="toggleFollow"
                             >
-                                {{ isFollowing ? "✓ Suivi(e)" : "+ Suivre" }}
+                                {{ isFollowing ? "Suivi(e)" : "+ Suivre" }}
                             </button>
                         </div>
                     </div>
@@ -234,7 +233,7 @@
                         "
                         class="already-commented-msg"
                     >
-                        ✓ Vous avez déjà laissé une évaluation à ce membre.
+                        Vous avez déjà laissé une évaluation à ce membre.
                     </div>
 
                     <div v-if="avisList.length === 0" class="state-card-light">

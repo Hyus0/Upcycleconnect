@@ -1,5 +1,5 @@
 <template>
-    <div class="page-container">
+    <div class="info-view">
         <header class="content-header">
             <div class="header-left">
                 <p class="sidebar__category2">
@@ -32,6 +32,48 @@
 
         <div class="info-layout">
             <div class="info-main-col">
+                
+                <section class="info-section">
+                    <h2 class="section-title">Images du profil</h2>
+                    
+                    <div class="images-row">
+                        <div class="upload-group avatar-group">
+                            <label class="image-label">Photo de profil</label>
+                            <div class="upload-controls">
+                                <div class="avatar-container">
+                                    <img :src="profilePreview || defaultAvatar" alt="Avatar" class="avatar-preview" />
+                                </div>
+                                <label for="profile-upload" class="btn-import">Importer</label>
+                                <input 
+                                    id="profile-upload" 
+                                    type="file" 
+                                    accept="image/png, image/jpeg, image/jpg" 
+                                    @change="handleProfileUpload" 
+                                    hidden 
+                                />
+                            </div>
+                        </div>
+                
+                        <div class="upload-group banner-group">
+                            <label class="image-label">Bannière</label>
+                            <div class="upload-controls">
+                                <div 
+                                    class="image-preview banner-preview" 
+                                    :style="{ backgroundImage: 'url(' + (bannerPreview || defaultBanner) + ')' }"
+                                >
+                                </div>
+                                <label for="banner-upload" class="btn-import">Importer</label>
+                                <input 
+                                    id="banner-upload" 
+                                    type="file" 
+                                    accept="image/png, image/jpeg, image/jpg" 
+                                    @change="handleBannerUpload" 
+                                    hidden 
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
                 <section class="info-section">
                     <h2 class="section-title">Identité Personnelle</h2>
                     <div class="input-grid">
@@ -119,6 +161,8 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from 'vue-router';
+import basicAvatar from '../../components/basicAvatar.png';
+import basicBanner from '../../components/basicBanner.jpg';
 
 const router = useRouter();
 
@@ -139,6 +183,30 @@ const form = ref({
 const errors = ref([]);
 const successMsg = ref("");
 
+const profileFile = ref(null);
+const bannerFile = ref(null);
+const profilePreview = ref(null);
+const bannerPreview = ref(null);
+
+const defaultAvatar = basicAvatar; 
+const defaultBanner = basicBanner;
+
+const handleProfileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        profileFile.value = file;
+        profilePreview.value = URL.createObjectURL(file);
+    }
+};
+
+const handleBannerUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        bannerFile.value = file;
+        bannerPreview.value = URL.createObjectURL(file);
+    }
+};
+
 onMounted(async () => {
     const id = sessionStorage.getItem("userId");
     const token = sessionStorage.getItem("userToken");
@@ -157,11 +225,17 @@ onMounted(async () => {
         if (response.ok) {
             const data = await response.json();
             form.value = data;
-        } else {
-            console.error("Erreur lors de la récupération du profil");
+            
+            if (data.image_profil && data.image_profil.trim() !== "") {
+                profilePreview.value = data.image_profil;
+            }
+            
+            if (data.banniere && data.banniere.trim() !== "") {
+                bannerPreview.value = data.banniere;
+            }
         }
     } catch (error) {
-        console.error("Erreur réseau :", error);
+        errors.value = ["Erreur réseau lors de la récupération du profil."];
     }
 });
 
@@ -185,7 +259,7 @@ const updateProfile = async () => {
     if (!userId || !token) return;
 
     try {
-        const response = await fetch(`http://localhost:8081/users/${userId}`, {
+        const responseText = await fetch(`http://localhost:8081/users/${userId}`, {
             method: "PUT",
             headers: {
                 Authorization: token,
@@ -194,12 +268,33 @@ const updateProfile = async () => {
             body: JSON.stringify(form.value),
         });
 
-        if (response.ok) {
-            successMsg.value = "Profil mis à jour avec succès!";
-        } else {
-          const data = await response.json();
-          errors.value = Array.isArray(data) ? data : [data.message || "Une erreur est survenue"];
+        if (!responseText.ok) {
+            const data = await responseText.json();
+            errors.value = Array.isArray(data) ? data : [data.message || "Erreur mise à jour texte"];
+            return;
         }
+
+        if (profileFile.value || bannerFile.value) {
+            const formData = new FormData();
+            if (profileFile.value) formData.append("profil", profileFile.value);
+            if (bannerFile.value) formData.append("banniere", bannerFile.value);
+
+            const responseImg = await fetch(`http://localhost:8081/users/${userId}/images`, {
+                method: "POST",
+                headers: {
+                    Authorization: token,
+                },
+                body: formData,
+            });
+
+            if (!responseImg.ok) {
+                 errors.value.push("Le texte a été mis à jour, mais l'envoi des images a échoué.");
+                 return;
+            }
+        }
+
+        successMsg.value = "Profil mis à jour avec succès!";
+        
     } catch (error) {
         errors.value = ["Le serveur est injoignable pour le moment."];
     }
@@ -207,20 +302,8 @@ const updateProfile = async () => {
 </script>
 
 <style scoped>
-.page-container {
-    padding: 20px;
-}
-
-.content-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 2rem;
-}
-
-.header-left {
-    display: flex;
-    flex-direction: column;
+.info-view {
+    padding: 10px;
 }
 
 .info-layout {
@@ -244,6 +327,95 @@ const updateProfile = async () => {
     font-weight: 700;
     margin-bottom: 20px;
     color: #1a1f1c;
+}
+
+.images-row {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.upload-group {
+    margin-bottom: 0;
+}
+
+.upload-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.image-label {
+    display: block;
+    font-weight: 600;
+    color: #5a6660;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+}
+
+.btn-import {
+    background: #f0f4f1;
+    color: #2d7a4f;
+    border: 1px solid #2d7a4f;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-import:hover {
+    background: #2d7a4f;
+    color: #ffffff;
+}
+
+.btn-import:active {
+    transform: scale(0.95);
+}
+
+.avatar-group {
+    flex-shrink: 0;
+}
+
+.avatar-container {
+    width: 100px;
+    height: 100px;
+}
+
+.avatar-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.banner-group {
+    flex-grow: 1;
+    max-width: 100%;
+}
+
+.banner-preview {
+    width: 100%;
+    max-width: 400px;
+    height: 100px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 12px;
+    background-color: #f1f3f2;
+}
+
+.banner-group .upload-controls {
+     justify-content: flex-start;
+}
+
+.banner-group .banner-preview {
+    flex-grow: 1;
 }
 
 .input-grid {

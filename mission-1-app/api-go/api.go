@@ -89,7 +89,9 @@ func main() {
 	http.HandleFunc("PUT /users/{id}/password", app.ModifyUserPassword)
 	http.HandleFunc("GET /users/{id}/stats", app.GetUserStatsHandler)
 	http.HandleFunc("GET /user/planning/{id}", app.GetPlanningHandler)
-
+	http.HandleFunc("POST /users/{id}/images", app.UploadUserImages)
+	http.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./uploads"))))
+	
 	// Avis
 	http.HandleFunc("GET /users/{id}/avis", app.GetUserAvisHandler) 
 	http.HandleFunc("POST /users/{id}/avis", app.AddAvisHandler)
@@ -109,6 +111,7 @@ func main() {
 	http.HandleFunc("POST /annonces/{id}/favori/{userId}", app.ToggleFavoriHandler)
 	http.HandleFunc("GET /users/{id}/favoris", app.GetMesFavorisHandler)
 	http.HandleFunc("GET /users/{id}/achats", app.GetUserAchatsHandler)
+	http.HandleFunc("POST /annonces/{id}/image", app.UploadAnnonceImage)
 	
 	//Evenement
 	http.HandleFunc("GET /evenements", app.GetAllEvenements)
@@ -156,12 +159,16 @@ func main() {
 	http.HandleFunc("DELETE /projets/{id}", app.DeleteProjetHandler)
 	http.HandleFunc("POST /projets", app.CreateProjetHandler)
 	http.HandleFunc("PUT /projets/{id}", app.UpdateProjetHandler)
+	http.HandleFunc("POST /projets/upload-image", app.UploadProjetImageHandler)
 	
 	//tips
 	http.HandleFunc("GET /tips/role/{role}", app.GetTipByRoleHandler)
 	http.HandleFunc("GET /tips", app.GetAllTipsHandler)
 	http.HandleFunc("GET /tips/{id}", app.GetTipByIDHandler)
-
+	http.HandleFunc("POST /tips", app.CreateTipHandler)
+	http.HandleFunc("PUT /tips/{id}", app.UpdateTipHandler)
+	http.HandleFunc("DELETE /tips/{id}", app.DeleteTipHandler)
+	
 	//commentaires
 	http.HandleFunc("GET /commentaires", app.GetAllCommentairesHandler)
 
@@ -177,6 +184,8 @@ func main() {
 	http.HandleFunc("POST /users/{id}/checkout", app.CheckoutHandler)
 
 	//notification
+	http.HandleFunc("GET /notifications", app.GetAllNotificationsHandler)	
+	http.HandleFunc("GET /notifications/{id}", app.GetNotificationHandler)
 	http.HandleFunc("GET /users/{id}/notifications", app.GetNotificationsHandler)
 	http.HandleFunc("POST /notifications/{id}/read", app.MarquerNotificationLueHandler)
 

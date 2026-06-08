@@ -13,6 +13,20 @@ func CreateAvis(idAuteur int, idCible int, note int, commentaire string) error {
 	query := "INSERT INTO AVIS (id_auteur, id_cible, note, commentaire) VALUES (?, ?, ?, ?)"
 	_, err := Conn.Exec(query, idAuteur, idCible, note, commentaire)
 	
+	if err == nil {
+		var prenomAuteur string
+		errUser := Conn.QueryRow("SELECT prenom FROM UTILISATEUR WHERE id = ?", idAuteur).Scan(&prenomAuteur)
+		
+		if errUser != nil || prenomAuteur == "" {
+			prenomAuteur = "Un membre"
+		}
+
+		titreNotif := "Nouvel avis reçu ⭐"
+		messageNotif := fmt.Sprintf("%s vient de vous laisser un avis de %d étoile(s) !", prenomAuteur, note)
+
+		CreerNotification(idCible, idAuteur, "Avis", titreNotif, messageNotif)
+	}
+	
 	return err
 }
 

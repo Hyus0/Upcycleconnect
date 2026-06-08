@@ -114,7 +114,7 @@ func DeposerObjet(codeBarreDepot string, siteID int) (string, error) {
 		nomSite,
 	)
 	
-	err = CreerNotification(acheteurID, "Alerte", titreNotif, messageNotif)
+	err = CreerNotification(acheteurID, 0, "Casier", titreNotif, messageNotif)
 	if err != nil {
 		tx.Rollback()
 		return "", fmt.Errorf("erreur lors de la notification acheteur : %v", err)
@@ -163,9 +163,9 @@ func AcheterAnnonce(annonceID int, acheteurID int) error {
 	messageNotif := fmt.Sprintf("%s a acheté votre objet. Réservez un casier dès maintenant pour aller le déposer !", prenomAcheteur)
 
 	_, err = tx.Exec(`
-		INSERT INTO NOTIFICATION (id_utilisateur, type, titre, message) 
-		VALUES (?, 'Alerte', ?, ?)`, 
-		vendeurID, titreNotif, messageNotif)
+		INSERT INTO NOTIFICATION (id_utilisateur, id_emetteur, type, titre, message) 
+		VALUES (?, ?, 'Rappel', ?, ?)`, 
+		vendeurID, acheteurID, titreNotif, messageNotif)
 	
 	if err != nil {
 		tx.Rollback()
@@ -180,12 +180,10 @@ func RecupererObjet(codeBarreRetrait string, siteID int) error {
 	var poids float64
 	
 	var idVendeur int
-	// Utilisation de sql.NullInt64 au cas où id_acheteur est NULL en base de données
 	var idAcheteur sql.NullInt64 
 	var titreAnnonce string
-	var dbSiteID int // Pour vérifier le site
+	var dbSiteID int 
 
-	// 1. On enlève "AND a.id_site = ?" pour faire la vérification en Go et avoir une erreur précise
 	err := Conn.QueryRow(`
 		SELECT a.id, a.poids_estime_kg, a.id_casier, c.id_conteneur, a.id_vendeur, a.id_acheteur, a.titre, a.id_site
 		FROM ANNONCE a 
@@ -200,7 +198,6 @@ func RecupererObjet(codeBarreRetrait string, siteID int) error {
 		return fmt.Errorf("erreur base de données : %v", err)
 	}
 
-	// 2. Vérification intelligente du site
 	if dbSiteID != siteID {
 		return fmt.Errorf("vous êtes à la mauvaise borne ! Cet objet vous attend au site n°%d", dbSiteID)
 	}
@@ -223,12 +220,10 @@ func RecupererObjet(codeBarreRetrait string, siteID int) error {
 		WHERE id = ?`, annonceID)
 	if err != nil { tx.Rollback(); return err }
 
-	// Calcul des points
 	co2Evite := poids * 1.5            
 	ressourcesEco := poids * 0.8       
 	pointsGagnes := 25 + int(poids*5)
 	
-	// Mise à jour Score Vendeur
 	_, err = tx.Exec(`
 		UPDATE UPCYCLING_SCORE 
 		SET ressources_economisees = ressources_economisees + ?,
@@ -243,7 +238,6 @@ func RecupererObjet(codeBarreRetrait string, siteID int) error {
 		return fmt.Errorf("erreur lors de la mise à jour du score vendeur: %v", err) 
 	}
 
-	// Mise à jour Score Acheteur (Seulement s'il y a bien un acheteur valide)
 	if idAcheteur.Valid && idAcheteur.Int64 > 0 {
 		_, err = tx.Exec(`
 			UPDATE UPCYCLING_SCORE 
@@ -260,13 +254,12 @@ func RecupererObjet(codeBarreRetrait string, siteID int) error {
 		}
 	}
 
-	// Notification Vendeur
 	titreNotifVendeur := fmt.Sprintf("Votre '%s' a été récupéré!", titreAnnonce)
 	messageNotifVendeur := "L'acheteur a récupéré votre objet au point de collecte. Votre Upcycling Score a été mis à jour, merci pour votre geste éco-responsable!"
 
 	_, err = tx.Exec(`
-		INSERT INTO NOTIFICATION (id_utilisateur, type, titre, message) 
-		VALUES (?, 'Message', ?, ?)`, 
+		INSERT INTO NOTIFICATION (id_utilisateur, id_emetteur, type, titre, message) 
+		VALUES (?, 0, 'Alerte', ?, ?)`, 
 		idVendeur, titreNotifVendeur, messageNotifVendeur)
 	
 	if err != nil {
@@ -274,14 +267,13 @@ func RecupererObjet(codeBarreRetrait string, siteID int) error {
 		return fmt.Errorf("erreur lors de la création de la notification vendeur : %v", err)
 	}
 
-	// Notification Acheteur
 	if idAcheteur.Valid && idAcheteur.Int64 > 0 {
 		titreNotifAcheteur := fmt.Sprintf("Vous avez récupéré '%s' !", titreAnnonce)
 		messageNotifAcheteur := "Félicitations pour cette acquisition ! Vous avez évité l'achat de neuf et gagné des points pour votre Upcycling Score."
 
 		_, err = tx.Exec(`
-			INSERT INTO NOTIFICATION (id_utilisateur, type, titre, message) 
-			VALUES (?, 'Message', ?, ?)`, 
+			INSERT INTO NOTIFICATION (id_utilisateur, id_emetteur, type, titre, message) 
+			VALUES (?, 0, 'Alerte', ?, ?)`, 
 			idAcheteur.Int64, titreNotifAcheteur, messageNotifAcheteur)
 		
 		if err != nil {

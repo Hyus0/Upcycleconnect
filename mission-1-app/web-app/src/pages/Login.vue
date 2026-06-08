@@ -27,15 +27,20 @@
 
                 <div class="login-left__stats">
                     <div class="stat">
-                        <strong>2.4t</strong>
+                        <strong>
+                          {{ stats.co2_evite_mois >= 1000 
+                             ? (stats.co2_evite_mois / 1000).toFixed(1) + 't' 
+                             : stats.co2_evite_mois.toFixed(0) + 'kg' 
+                          }}
+                        </strong>
                         <span>{{ t.StatCO2Month || 'CO₂ évité / mois' }}</span>
                     </div>
                     <div class="stat">
-                        <strong>8k+</strong>
+                        <strong>{{ stats.objets_upcycles >= 1000 ? Math.floor(stats.objets_upcycles/1000) + 'k+' : stats.objets_upcycles }}</strong>
                         <span>{{ t.StatUpcycled || 'Objets upcyclés' }}</span>
                     </div>
                     <div class="stat">
-                        <strong>340</strong>
+                        <strong>{{ stats.artisans_actifs }}</strong>
                         <span>{{ t.StatArtisans || 'Artisans actifs' }}</span>
                     </div>
                 </div>
@@ -183,7 +188,24 @@ const motDePasse = ref("");
 const rememberMe = ref(false);
 const errorMessages = ref([]);
 
+const stats = ref({
+    co2_evite_mois: 0,
+    objets_upcycles: 0,
+    artisans_actifs: 0
+});
+
 const isLoggedIn = ref(!!sessionStorage.getItem("userToken"));
+
+const fetchStats = async () => {
+    try {
+        const res = await fetch("http://localhost:8081/stats/platform");
+        if (res.ok) {
+            stats.value = await res.json();
+        }
+    } catch (e) {
+        console.error("Erreur stats:", e);
+    }
+};
 
 const getUserRole = () => {
     const role = sessionStorage.getItem("userRole");
@@ -212,7 +234,7 @@ const fetchCommentaires = async () => {
             commentaires.value = await res.json();
             if (commentaires.value && commentaires.value.length > 0) {
                 pickRandomComment();
-                intervalId = setInterval(pickRandomComment, 3000);
+                intervalId = setInterval(pickRandomComment, 25000);
             }
         }
     } catch (error) {
@@ -221,7 +243,8 @@ const fetchCommentaires = async () => {
 };
 
 onMounted(() => {
-    fetchCommentaires();
+  fetchCommentaires();
+  fetchStats();
 });
 
 onUnmounted(() => {

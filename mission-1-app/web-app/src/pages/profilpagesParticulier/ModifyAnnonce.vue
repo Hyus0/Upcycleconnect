@@ -3,6 +3,8 @@
         <div class="header-left">
             <p class="sidebar__category2">ACCUEIL > MES ANNONCES > ÉDITION</p>
             <h1 class="hero-title1">MODIFIER L'OBJET</h1>
+            <p class="classic-text">Modifiez les détails de votre annonce  .</p>
+
         </div>
         <div class="header-actions">
             <button class="btn-secondary" @click="$router.back()">
@@ -19,6 +21,9 @@
         </div>
     </header>
 
+    <div v-if="successMsg" class="success-box-header">
+        {{ successMsg }}
+    </div>
     <div v-if="loading" class="loading-state">Récupération des données...</div>
 
     <form
@@ -60,6 +65,23 @@
                     ></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label class="info-label">Photo de l'annonce</label>
+                    <div class="upload-controls">
+                        <div 
+                            class="image-preview" 
+                            :style="{ backgroundImage: 'url(' + (imagePreview || (annonce.image && annonce.image.trim() !== '' ? annonce.image : defaultImage)) + ')' }"
+                        ></div>
+                        <label for="annonce-image-edit" class="btn-import">Changer l'image</label>
+                        <input 
+                            id="annonce-image-edit" 
+                            type="file" 
+                            accept="image/png, image/jpeg, image/jpg" 
+                            @change="handleImageUpload" 
+                            hidden 
+                        />
+                    </div>
+                </div>
                 <div class="specs-grid-edit">
                     <div class="form-group">
                         <label class="info-label">Catégorie</label>
@@ -165,6 +187,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import imageParDefaut from "../../components/upcycling-concept.jpg"; 
 
 const route = useRoute();
 const router = useRouter();
@@ -172,6 +195,11 @@ const loading = ref(true);
 const submitting = ref(false);
 const categories = ref([]);
 const annonce = ref({});
+
+const defaultImage = imageParDefaut;
+const imageFile = ref(null);
+const imagePreview = ref(null);
+const successMsg = ref("");
 
 const fetchCategories = async () => {
     try {
@@ -201,26 +229,61 @@ onMounted(async () => {
     await Promise.all([fetchCategories(), fetchAnnonce()]);
 });
 
+const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        imageFile.value = file;
+        imagePreview.value = URL.createObjectURL(file);
+    }
+};
+
 const handleUpdate = async () => {
     submitting.value = true;
+    successMsg.value = ""; 
     const token = sessionStorage.getItem("userToken");
+    
     try {
-        const res = await fetch(
-            `http://localhost:8081/annonces/${annonce.value.id}`,
-            {
-                method: "PUT",
+        const res = await fetch(`http://localhost:8081/annonces/${annonce.value.id}`, {
+            method: "PUT",
+            headers: {
+                Authorization: token,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(annonce.value),
+        });
+        
+        if (!res.ok) {
+             alert("Erreur lors de la mise à jour des données texte.");
+             submitting.value = false;
+             return;
+        }
+
+        if (imageFile.value) {
+            const formData = new FormData();
+            formData.append("image", imageFile.value);
+
+            const imgRes = await fetch(`http://localhost:8081/annonces/${annonce.value.id}/image`, {
+                method: "POST",
                 headers: {
                     Authorization: token,
-                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify(annonce.value),
-            },
-        );
-        if (res.ok)
-            router.push({
-                name: "see-annonce",
-                params: { id: annonce.value.id },
+                body: formData,
             });
+            
+            if (!imgRes.ok) {
+                console.error("Erreur lors de la mise à jour de l'image.");
+            }
+        }
+
+        successMsg.value = "Modification validée avec succès !";
+
+        setTimeout(() => {
+            router.push(`/annonce/${annonce.value.id}`);
+        }, 1500);
+
+    } catch (e) {
+        console.error("Erreur Javascript ou réseau :", e);
+        alert("Une erreur est survenue.");
     } finally {
         submitting.value = false;
     }
@@ -346,5 +409,58 @@ h3 {
     text-transform: uppercase;
     color: #999;
     margin-bottom: 1.2rem;
+}
+
+.upload-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.image-preview {
+    width: 100%;
+    max-width: 200px;
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 12px;
+    border: 1px dashed #dcdfdc;
+    background-color: #f1f3f2;
+}
+
+.btn-import {
+    background: #f0f4f1;
+    color: #2d7a4f;
+    border: 1px solid #2d7a4f;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-import:hover {
+    background: #2d7a4f;
+    color: #ffffff;
+}
+
+.btn-import:active {
+    transform: scale(0.95);
+}
+
+.success-box-header {
+    background-color: #f0fdf4;
+    border: 1px solid #22c55e;
+    color: #166534;
+    padding: 10px 25px; 
+    border-radius: 8px;
+    margin-top: 15px; 
+    margin-bottom: 10px; 
+    font-weight: 600;
+    font-size: 0.95rem;
+    width: fit-content; 
+    box-shadow: 0 4px 6px rgba(34, 197, 94, 0.1);
 }
 </style>

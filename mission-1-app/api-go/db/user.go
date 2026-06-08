@@ -33,15 +33,22 @@ func GetAllUsers() ([]models.GetUser, error) {
 
 func GetUser(userId int) (*models.GetUser, error) {
 	var u models.GetUser
+	
 	query := `SELECT id, prenom, nom, mail, adresse, ville, code_postal,
+		          COALESCE(image_profil, ''), COALESCE(banniere, ''),
 		          COALESCE(date_naissance, ''),
 		          COALESCE(date_inscription, ''),
-					COALESCE(date_update_password, ''),
+		          COALESCE(date_update_password, ''),
 		          role, id_langue
 		          FROM UTILISATEUR WHERE id = ?`
+	
 	row := Conn.QueryRow(query, userId)
 
-	err := row.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal, &u.DateNaissance, &u.DateInscription, &u.DateUpdatePassword, &u.Role, &u.IdLangue)
+	err := row.Scan(
+		&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal,
+		&u.ImageProfil, &u.Banniere, 
+		&u.DateNaissance, &u.DateInscription, &u.DateUpdatePassword, &u.Role, &u.IdLangue,
+	)
 
 	if err == sql.ErrNoRows {
 		return nil, nil

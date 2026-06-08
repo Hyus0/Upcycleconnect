@@ -12,7 +12,7 @@
                 </p>
             </div>
             <button class="btn-main-action" @click="$router.push('/catalogue')">
-                🛒 Voir le catalogue
+                Voir le catalogue
             </button>
         </header>
 

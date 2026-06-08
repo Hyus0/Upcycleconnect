@@ -42,6 +42,11 @@ const routes = [
     component: () => import('./pages/FormationDetail.vue')
   },
   {
+    path: '/evenements/:id',
+    name: 'evenement-detail',
+    component: () => import('./pages/EvenementDetail.vue')
+  },
+  {
     path: '/projets/:id',
     name: 'projet-detail',
     component: () => import('./pages/ProjetDetail.vue')
@@ -99,6 +104,16 @@ const routes = [
         }
       },
       {
+        path: "notifications",
+        name: "mes-notifications",
+        component: () => {
+          const role = sessionStorage.getItem("userRole");
+          if (role === "Prestataire") return import('./pages/profilpagesPrestataire/Notification.vue');
+          if (role === "Salarie") return import('./pages/profilpagesSalarie/Notification.vue');
+          return import('./pages/profilpagesParticulier/Notification.vue');
+        }
+      },
+      {
         path: "factures",
         name: "mes-factures",
         component: () => {
@@ -108,7 +123,7 @@ const routes = [
         }
       },
       {
-        path: "forums",
+        path: "/profil/forum",
         name: "mes-forums",
         component: () => {
           const role = sessionStorage.getItem("userRole");
@@ -158,7 +173,6 @@ const routes = [
         meta: { requiresRole: "Particulier" }
       },
 
-      // --- SPÉCIFIQUES AUX PRESTATAIRES ---
       {
         path: "favoris",
         name: "annonce-like",
@@ -194,7 +208,61 @@ const routes = [
         name: "mon-abonnement",
         component: () => import("./pages/profilpagesPrestataire/Abonnement.vue"),
         meta: { requiresRole: "Prestataire" }
-      }
+      },
+      {
+        path: "tips",
+        name: "mes-tips",
+        component: () => import("./pages/profilpagesSalarie/Tips.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
+      {
+        path: "evenements",
+        name: "mes-evenements",
+        component: () => import("./pages/profilpagesSalarie/Evenement.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
+      {
+        path: "formations",
+        name: "mes-formations",
+        component: () => import("./pages/profilpagesSalarie/Formation.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
+      {
+        path: "createTips",
+        name: "create-tips",
+        component: () => import("./pages/profilpagesSalarie/CreateTips.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
+      {
+        path: "createEvenement",
+        name: "create-evenement",
+        component: () => import("./pages/profilpagesSalarie/CreateEvenement.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
+      {
+        path: "createFormation",
+        name: "create-formation",
+        component: () => import("./pages/profilpagesSalarie/CreateFormation.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
+      {
+        path: "modifyTips/:id",
+        name: "modify-tips",
+        component: () => import("./pages/profilpagesSalarie/ModifyTip.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
+      {
+        path: "modifyEvenement/:id",
+        name: "modify-evenement",
+        component: () => import("./pages/profilpagesSalarie/ModifyEvenement.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
+      {
+        path: "modifyFormation/:id",
+        name: "modify-formation",
+        component: () => import("./pages/profilpagesSalarie/ModifyFormation.vue"),
+        meta: { requiresRole: "Salarie" }
+      },
     ],
   },
 ];
@@ -215,7 +283,6 @@ router.beforeEach(async (to, from, next) => {
   const id = sessionStorage.getItem("userId");
   const userRole = sessionStorage.getItem("userRole");
 
-  // 1. Vérification d'authentification globale
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!id || !token) {
       return next("/connexion");

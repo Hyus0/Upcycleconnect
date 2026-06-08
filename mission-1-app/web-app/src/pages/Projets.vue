@@ -47,7 +47,8 @@
                 >
                     <div class="card-image">
                         <img 
-                            src='../components/upcycling-concept.jpg' alt='Image de recyclage'
+                            :src="resolveImageUrl(projet.image_url || projet.ImageUrl)" 
+                            :alt="projet.titre"
                         >
                         <div class="impact-overlay">
                             🍃 {{ projet.co2_evite_kg }}kg CO2
@@ -93,6 +94,7 @@ import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 
+const API_URL = "http://localhost:8081"; // 👈 AJOUT DE L'API URL
 const projets = ref([]);
 const loading = ref(true);
 const searchQuery = ref(""); 
@@ -116,6 +118,31 @@ const filteredProjets = computed(() => {
     });
 });
 
+// 👇 NOUVELLE FONCTION: Sécurise l'affichage de l'image 👇
+const resolveImageUrl = (url) => {
+    // Si pas d'image, on affiche ton image de base
+    if (!url) return new URL('../components/upcycling-concept.jpg', import.meta.url).href;
+    
+    if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) {
+        return url;
+    }
+    
+    if (url.startsWith("uploads/")) {
+        return `${API_URL}/img/${url.replace('uploads/', '')}`;
+    }
+    
+    if (!url.includes("/")) {
+        return `${API_URL}/img/projets/${url}`;
+    }
+    
+    if (url.startsWith("/")) {
+        return `${API_URL}${url}`;
+    }
+    
+    return `${API_URL}/${url}`;
+};
+// 👆 ------------------------------------------------ 👆
+
 const formatDate = (dateStr) => {
     if (!dateStr) return "Récemment";
     const date = new Date(dateStr);
@@ -125,8 +152,10 @@ const formatDate = (dateStr) => {
 const fetchProjets = async () => {
     loading.value = true;
     try {
-        const res = await fetch(`http://localhost:8081/projets`);
-        if (res.ok) projets.value = await res.json();
+        const res = await fetch(`${API_URL}/projets`);
+        if (res.ok) {
+            projets.value = await res.json();
+        }
     } catch (error) {
         console.error("Erreur:", error);
     } finally {
@@ -164,6 +193,7 @@ onMounted(fetchProjets);
     width: 100%;
     position: relative;
     overflow: hidden;
+    background-color: #e9ecef;
 }
 
 .card-image img {

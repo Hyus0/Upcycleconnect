@@ -55,7 +55,7 @@ func ToggleFavori(idAnnonce int, idUtilisateur int) error {
 
 func GetFavorisByUserId(userID int) ([]models.Annonce, error) {
 	query := `
-		SELECT a.id, a.id_vendeur, a.titre, a.description, a.prix, a.type, a.ville, a.code_postal, a.date_creation
+		SELECT a.id, a.id_vendeur, a.titre, a.description, a.prix, a.type, a.ville, a.code_postal, a.date_creation, COALESCE(a.image, '')
 		FROM ANNONCE a
 		INNER JOIN FAVORIS f ON a.id = f.id_annonce
 		WHERE f.id_utilisateur = ?
@@ -71,7 +71,7 @@ func GetFavorisByUserId(userID int) ([]models.Annonce, error) {
 	var annonces []models.Annonce
 	for rows.Next() {
 		var a models.Annonce
-		if err := rows.Scan(&a.ID, &a.IdVendeur, &a.Titre, &a.Description, &a.Prix, &a.Type, &a.Ville, &a.CodePostal, &a.DateCreation); err == nil {
+		if err := rows.Scan(&a.ID, &a.IdVendeur, &a.Titre, &a.Description, &a.Prix, &a.Type, &a.Ville, &a.CodePostal, &a.DateCreation, &a.Image); err == nil {
 			annonces = append(annonces, a)
 		}
 	}

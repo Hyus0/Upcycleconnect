@@ -20,9 +20,9 @@
               <span>Compte</span>
               <small>Informations personnelles</small>
             </RouterLink>
-            <RouterLink to="/profil" class="nav-menu__item">
-              <span>Activite</span>
-              <small>Score, planning et resume</small>
+            <RouterLink to="/profil/notifications" class="nav-menu__item">
+              <span>Notifications</span>
+              <small>Alertes casiers, messages et rappels</small>
             </RouterLink>
             <RouterLink to="/profil/factures" class="nav-menu__item">
               <span>Factures</span>
@@ -227,11 +227,6 @@ const dashboardChildrenParticulier = [
     to: "/profil/depots",
     description: "Suivi des depots et collectes"
   },
-  {
-    label: "Informations",
-    to: "/profil/informations",
-    description: "Profil, adresse et preferences"
-  }
 ];
 
 const dashboardChildrenPrestataire = [
@@ -255,13 +250,35 @@ const dashboardChildrenPrestataire = [
     to: "/profil/projets",
     description: "Créations et vitrine d'upcycling"
   },
-  {
-    label: "Informations",
-    to: "/profil/informations",
-    description: "Profil pro et informations"
-  }
 ];
 
+const dashboardChildrenSalarie = [
+  {
+    label: "Vue d'ensemble",
+    to: "/profil",
+    description: "Score, planning et activite"
+  },
+  {
+      label: "Mes Tips",
+      to: "/profil/tips",
+      description: "Gérez vos astuces partagées et tutoriels d'upcycling"
+    },
+    {
+      label: "Mes Formations",
+      to: "/profil/formations",
+      description: "Consultez vos cours suivis et parcours d'apprentissage"
+    },
+    {
+      label: "Mes Evenements",
+      to: "/profil/evenements",
+      description: "Retrouvez vos inscriptions et vos ateliers à venir"
+    },
+    {
+      label: "Modération des forums",
+      to: "/profil/forum",
+      description: "Gérez les signalements et veillez aux règles de la communauté"
+    }
+];
 const serviceChildren = [
   {
     label: "Upcycling Score",
@@ -322,10 +339,18 @@ const objetsChildren = [
 ];
 
 const dynamicNavGroups = computed(() => {
+  let dashboardChildren = dashboardChildrenParticulier;
+
+  if (activeUserRole.value === "Prestataire") {
+    dashboardChildren = dashboardChildrenPrestataire;
+  } else if (activeUserRole.value === "Salarie") {
+    dashboardChildren = dashboardChildrenSalarie;
+  }
+
   const groups = [
     {
       label: "Tableau de bord",
-      children: activeUserRole.value === "Prestataire" ? dashboardChildrenPrestataire : dashboardChildrenParticulier
+      children: dashboardChildren
     },
     {
       label: "Services",

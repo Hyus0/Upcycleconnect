@@ -199,7 +199,7 @@
                         </button>
                         <button
                             class="btn btn--outline"
-                            @click="$router.push('/annonces')"
+                            @click="$router.push('/catalogue')"
                         >
                             {{ t.ViewAds || 'Voir les annonces' }}
                         </button>
@@ -264,8 +264,28 @@ const fetchPlatformStats = async () => {
     }
 };
 
+const plateform_user = ref(0);
+
+const fetchUserCount = async () => {
+    try {
+        const res = await fetch(`${API_URL}/users`, {
+            headers: { 
+                "Authorization": sessionStorage.getItem("userToken") 
+            }
+        });
+        
+        if (res.ok) {
+            const users = await res.json();
+            plateform_user.value = users.length; 
+        }
+    } catch (e) {
+        console.error("Erreur lors de la récupération des utilisateurs:", e);
+    }
+};
+
 onMounted(() => {
     fetchPlatformStats();
+    fetchUserCount();
 });
 </script>
 

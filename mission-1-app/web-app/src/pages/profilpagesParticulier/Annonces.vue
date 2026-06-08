@@ -37,7 +37,7 @@
 
                     <td>
                         <span :class="annonce.est_valide === 'Valide' ? 'status-valid' : 'status-pending'">
-                            {{ annonce.est_valide === 'Valide' ? '✓ APPROUVÉ' : '⌛ EN ANALYSE' }}
+                            {{ annonce.est_valide === 'Valide' ? 'APPROUVÉ' : '⌛ EN ANALYSE' }}
                         </span>
                     </td>
 

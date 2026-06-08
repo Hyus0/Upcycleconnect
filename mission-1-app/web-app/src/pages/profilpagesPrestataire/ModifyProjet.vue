@@ -8,11 +8,7 @@
                     Mettez à jour les informations et les étapes de votre tutoriel.
                 </p>
 
-                <div
-                    v-if="errors.length > 0"
-                    class="error-box"
-                    style="margin-top: 1rem; margin-bottom: 0"
-                >
+                <div v-if="errors.length > 0" class="error-box" style="margin-top: 1rem; margin-bottom: 0">
                     <ul style="margin: 0; padding-left: 20px">
                         <li v-for="(err, index) in errors" :key="index">
                             {{ err }}
@@ -20,11 +16,7 @@
                     </ul>
                 </div>
 
-                <div
-                    v-if="successMsg"
-                    class="success-box"
-                    style="margin-top: 1rem; margin-bottom: 0"
-                >
+                <div v-if="successMsg" class="success-box" style="margin-top: 1rem; margin-bottom: 0">
                     {{ successMsg }}
                 </div>
             </div>
@@ -37,6 +29,15 @@
         </div>
 
         <form v-else @submit.prevent="handleSubmit" class="create-annonce-form">
+            
+            <input 
+                type="file" 
+                ref="fileInput" 
+                @change="handleFileUpload" 
+                accept="image/*" 
+                style="display: none;" 
+            />
+
             <div class="split-layout">
                 <div class="form-card main-info-card">
                     <h2 class="card-title">1. Le Projet</h2>
@@ -70,28 +71,22 @@
 
                     <div class="form-group">
                         <label>Image de couverture</label>
-                        <div class="image-input-row">
-                            <input
-                                v-model="form.image_url"
-                                type="text"
-                                required
-                                placeholder="URL de l'image"
-                                style="flex: 1"
-                            />
+                        <div class="image-upload-wrapper">
                             <button
                                 type="button"
                                 class="btn-import"
-                                @click="simulerImport('couverture')"
+                                @click="triggerUpload('couverture')"
                             >
-                                Importer
+                                📷 Modifier l'image
                             </button>
+                            <img
+                                v-if="form.image_url"
+                                :src="resolveImageUrl(form.image_url)" 
+                                class="img-preview"
+                                alt="Couverture"
+                            />
+                            <span v-else class="no-image-text">Aucune image</span>
                         </div>
-                        <img
-                            v-if="form.image_url"
-                            :src="form.image_url"
-                            class="img-preview"
-                            alt="Couverture"
-                        />
                     </div>
 
                     <div class="form-divider">Écologie & Visibilité</div>
@@ -200,28 +195,22 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label>Image de l'étape</label>
-                                    <div class="image-input-row">
-                                        <input
-                                            v-model="etape.image_url"
-                                            type="text"
-                                            placeholder="URL Image (optionnelle)"
-                                            style="flex: 1"
-                                        />
+                                    <label>Image de l'étape (optionnelle)</label>
+                                    <div class="image-upload-wrapper">
                                         <button
                                             type="button"
                                             class="btn-import"
-                                            @click="simulerImport('etape', index)"
+                                            @click="triggerUpload('etape', index)"
                                         >
-                                            Importer
+                                            📷 {{ etape.image_url ? "Modifier l'image" : "Ajouter une image" }}
                                         </button>
+                                        <img
+                                            v-if="etape.image_url"
+                                            :src="resolveImageUrl(etape.image_url)" 
+                                            class="img-preview"
+                                            alt="Étape"
+                                        />
                                     </div>
-                                    <img
-                                        v-if="etape.image_url"
-                                        :src="etape.image_url"
-                                        class="img-preview"
-                                        alt="Étape"
-                                    />
                                 </div>
                             </div>
                         </div>
@@ -239,7 +228,7 @@
                             {{
                                 loading
                                     ? "Enregistrement..."
-                                    : "Enregistrer les modifications ✓"
+                                    : "Enregistrer les modifications"
                             }}
                         </button>
                     </div>
@@ -308,23 +297,75 @@ onMounted(async () => {
     }
 });
 
+const fileInput = ref(null);
+const uploadContext = ref({ type: "", index: null });
+
+const triggerUpload = (type, index = null) => {
+    uploadContext.value = { type, index };
+    fileInput.value.click();
+};
+
+const resolveImageUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) {
+        return url;
+    }
+    if (url.startsWith("/")) {
+        return `${API_URL}${url}`;
+    }
+    return `${API_URL}/${url}`;
+};
+
+const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const { type, index } = uploadContext.value;
+
+    const localPreviewUrl = URL.createObjectURL(file);
+    if (type === "couverture") {
+        form.value.image_url = localPreviewUrl;
+    } else if (type === "etape" && index !== null) {
+        form.value.etapes[index].image_url = localPreviewUrl;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+        const token = sessionStorage.getItem("userToken");
+
+        const res = await fetch(`${API_URL}/projets/upload-image`, {
+            method: "POST",
+            headers: { Authorization: token },
+            body: formData,
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            
+            if (type === "couverture") {
+                form.value.image_url = data.url;
+            } else if (type === "etape" && index !== null) {
+                form.value.etapes[index].image_url = data.url;
+            }
+        } else {
+            alert("Erreur lors de l'upload de l'image.");
+        }
+    } catch (e) {
+        console.error("Erreur d'upload :", e);
+        alert("Serveur injoignable.");
+    } finally {
+        event.target.value = "";
+    }
+};
+
 const addEtape = () => {
     form.value.etapes.push({ titre: "", description: "", image_url: "" });
 };
 
 const removeEtape = (index) => {
     form.value.etapes.splice(index, 1);
-};
-
-const simulerImport = (type, index = null) => {
-    const fakeUrl =
-        "https://picsum.photos/600/400?random=" +
-        Math.floor(Math.random() * 1000);
-    if (type === "couverture") {
-        form.value.image_url = fakeUrl;
-    } else if (type === "etape" && index !== null) {
-        form.value.etapes[index].image_url = fakeUrl;
-    }
 };
 
 const validateFrontend = () => {
@@ -386,7 +427,6 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-/* Ajout du conteneur de la page */
 .page-container {
     padding: 20px;
 }
@@ -547,33 +587,37 @@ textarea {
     resize: vertical;
 }
 
-.image-input-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    width: 100%;
+.image-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
-.btn-import {
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    padding: 0.9rem;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    color: #333;
-    white-space: nowrap;
+.btn-import { 
+  background: #f5f5f5; 
+  border: 1px dashed #ccc; 
+  padding: 0.8rem 1.2rem; 
+  border-radius: 10px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  color: #555; 
+  transition: all 0.2s;
 }
-.btn-import:hover {
-    background: #e0e0e0;
+.btn-import:hover { 
+  background: #e0e0e0;
+  border-color: #aaa; 
 }
-
-.img-preview {
-    width: 140px;
-    height: 90px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-top: 5px;
-    border: 1px solid #eee;
+.img-preview { 
+  width: 120px; 
+  height: 80px; 
+  object-fit: cover; 
+  border-radius: 8px; 
+  border: 1px solid #ddd; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.no-image-text {
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
 }
 
 .radio-group {
@@ -724,7 +768,7 @@ textarea {
 .form-actions-card {
     margin-top: 1rem;
     display: flex;
-    flex-direction: column;
+    justify-content: flex-end; 
     gap: 1rem;
 }
 .btn-save {
@@ -745,7 +789,7 @@ textarea {
     cursor: not-allowed;
 }
 .btn-cancel {
-    background: none;
+    background: #ffffff;
     border: 1px solid #ccc;
     color: #666;
     padding: 1rem 2.5rem;

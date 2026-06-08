@@ -32,7 +32,7 @@
                 <div class="left-column">
                     <div class="image-container-stretch">
                         <img
-                            :src="annonce.imageUrl || imageParDefaut"
+                            :src="(annonce.image && annonce.image.trim() !== '') ? annonce.image : imageParDefaut"
                             alt="Image de l'objet"
                             class="main-image-fit"
                         />
@@ -50,9 +50,13 @@
                             :class="{ 'is-liked': isFavorited }"
                             @click.prevent="toggleFavori"
                         >
-                            <span class="heart-icon">{{
-                                isFavorited ? "❤️" : "🤍"
-                            }}</span>
+                            <span class="heart-icon">
+                                <Heart 
+                                    :fill="isFavorited ? '#ef4444' : 'transparent'" 
+                                    :color="isFavorited ? '#ef4444' : '#6b7280'" 
+                                    :size="24" 
+                                />
+                            </span>
                             <span v-if="likesCount > 0" class="likes-count">{{
                                 likesCount
                             }}</span>
@@ -103,7 +107,17 @@
                             class="product-vendor clickable-vendor"
                             @click="goToProfilVendeur"
                         >
-                            <div class="vendor-avatar">👤</div>
+                            <div class="vendor-avatar">
+                                <img 
+                                    v-if="vendeur.image_profil && vendeur.image_profil.trim() !== ''" 
+                                    :src="vendeur.image_profil" 
+                                    alt="Avatar du vendeur" 
+                                    class="vendor-avatar-img" 
+                                />
+                                <span v-else>
+                                    {{ vendeur.prenom?.charAt(0) }}{{ vendeur.nom?.charAt(0) }}
+                                </span>
+                            </div>
                             <div class="vendor-info">
                                 <span class="vendor-name">{{
                                     vendeur.prenom ||
@@ -186,7 +200,7 @@
                             @click="goToAnnonce(ann.id)"
                         >
                             <img
-                                :src="ann.imageUrl || imageParDefaut"
+                                :src="(ann.image && ann.image.trim() !== '') ? ann.image : imageParDefaut"
                                 alt="Image de l'annonce"
                                 class="annonce-card__image"
                             />
@@ -238,6 +252,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { Heart } from 'lucide-vue-next';
 import { useRoute, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
@@ -560,19 +575,23 @@ onMounted(fetchAnnoncePrincipale);
 .image-container-stretch {
     position: relative;
     width: 100%;
-    height: 100%;
+    aspect-ratio: 4/3; 
+    max-height: 500px;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: hidden; 
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    background: #fff;
+    background: #f0f4f1; 
     border: 1px solid #eaeaea;
 }
 
 .main-image-fit {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover; 
+    object-position: center; 
+    display: block;
 }
+
 
 .type-badge-image {
     position: absolute;
@@ -724,12 +743,20 @@ onMounted(fetchAnnoncePrincipale);
 .vendor-avatar {
     width: 40px;
     height: 40px;
-    background: #f0f4f1;
+    background: #2d7a4f; 
+    color: white;     
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
+    overflow: hidden; 
+}
+
+.vendor-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .vendor-name {
@@ -869,12 +896,19 @@ onMounted(fetchAnnoncePrincipale);
     width: 100%;
     aspect-ratio: 4/3;
     background-color: #f0f4f1;
+    overflow: hidden; 
 }
+
 .annonce-card__image {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
 }
+
 .annonce-card__badges {
     position: absolute;
     top: 8px;

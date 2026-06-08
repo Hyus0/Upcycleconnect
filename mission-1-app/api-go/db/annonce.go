@@ -15,8 +15,8 @@ func CreateAnnonce(a *models.Annonce) error {
 		INSERT INTO ANNONCE (
 			id_vendeur, id_categorie, titre, description, 
 			type_materiau, poids_estime_kg, prix, etat_objet, 
-			statut, est_valide, type, ville, code_postal, adresse
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			statut, est_valide, type, ville, code_postal, adresse, image
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	res, err := Conn.Exec(
@@ -35,6 +35,7 @@ func CreateAnnonce(a *models.Annonce) error {
 		a.Ville,
 		a.CodePostal,
 		a.Adresse,
+		a.Image, 
 	)
 	if err != nil {
 		return err
@@ -67,7 +68,8 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 			COALESCE(date_depot_effective, '0001-01-01 00:00:00'), 
 			COALESCE(date_recuperation_effective, '0001-01-01 00:00:00'),
 			type, ville, code_postal, adresse,
-			COALESCE(id_site, 0)
+			COALESCE(id_site, 0),
+			COALESCE(image, '') -- AJOUT DE L'IMAGE
 		FROM ANNONCE
 		WHERE est_valide = 'Valide' AND statut = 'Disponible'
 		ORDER BY date_creation DESC
@@ -88,7 +90,7 @@ func GetAllAnnonces() ([]models.Annonce, error) {
 			&a.Titre, &a.Description, &a.TypeMateriau, &a.PoidsEstimeKg, &a.Prix,
 			&a.EtatObjet, &a.Statut, &a.EstValide, &a.CodeBarreDepot, &a.CodeBarreRetrait,
 			&a.DateCreation, &a.DateDepotEffective, &a.DateRecuperationEffective,
-			&a.Type, &a.Ville, &a.CodePostal, &a.Adresse, &a.IdSite,
+			&a.Type, &a.Ville, &a.CodePostal, &a.Adresse, &a.IdSite, &a.Image, 
 		)
 		if err != nil {
 			fmt.Println("Erreur Scan GetAllAnnonces:", err)
@@ -113,7 +115,8 @@ func GetAnnoncesByUserID(userID int) ([]models.Annonce, error) {
             COALESCE(a.date_depot_effective, '0001-01-01 00:00:00'), 
             COALESCE(a.date_recuperation_effective, '0001-01-01 00:00:00'),
             a.type, a.ville, a.code_postal, a.adresse,
-            COALESCE(a.id_site, 0)       
+            COALESCE(a.id_site, 0),
+			COALESCE(a.image, '') -- AJOUT DE L'IMAGE
         FROM ANNONCE a
         LEFT JOIN SITE s ON a.id_site = s.id 
         WHERE a.id_vendeur = ?
@@ -136,7 +139,7 @@ func GetAnnoncesByUserID(userID int) ([]models.Annonce, error) {
             &a.DateCreation, 
             &a.DateDepotEffective, &a.DateRecuperationEffective,
             &a.Type, &a.Ville, &a.CodePostal, &a.Adresse,
-            &a.IdSite,
+            &a.IdSite, &a.Image, 
         )
         if err != nil {
             fmt.Println("Erreur Scan GetAnnoncesByUserID:", err)
@@ -150,11 +153,12 @@ func GetAnnoncesByUserID(userID int) ([]models.Annonce, error) {
 func GetAnnonce(id int) (*models.Annonce, error) {
 	query := `
 		SELECT
-			id, id_vendeur, id_acheteur, id_casier, id_categorie,
+			id, id_vendeur, COALESCE(id_acheteur, 0), COALESCE(id_casier, 0), id_categorie,
 			titre, description, type_materiau, poids_estime_kg, prix,
-			etat_objet, statut, est_valide, code_barre_depot, code_barre_retrait,
-			date_creation, date_depot_effective, date_recuperation_effective,
-			type, ville, code_postal, adresse
+			etat_objet, statut, est_valide, COALESCE(code_barre_depot, ''), COALESCE(code_barre_retrait, ''),
+			date_creation, COALESCE(date_depot_effective, '0001-01-01 00:00:00'), COALESCE(date_recuperation_effective, '0001-01-01 00:00:00'),
+			type, ville, code_postal, adresse,
+			COALESCE(image, '') -- AJOUT DE L'IMAGE
 		FROM ANNONCE
 		WHERE id = ?
 	`
@@ -165,7 +169,7 @@ func GetAnnonce(id int) (*models.Annonce, error) {
 		&a.Titre, &a.Description, &a.TypeMateriau, &a.PoidsEstimeKg, &a.Prix,
 		&a.EtatObjet, &a.Statut, &a.EstValide, &a.CodeBarreDepot, &a.CodeBarreRetrait,
 		&a.DateCreation, &a.DateDepotEffective, &a.DateRecuperationEffective,
-		&a.Type, &a.Ville, &a.CodePostal, &a.Adresse,
+		&a.Type, &a.Ville, &a.CodePostal, &a.Adresse, &a.Image, 
 	)
 
 	if err == sql.ErrNoRows { return nil, nil }
@@ -182,7 +186,7 @@ func ModifyAnnonce(id int, a models.Annonce) error {
 	query := `
 		UPDATE ANNONCE SET
 			id_vendeur = ?,
-			id_acheteur = ?,
+			id_acheteur = NULLIF(?, 0),
 			titre = ?,
 			description = ?,
 			statut = ?,
@@ -192,7 +196,8 @@ func ModifyAnnonce(id int, a models.Annonce) error {
 			adresse = ?,
 			ville = ?,
 			code_postal = ?,
-			type = ?
+			type = ?,
+			image = ?
 		WHERE id = ?
 	`
 
@@ -210,6 +215,7 @@ func ModifyAnnonce(id int, a models.Annonce) error {
 		a.Ville,
 		a.CodePostal,
 		a.Type,
+		a.Image,
 		id,
 	)
 	if err != nil {

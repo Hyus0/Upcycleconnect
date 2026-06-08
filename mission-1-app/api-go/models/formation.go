@@ -28,6 +28,7 @@ type Formation struct {
 	Titre         string  `json:"titre"`
 	Description   string  `json:"description"`
 	Capacite_max  int     `json:"capacite_max"`
+	Est_valide	  string  `json: "est_valide"`
 	Date_debut    string  `json:"date_debut"`
 	Date_fin      string  `json:"date_fin"`
 	Statut        string  `json:"statut"`

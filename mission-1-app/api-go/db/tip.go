@@ -91,3 +91,42 @@ func GetTipByID(id int) (models.Tip, error) {
 
 	return t, err
 }
+
+func CreerTip(t models.Tip) error {
+	query := `
+		INSERT INTO TIPS (id_createur, titre, description, video_url, role_cible, date_creation, actif) 
+		VALUES (?, ?, ?, ?, ?, NOW(), ?)`
+	
+	_, err := Conn.Exec(query, 
+		t.ID_createur, 
+		t.Titre, 
+		t.Description, 
+		t.Video_url, 
+		t.Role_cible, 
+		t.Actif,
+	)
+	return err
+}
+
+func ModifierTip(t models.Tip) error {
+	query := `
+		UPDATE TIPS 
+		SET titre = ?, description = ?, video_url = ?, role_cible = ?, actif = ? 
+		WHERE id = ?`
+		
+	_, err := Conn.Exec(query, 
+		t.Titre, 
+		t.Description, 
+		t.Video_url, 
+		t.Role_cible, 
+		t.Actif, 
+		t.ID, 
+	)
+	return err
+}
+
+func SupprimerTip(id int) error {
+	query := `DELETE FROM TIPS WHERE id = ?`
+	_, err := Conn.Exec(query, id)
+	return err
+}

@@ -10,7 +10,10 @@
           Consulte les objets proposés sur UpcycleConnect, filtre par type et trouve rapidement ce qui est réutilisable.
         </p>
       </div>
-      <RouterLink class="btn-main-action" to="/profil/annonces">+ Déposer une annonce</RouterLink>
+      <RouterLink 
+      v-if="isParticulier"
+      class="btn-main-action" 
+      to="/profil/annonces">+ Déposer une annonce</RouterLink>
     </header>
 
     <div class="stats-grid annonces-stats">
@@ -70,18 +73,18 @@
 
       <div v-else class="annonces-grid">
         <article v-for="annonce in filteredAnnonces" :key="annonce.id" class="annonce-card">
-          <div class="annonce-card__image-wrapper">
-            <img 
-              :src="annonce.imageUrl || imageParDefaut" 
-              alt="Image de l'annonce" 
-              class="annonce-card__image" 
-            />
-            <div class="annonce-card__badges">
-              <span :class="annonce.type === 'Vente' ? 'badge badge--orange' : 'badge badge--green'">
-                {{ displayValue(annonce.type).toUpperCase() }}
-              </span>
+            <div class="annonce-card__image-wrapper">
+                <img 
+                    :src="(annonce.image && annonce.image.trim() !== '') ? annonce.image : imageParDefaut" 
+                    alt="Image de l'annonce" 
+                    class="annonce-card__image" 
+                />
+                <div class="annonce-card__badges">
+                    <span :class="annonce.type === 'Vente' ? 'badge badge--orange' : 'badge badge--green'">
+                    {{ displayValue(annonce.type).toUpperCase() }}
+                    </span>
+                </div>
             </div>
-          </div>
           
           <div class="annonce-card__content">
             <div class="annonce-card__header">
@@ -122,15 +125,20 @@ import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 import imageParDefaut from "../components/upcycling-concept.jpg";
 
+
 const router = useRouter();
 const loading = ref(true);
 const source = ref("api");
 const annonces = ref([]);
 const API_URL = "http://localhost:8081";
 
+const isParticulier = computed(() => {
+  const role = sessionStorage.getItem("userRole");
+  return role === "Particulier";
+});
+
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 
-// NOUVEAU : On récupère l'ID de l'utilisateur connecté
 const currentUserId = computed(() => {
   const storedId = sessionStorage.getItem("id") || sessionStorage.getItem("userId");
   return Number(storedId) || 0;
@@ -172,7 +180,6 @@ function displayValue(value) {
   return value === null || value === undefined || value === "" ? "N/A" : value;
 }
 
-// CORRIGÉ : La fonction prend maintenant un ID en paramètre !
 const modifierAnnonce = (id) => {
   router.push(`/profil/modifyAnnonce/${id}`);
 };
@@ -274,12 +281,17 @@ onMounted(async () => {
   width: 100%;
   aspect-ratio: 4/3;
   background-color: #f0f4f1;
+  overflow: hidden;
 }
 
 .annonce-card__image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .annonce-card__badges {

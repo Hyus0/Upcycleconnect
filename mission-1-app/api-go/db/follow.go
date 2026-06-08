@@ -46,7 +46,20 @@ func ToggleFollowUser(idSuivi int, idAbonne int) error {
 		_, err = Conn.Exec("DELETE FROM ABONNEMENT_UTILISATEUR WHERE id_suivi = ? AND id_abonne = ?", idSuivi, idAbonne)
 	} else {
 		_, err = Conn.Exec("INSERT INTO ABONNEMENT_UTILISATEUR (id_suivi, id_abonne) VALUES (?, ?)", idSuivi, idAbonne)
-	}
+		
+		if err == nil {
+			var prenomAbonne string
+			errUser := Conn.QueryRow("SELECT prenom FROM UTILISATEUR WHERE id = ?", idAbonne).Scan(&prenomAbonne)
+			
+			if errUser != nil || prenomAbonne == "" {
+				prenomAbonne = "Un membre"
+			}
 
+			titreNotif := "Nouvel abonné 👤"
+			messageNotif := fmt.Sprintf("%s a commencé à vous suivre !", prenomAbonne)
+
+			CreerNotification(idSuivi, idAbonne, "Follow", titreNotif, messageNotif)
+		}
+	}
 	return err
 }

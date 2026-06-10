@@ -122,7 +122,7 @@ func main() {
 	http.HandleFunc("POST /api/evenements/{id}/join", app.JoinEvenement)
 	http.HandleFunc("POST /api/evenements/{id}/quit", app.QuitEvenement)
 	http.HandleFunc("GET /api/evenements/{id}/inscription-status", app.CheckInscriptionEvenement)
-
+	http.HandleFunc("GET /api/evenements/{id}/participants", app.GetEvenementParticipantsHandler)
 	//Categorie
 	http.HandleFunc("GET /categories", app.GetAllCategories)
 	http.HandleFunc("GET /category/{id}", app.GetCategory)
@@ -138,7 +138,8 @@ func main() {
 	http.HandleFunc("DELETE /formation/{id}", app.DeleteFormation)
 	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormation)
 	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormation)
-
+	http.HandleFunc("GET /api/formations/{id}/participants", app.GetFormationParticipantsHandler)
+	
 	//Logistique
 	http.HandleFunc("GET /sites", app.GetAllSites)
 	http.HandleFunc("GET /site/{id}", app.GetSiteHandler)
@@ -174,9 +175,16 @@ func main() {
 
 	//forums
 	http.HandleFunc("GET /forums", app.GetForumsHandler)
-	http.HandleFunc("POST /forums/message", app.SendMessageHandler)
-	http.HandleFunc("POST /forums/topic", app.CreateTopicHandler)
-
+    http.HandleFunc("POST /forums/message", app.SendMessageHandler)
+    http.HandleFunc("POST /forums/topic", app.CreateTopicHandler)
+    http.HandleFunc("DELETE /forums/message/{id}", app.DeleteMessageHandler)
+    http.HandleFunc("DELETE /forums/topic/{id}", app.DeleteTopicHandler)    
+    http.HandleFunc("GET /forums/messages/recent", app.GetRecentMessagesHandler)
+    http.HandleFunc("POST /forums/message/{id}/signaler", app.SignalerMessageHandler)
+    http.HandleFunc("GET /api/moderation/forums/signales", app.TopMessageSignaleHandler)
+    http.HandleFunc("PUT /api/moderation/user/{id}/ban-forum", app.BanUserForumHandler)	
+    http.HandleFunc("GET /api/moderation/users/banned", app.GetBannedUsersHandler)
+	http.HandleFunc("GET /api/moderation/topics", app.GetModerationTopicsHandler)
 	//panier
 	http.HandleFunc("GET /users/{id}/panier", app.GetPanierHandler)
 	http.HandleFunc("POST /users/{id}/panier", app.AddToPanierHandler)

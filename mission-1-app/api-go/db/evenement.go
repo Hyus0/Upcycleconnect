@@ -304,3 +304,32 @@ func GetUserPlanning(userID int) (models.UserPlanning, error) {
 	planning.Evenements = evenements
 	return planning, nil
 }
+
+func GetEvenementParticipants(evenementID int) ([]models.Participant, error) {
+	query := `
+		SELECT 
+			u.id, 
+			u.prenom, 
+			u.nom, 
+			COALESCE(u.image_profil, '') as image_profil, 
+			u.role
+		FROM UTILISATEUR u
+		JOIN EVENEMENT_INSCRIPTION i ON u.id = i.id_utilisateur
+		WHERE i.id_evenement = ?
+	`
+	
+	rows, err := Conn.Query(query, evenementID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var participants []models.Participant
+	for rows.Next() {
+		var p models.Participant
+		if err := rows.Scan(&p.ID, &p.Prenom, &p.Nom, &p.ImageProfil, &p.Role); err == nil {
+			participants = append(participants, p)
+		}
+	}
+	return participants, nil
+}

@@ -18,7 +18,8 @@
                     </h1>
                     <div v-if="evenement" class="project-sub-header">
                         <p class="classic-text">
-                            Publié le {{ formatDateLong(evenement.date_creation) }}
+                            Publié le
+                            {{ formatDateLong(evenement.date_creation) }}
                             <span class="dot-separator">•</span>
                             {{ formatDateLong(evenement.date_evenement) }}
                         </p>
@@ -41,40 +42,114 @@
                                 Présentation de l'événement
                             </h2>
                             <span
-                                :class="['type-badge', 'type-' + evenement.type?.toLowerCase()]"
+                                :class="[
+                                    'type-badge',
+                                    'type-' + evenement.type?.toLowerCase(),
+                                ]"
                             >
                                 {{ evenement.type?.toUpperCase() }}
                             </span>
                         </div>
 
                         <div class="description-section">
-                            <label class="info-label">Description & Programme</label>
+                            <label class="info-label"
+                                >Description & Programme</label
+                            >
                             <div class="description-box">
                                 {{ evenement.description }}
                             </div>
                         </div>
 
                         <div class="specs-section">
-                            <label class="info-label">Informations pratiques</label>
+                            <label class="info-label"
+                                >Informations pratiques</label
+                            >
                             <div class="specs-grid">
                                 <div class="spec-item">
-                                    <span class="spec-label">Date de l'événement</span>
+                                    <span class="spec-label"
+                                        >Date de l'événement</span
+                                    >
                                     <p class="spec-value highlight-val">
-                                        {{ formatDateLong(evenement.date_evenement) }}
+                                        {{
+                                            formatDateLong(
+                                                evenement.date_evenement,
+                                            )
+                                        }}
                                     </p>
                                 </div>
                                 <div class="spec-item">
                                     <span class="spec-label">Format</span>
-                                    <p class="spec-value">{{ evenement.type }}</p>
+                                    <p class="spec-value">
+                                        {{ evenement.type }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="description-section">
-                            <label class="info-label">Lieu exact de rendez-vous</label>
+                            <label class="info-label"
+                                >Lieu exact de rendez-vous</label
+                            >
                             <div class="description-box address-box">
-                                <strong>📍 {{ evenement.adresse }}</strong><br />
-                                {{ evenement.code_postal }} {{ evenement.ville }}
+                                <strong>📍 {{ evenement.adresse }}</strong
+                                ><br />
+                                {{ evenement.code_postal }}
+                                {{ evenement.ville }}
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="canViewParticipants" class="form-card">
+                        <div class="card-header-flex">
+                            <h2 class="card-title">Liste des participants</h2>
+                            <span
+                                class="type-badge"
+                                style="background: #e8eaf6; color: #3f51b5"
+                                >Privé</span
+                            >
+                        </div>
+
+                        <div
+                            v-if="participantsLoading"
+                            class="loading-state"
+                            style="padding: 1rem"
+                        >
+                            Chargement de la liste...
+                        </div>
+                        <div
+                            v-else-if="participants.length === 0"
+                            class="description-box"
+                            style="text-align: center; color: #666"
+                        >
+                            Aucun participant inscrit pour le moment.
+                        </div>
+                        <div v-else class="participants-list">
+                            <div
+                                v-for="p in participants"
+                                :key="p.id"
+                                class="participant-item cursor-pointer"
+                                @click="viewProfile(p.id)"
+                            >
+                                <div class="mini-avatar">
+                                    <img
+                                        v-if="p.image_profil"
+                                        :src="p.image_profil"
+                                        class="mini-avatar-img"
+                                    />
+                                    <span v-else
+                                        >{{ p.prenom?.charAt(0)
+                                        }}{{ p.nom?.charAt(0) }}</span
+                                    >
+                                </div>
+                                <div>
+                                    <strong class="hover-underline"
+                                        >{{ p.prenom }} {{ p.nom }}</strong
+                                    >
+                                    <div
+                                        style="font-size: 0.75rem; color: #666"
+                                    >
+                                        {{ p.role }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -82,8 +157,13 @@
 
                 <div class="right-column">
                     <div class="form-card side-card">
-                        <h2 class="card-title-side">Organisateur de l'événement</h2>
-                        <div class="trainer-preview">
+                        <h2 class="card-title-side">
+                            Organisateur de l'événement
+                        </h2>
+                        <div
+                            class="trainer-preview cursor-pointer"
+                            @click="viewProfile(evenement.id_createur)"
+                        >
                             <div class="mini-avatar">
                                 <img
                                     v-if="createur?.image_profil"
@@ -91,17 +171,15 @@
                                     class="mini-avatar-img"
                                 />
                                 <span v-else>
-                                    {{ createur?.prenom?.charAt(0) }}{{ createur?.nom?.charAt(0) }}
+                                    {{ createur?.prenom?.charAt(0)
+                                    }}{{ createur?.nom?.charAt(0) }}
                                 </span>
                             </div>
                             <div>
-                                <p class="trainer-name">
+                                <p class="trainer-name hover-underline">
                                     {{ createur?.prenom }} {{ createur?.nom }}
                                 </p>
-                                <button
-                                    class="link-btn"
-                                    @click="viewProfile(evenement.id_createur)"
-                                >
+                                <button class="link-btn">
                                     Voir le profil expert
                                 </button>
                             </div>
@@ -116,7 +194,9 @@
                         </div>
                         <div class="data-row">
                             <span class="data-label">Publié le :</span>
-                            <span class="status-badge">{{ formatDateLong(evenement.date_creation) }}</span>
+                            <span class="status-badge">{{
+                                formatDateLong(evenement.date_creation)
+                            }}</span>
                         </div>
                     </div>
 
@@ -127,7 +207,9 @@
                             :class="{ 'btn-liked-active': isRegistered }"
                             :disabled="isRegistering"
                         >
-                            <span v-if="isRegistered">Inscrit à l'événement</span>
+                            <span v-if="isRegistered"
+                                >Inscrit à l'événement</span
+                            >
                             <span v-else>Participer à l'événement</span>
                         </button>
 
@@ -163,6 +245,8 @@ const isRegistered = ref(false);
 const isRegistering = ref(false);
 const isLeaving = ref(false);
 const userScore = ref(0);
+const participants = ref([]);
+const participantsLoading = ref(false);
 
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {
@@ -189,17 +273,49 @@ const fetchCreateur = async (id) => {
     }
 };
 
+const canViewParticipants = computed(() => {
+    if (!evenement.value) return false;
+    const currentUserId = parseInt(sessionStorage.getItem("userId") || "0");
+    const currentUserRole = sessionStorage.getItem("userRole") || "";
+
+    return (
+        currentUserId === evenement.value.id_createur ||
+        currentUserRole === "Admin"
+    );
+});
+
+const fetchParticipants = async (evenementId) => {
+    participantsLoading.value = true;
+    try {
+        const res = await fetch(
+            `http://localhost:8081/api/evenements/${evenementId}/participants`,
+        );
+        if (res.ok) {
+            participants.value = await res.json();
+        }
+    } catch (error) {
+        console.error("Erreur chargement participants:", error);
+    } finally {
+        participantsLoading.value = false;
+    }
+};
+
 const fetchDetail = async () => {
     const id = route.params.id;
     const userId = sessionStorage.getItem("userId") || 0;
     try {
-        const res = await fetch(`http://localhost:8081/evenements/${id}?user_id=${userId}`);
+        const res = await fetch(
+            `http://localhost:8081/evenements/${id}?user_id=${userId}`,
+        );
         if (res.ok) {
             const data = await res.json();
             evenement.value = data;
             isRegistered.value = data.is_registered;
             if (data.id_createur) {
                 await fetchCreateur(data.id_createur);
+            }
+            if (canViewParticipants.value) {
+                fetchParticipants(id);
             }
         }
     } catch (error) {
@@ -235,7 +351,7 @@ const handleInscription = async () => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ id_utilisateur: parseInt(userId) }),
-            }
+            },
         );
         if (res.status === 201 || res.ok) {
             alert("Votre participation a bien été enregistrée !");
@@ -254,7 +370,11 @@ const handleInscription = async () => {
 };
 
 const handleQuit = async () => {
-    if (!confirm("Voulez-vous vraiment annuler votre participation à cet événement ?"))
+    if (
+        !confirm(
+            "Voulez-vous vraiment annuler votre participation à cet événement ?",
+        )
+    )
         return;
     const token = sessionStorage.getItem("userToken");
     const userId = sessionStorage.getItem("userId");
@@ -269,7 +389,7 @@ const handleQuit = async () => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ id_utilisateur: parseInt(userId) }),
-            }
+            },
         );
         if (res.ok) {
             alert("Votre participation a été annulée.");
@@ -387,19 +507,29 @@ onMounted(fetchDetail);
     color: #1a1a1a;
 }
 
-/* BADGES TYPES */
 .type-badge {
     padding: 6px 12px;
     border-radius: 15px;
     font-size: 0.75rem;
     font-weight: 800;
 }
-.type-atelier    { background: #e9f5ed; color: #2d7a4f; }
-.type-collecte   { background: #fff3e0; color: #e65100; }
-.type-conference { background: #e8eaf6; color: #3f51b5; }
-.type-echange    { background: #f3e5f5; color: #7b1fa2; }
+.type-atelier {
+    background: #e9f5ed;
+    color: #2d7a4f;
+}
+.type-collecte {
+    background: #fff3e0;
+    color: #e65100;
+}
+.type-conference {
+    background: #e8eaf6;
+    color: #3f51b5;
+}
+.type-echange {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
 
-/* DESCRIPTION */
 .description-section {
     display: flex;
     flex-direction: column;
@@ -428,7 +558,6 @@ onMounted(fetchDetail);
     line-height: 1.8;
 }
 
-/* SPECS GRID */
 .specs-section {
     display: flex;
     flex-direction: column;
@@ -470,7 +599,6 @@ onMounted(fetchDetail);
     color: #2d7a4f !important;
 }
 
-/* PANNEAU DROIT */
 .side-card {
     padding: 1.5rem 2rem;
     gap: 1rem;
@@ -609,5 +737,38 @@ onMounted(fetchDetail);
     padding: 3rem;
     color: #8fa396;
     font-style: italic;
+}
+
+.participants-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cursor-pointer:hover {
+    transform: translateY(-2px);
+}
+
+.participant-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border-color: #dcdcdc;
 }
 </style>

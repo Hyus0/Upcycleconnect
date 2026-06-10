@@ -175,7 +175,7 @@ func ValidateUserModify(userDto models.User) []string {
 		}
 	}
 
-	validRoles := map[string]bool{"Particulier": true, "Prestataire": true, "Admin": true}
+	validRoles := map[string]bool{"Particulier": true, "Prestataire": true, "Salarie": true,  "Admin": true}
 	if !validRoles[userDto.Role] {
 		errsMsg = append(errsMsg, "Rôle invalide")
 	}
@@ -1080,6 +1080,29 @@ func CheckInscriptionEvenement(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"inscrit": inscrit})
 }
 
+func GetEvenementParticipantsHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	evenementID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	participants, err := db.GetEvenementParticipants(evenementID)
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération des participants", http.StatusInternalServerError)
+		return
+	}
+
+	if participants == nil {
+		participants = []models.Participant{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(participants)
+}
+
+//Categorie
 func GetAllCategories(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -1401,6 +1424,28 @@ func QuitFormation(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Désinscription réussie"))
+}
+
+func GetFormationParticipantsHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	formationID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	participants, err := db.GetFormationParticipants(formationID)
+	if err != nil {
+		http.Error(w, "Erreur lors de la récupération des participants", http.StatusInternalServerError)
+		return
+	}
+
+	if participants == nil {
+		participants = []models.Participant{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(participants)
 }
 
 // Logistique
@@ -1928,16 +1973,153 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		UserID  int    `json:"user_id"`
 		ForumID int    `json:"forum_id"`
-		Content string `json:"content"`
+		Contenu string `json:"contenu"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
-	err := db.SendMessageForum(req.UserID, req.ForumID, req.Content)
+	err := db.SendMessageForum(req.UserID, req.ForumID, req.Contenu)
 	if err != nil {
 		http.Error(w, "Erreur envoi", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func SignalerMessageHandler(w http.ResponseWriter, r *http.Request) {
+	messageIDStr := r.PathValue("id") 
+	messageID, err := strconv.Atoi(messageIDStr)
+	if err != nil {
+		http.Error(w, "ID message invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		UserID int    `json:"user_id"`
+		Motif  string `json:"motif"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Erreur de format de requête", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.SignalerMessageForum(messageID, req.UserID, req.Motif); err != nil {
+		http.Error(w, "Erreur lors du signalement", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func TopMessageSignaleHandler(w http.ResponseWriter, r *http.Request) {
+	reportedMessages, err := db.GetTopMessagesSignales()
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	if reportedMessages == nil {
+		reportedMessages = []models.ReportedMessage{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(reportedMessages)
+}
+
+func BanUserForumHandler(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("id") 
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Ban bool `json:"ban"` 
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Erreur de format de requête", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.ToggleBanForum(userID, req.Ban); err != nil {
+		http.Error(w, "Erreur lors du ban", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func DeleteMessageHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	messageID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.DeleteMessageForum(messageID); err != nil {
+		http.Error(w, "Erreur lors de la suppression", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func DeleteTopicHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	topicID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.DeleteTopicForum(topicID); err != nil {
+		http.Error(w, "Erreur lors de la suppression", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func GetRecentMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	messages, err := db.GetRecentForumMessages()
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	if messages == nil {
+		messages = []models.ForumMessage{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(messages)
+}
+
+func GetBannedUsersHandler(w http.ResponseWriter, r *http.Request) {
+	bannedUsers, err := db.GetBannedUsers()
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+	if bannedUsers == nil {
+		bannedUsers = []models.BannedUser{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(bannedUsers)
+}
+
+func GetModerationTopicsHandler(w http.ResponseWriter, r *http.Request) {
+	topics, err := db.GetModerationTopics()
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+	if topics == nil {
+		topics = []models.ModTopic{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(topics)
 }
 
 //Favori

@@ -79,7 +79,7 @@ func GetFormation(formationID int, userID int) (*models.GetFormation, error) {
 
     query := `
         SELECT 
-            f.id, f.id_formateur, u.prenom, u.nom, f.type, f.titre, f.description, 
+            f.id, f.id_formateur, u.prenom, u.nom, COALESCE(u.image_profil, ''), f.type, f.titre, f.description, 
             f.capacite_max, f.date_debut, f.date_fin, f.statut, f.prix_unitaire, 
             f.adresse, f.ville, f.code_postal,
             (SELECT COUNT(*) FROM FORMATION_INSCRIPTION WHERE id_formation = f.id) as nb_inscrit
@@ -94,6 +94,7 @@ func GetFormation(formationID int, userID int) (*models.GetFormation, error) {
         &f.ID_formateur, 
         &f.Prenom_formateur, 
         &f.Nom_formateur,  
+        &f.Image_formateur,
         &f.Type, 
         &f.Titre, 
         &f.Description, 
@@ -353,4 +354,33 @@ func GetUserFormations(userID int) ([]models.GetFormation, error) {
 		formations = append(formations, f)
 	}
 	return formations, nil
+}
+
+func GetFormationParticipants(formationID int) ([]models.Participant, error) {
+	query := `
+		SELECT 
+			u.id, 
+			u.prenom, 
+			u.nom, 
+			COALESCE(u.image_profil, '') as image_profil, 
+			u.role
+		FROM UTILISATEUR u
+		JOIN FORMATION_INSCRIPTION i ON u.id = i.id_utilisateur
+		WHERE i.id_formation = ?
+	`
+	
+	rows, err := Conn.Query(query, formationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var participants []models.Participant
+	for rows.Next() {
+		var p models.Participant
+		if err := rows.Scan(&p.ID, &p.Prenom, &p.Nom, &p.ImageProfil, &p.Role); err == nil {
+			participants = append(participants, p)
+		}
+	}
+	return participants, nil
 }

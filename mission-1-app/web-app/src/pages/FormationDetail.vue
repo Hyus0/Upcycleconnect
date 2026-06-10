@@ -22,7 +22,8 @@
                             <span class="dot-separator">•</span>
                             au {{ formatDateLong(formation.date_fin) }}
                             <span class="dot-separator">•</span>
-                            {{ formation.nb_inscrit }} / {{ formation.capacite_max }} participants
+                            {{ formation.nb_inscrit }} /
+                            {{ formation.capacite_max }} participants
                         </p>
                     </div>
                 </div>
@@ -43,48 +44,128 @@
                                 Présentation de la session
                             </h2>
                             <span
-                                :class="['type-badge', 'type-' + formation.type?.toLowerCase()]"
+                                :class="[
+                                    'type-badge',
+                                    'type-' + formation.type?.toLowerCase(),
+                                ]"
                             >
                                 {{ formation.type?.toUpperCase() }}
                             </span>
                         </div>
 
                         <div class="description-section">
-                            <label class="info-label">Description & Programme</label>
+                            <label class="info-label"
+                                >Description & Programme</label
+                            >
                             <div class="description-box">
                                 {{ formation.description }}
                             </div>
                         </div>
 
                         <div class="specs-section">
-                            <label class="info-label">Informations pratiques</label>
+                            <label class="info-label"
+                                >Informations pratiques</label
+                            >
                             <div class="specs-grid">
                                 <div class="spec-item">
-                                    <span class="spec-label">Date de début</span>
+                                    <span class="spec-label"
+                                        >Date de début</span
+                                    >
                                     <p class="spec-value highlight-val">
-                                        {{ formatDateLong(formation.date_debut) }}
+                                        {{
+                                            formatDateLong(formation.date_debut)
+                                        }}
                                     </p>
                                 </div>
                                 <div class="spec-item">
                                     <span class="spec-label">Date de fin</span>
-                                    <p class="spec-value">{{ formatDateLong(formation.date_fin) }}</p>
+                                    <p class="spec-value">
+                                        {{ formatDateLong(formation.date_fin) }}
+                                    </p>
                                 </div>
                                 <div class="spec-item">
                                     <span class="spec-label">Capacité max</span>
-                                    <p class="spec-value">{{ formation.capacite_max }} participants</p>
+                                    <p class="spec-value">
+                                        {{
+                                            formation.capacite_max
+                                        }}
+                                        participants
+                                    </p>
                                 </div>
                                 <div class="spec-item">
                                     <span class="spec-label">Format</span>
-                                    <p class="spec-value">{{ formation.type }}</p>
+                                    <p class="spec-value">
+                                        {{ formation.type }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="description-section">
-                            <label class="info-label">Lieu exact de rendez-vous</label>
+                            <label class="info-label"
+                                >Lieu exact de rendez-vous</label
+                            >
                             <div class="description-box address-box">
-                                <strong>📍 {{ formation.adresse }}</strong><br />
-                                {{ formation.code_postal }} {{ formation.ville }}
+                                <strong>📍 {{ formation.adresse }}</strong
+                                ><br />
+                                {{ formation.code_postal }}
+                                {{ formation.ville }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="canViewParticipants" class="form-card">
+                        <div class="card-header-flex">
+                            <h2 class="card-title">Liste des participants</h2>
+                            <span
+                                class="type-badge"
+                                style="background: #e8eaf6; color: #3f51b5"
+                                >Privé</span
+                            >
+                        </div>
+
+                        <div
+                            v-if="participantsLoading"
+                            class="loading-state"
+                            style="padding: 1rem"
+                        >
+                            Chargement de la liste...
+                        </div>
+                        <div
+                            v-else-if="participants.length === 0"
+                            class="description-box"
+                            style="text-align: center; color: #666"
+                        >
+                            Aucun participant inscrit pour le moment.
+                        </div>
+                        <div v-else class="participants-list">
+                            <div
+                                v-for="p in participants"
+                                :key="p.id"
+                                class="participant-item cursor-pointer"
+                                @click="viewProfile(p.id)"
+                            >
+                                <div class="mini-avatar">
+                                    <img
+                                        v-if="p.image_profil"
+                                        :src="p.image_profil"
+                                        class="mini-avatar-img"
+                                    />
+                                    <span v-else
+                                        >{{ p.prenom?.charAt(0)
+                                        }}{{ p.nom?.charAt(0) }}</span
+                                    >
+                                </div>
+                                <div>
+                                    <strong class="hover-underline"
+                                        >{{ p.prenom }} {{ p.nom }}</strong
+                                    >
+                                    <div
+                                        style="font-size: 0.75rem; color: #666"
+                                    >
+                                        {{ p.role }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -92,8 +173,13 @@
 
                 <div class="right-column">
                     <div class="form-card side-card">
-                        <h2 class="card-title-side">Organisateur de la session</h2>
-                        <div class="trainer-preview">
+                        <h2 class="card-title-side">
+                            Organisateur de la session
+                        </h2>
+                        <div
+                            class="trainer-preview cursor-pointer"
+                            @click="viewProfile(formation.id_formateur)"
+                        >
                             <div class="mini-avatar">
                                 <img
                                     v-if="formation.image_formateur"
@@ -101,18 +187,16 @@
                                     class="mini-avatar-img"
                                 />
                                 <span v-else>
-                                    {{ formation.prenom_formateur?.charAt(0) }}{{ formation.nom_formateur?.charAt(0) }}
+                                    {{ formation.prenom_formateur?.charAt(0)
+                                    }}{{ formation.nom_formateur?.charAt(0) }}
                                 </span>
                             </div>
                             <div>
-                                <p class="trainer-name">
+                                <p class="trainer-name hover-underline">
                                     {{ formation.prenom_formateur }}
                                     {{ formation.nom_formateur }}
                                 </p>
-                                <button
-                                    class="link-btn"
-                                    @click="viewProfile(formation.id_formateur)"
-                                >
+                                <button class="link-btn">
                                     Voir le profil expert
                                 </button>
                             </div>
@@ -127,30 +211,53 @@
                         </div>
                         <div class="data-row">
                             <span class="data-label">Places occupées :</span>
-                            <span class="status-badge">{{ formation.nb_inscrit }} / {{ formation.capacite_max }}</span>
+                            <span class="status-badge"
+                                >{{ formation.nb_inscrit }} /
+                                {{ formation.capacite_max }}</span
+                            >
                         </div>
                     </div>
 
                     <div class="form-card side-card price-card">
                         <h2 class="card-title-side">Prix de la réservation</h2>
                         <div class="price-value">
-                            {{ formation.prix_unitaire > 0 ? formation.prix_unitaire + " €" : "GRATUIT" }}
+                            {{
+                                formation.prix_unitaire > 0
+                                    ? formation.prix_unitaire + " €"
+                                    : "GRATUIT"
+                            }}
                         </div>
                         <p class="price-hint">par personne</p>
                     </div>
 
                     <div class="form-actions-card">
                         <button
-                            @click="formation.prix_unitaire > 0 ? handleAddToCart() : handleInscription()"
+                            @click="
+                                formation.prix_unitaire > 0
+                                    ? handleAddToCart()
+                                    : handleInscription()
+                            "
                             class="btn-save"
                             :class="{ 'btn-liked-active': isRegistered }"
-                            :disabled="isRegistered || formation.statut !== 'Ouvert' || isRegistering || isAddingToCart"
+                            :disabled="
+                                isRegistered ||
+                                formation.statut !== 'Ouvert' ||
+                                isRegistering ||
+                                isAddingToCart
+                            "
                         >
                             <span v-if="isRegistered">Déjà inscrit</span>
                             <span v-else>
-                                <template v-if="formation.statut !== 'Ouvert'">❌ Complet</template>
-                                <template v-else-if="formation.prix_unitaire > 0">Ajouter au panier</template>
-                                <template v-else>Réserver ma place (Gratuit)</template>
+                                <template v-if="formation.statut !== 'Ouvert'"
+                                    >❌ Complet</template
+                                >
+                                <template
+                                    v-else-if="formation.prix_unitaire > 0"
+                                    >Ajouter au panier</template
+                                >
+                                <template v-else
+                                    >Réserver ma place (Gratuit)</template
+                                >
                             </span>
                         </button>
 
@@ -188,11 +295,24 @@ const userScore = ref(0);
 const isRegistered = ref(false);
 const isLeaving = ref(false);
 
+const participants = ref([]);
+const participantsLoading = ref(false);
+
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {
     const prenom = sessionStorage.getItem("userPrenom") || "";
     const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
+});
+
+const canViewParticipants = computed(() => {
+    if (!formation.value) return false;
+    const currentUserId = parseInt(sessionStorage.getItem("userId") || "0");
+    const currentUserRole = sessionStorage.getItem("userRole") || "";
+    return (
+        currentUserId === formation.value.id_formateur ||
+        currentUserRole === "Admin"
+    );
 });
 
 const formatDateLong = (d) => {
@@ -208,11 +328,17 @@ const fetchDetail = async () => {
     const id = route.params.id;
     const userId = sessionStorage.getItem("userId") || 0;
     try {
-        const res = await fetch(`http://localhost:8081/formations/${id}?user_id=${userId}`);
+        const res = await fetch(
+            `http://localhost:8081/formations/${id}?user_id=${userId}`,
+        );
         if (res.ok) {
             const data = await res.json();
             formation.value = data;
             isRegistered.value = data.is_registered;
+
+            if (canViewParticipants.value) {
+                fetchParticipants(id);
+            }
         }
     } catch (error) {
         console.error("Erreur fetch :", error);
@@ -221,11 +347,27 @@ const fetchDetail = async () => {
     }
 };
 
+const fetchParticipants = async (formationId) => {
+    participantsLoading.value = true;
+    try {
+        const res = await fetch(
+            `http://localhost:8081/api/formations/${formationId}/participants`,
+        );
+        if (res.ok) {
+            participants.value = await res.json();
+        }
+    } catch (error) {
+        console.error("Erreur chargement participants:", error);
+    } finally {
+        participantsLoading.value = false;
+    }
+};
+
 const viewProfile = (id) => {
     if (id) {
         router.push(`/user/${id}`);
     } else {
-        console.error("ID manquant");
+        console.error("ID manquant pour la redirection");
     }
 };
 
@@ -235,20 +377,23 @@ const handleAddToCart = async () => {
     if (!token || !userId) return router.push("/connexion");
     isAddingToCart.value = true;
     try {
-        const res = await fetch(`http://localhost:8081/users/${userId}/panier`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
+        const res = await fetch(
+            `http://localhost:8081/users/${userId}/panier`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    type_item: "Formation",
+                    reference_id: parseInt(formation.value.id),
+                    prix_unitaire: parseFloat(formation.value.prix_unitaire),
+                }),
             },
-            body: JSON.stringify({
-                type_item: "Formation",
-                reference_id: parseInt(formation.value.id),
-                prix_unitaire: parseFloat(formation.value.prix_unitaire),
-            }),
-        });
+        );
         if (res.ok) {
-            alert("Formation ajoutée à votre panier ! 🛒");
+            alert("Formation ajoutée à votre panier!");
         } else {
             const errorMsg = await res.text();
             alert("Erreur lors de l'ajout au panier : " + errorMsg);
@@ -276,7 +421,7 @@ const handleInscription = async () => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ id_utilisateur: parseInt(userId) }),
-            }
+            },
         );
         if (res.status === 201) {
             alert("Inscription réussie !");
@@ -297,7 +442,8 @@ const handleInscription = async () => {
 };
 
 const handleQuit = async () => {
-    if (!confirm("Voulez-vous vraiment vous désinscrire de cette formation ?")) return;
+    if (!confirm("Voulez-vous vraiment vous désinscrire de cette formation ?"))
+        return;
     const token = sessionStorage.getItem("userToken");
     const userId = sessionStorage.getItem("userId");
     isLeaving.value = true;
@@ -311,7 +457,7 @@ const handleQuit = async () => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ id_utilisateur: parseInt(userId) }),
-            }
+            },
         );
         if (res.ok) {
             alert("Vous avez bien été désinscrit.");
@@ -435,9 +581,18 @@ onMounted(fetchDetail);
     font-size: 0.75rem;
     font-weight: 800;
 }
-.type-atelier   { background: #e9f5ed; color: #2d7a4f; }
-.type-cours     { background: #e8eaf6; color: #3f51b5; }
-.type-webinaire { background: #f3e5f5; color: #7b1fa2; }
+.type-atelier {
+    background: #e9f5ed;
+    color: #2d7a4f;
+}
+.type-cours {
+    background: #e8eaf6;
+    color: #3f51b5;
+}
+.type-webinaire {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
 
 .description-section {
     display: flex;
@@ -508,7 +663,6 @@ onMounted(fetchDetail);
     color: #2d7a4f !important;
 }
 
-/* PANNEAU DROIT */
 .side-card {
     padding: 1.5rem 2rem;
     gap: 1rem;
@@ -589,7 +743,39 @@ onMounted(fetchDetail);
     font-size: 0.85rem;
 }
 
-/* PRIX */
+.participants-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cursor-pointer:hover {
+    transform: translateY(-2px);
+}
+
+.participant-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border-color: #dcdcdc;
+}
+
 .price-card {
     text-align: center;
 }
@@ -607,7 +793,6 @@ onMounted(fetchDetail);
     margin: 0;
 }
 
-/* BOUTONS */
 .form-actions-card {
     margin-top: 0.2rem;
     padding: 0;

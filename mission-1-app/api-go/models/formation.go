@@ -5,6 +5,7 @@ type GetFormation struct {
 	ID_formateur  int     `json:"id_formateur"`
 	Prenom_formateur string    `json:"prenom_formateur"`
     Nom_formateur    string    `json:"nom_formateur"`
+    Image_formateur	string 	`json:"image_formateur"`
     IsRegistered    bool	`json:"is_registered"`
 	Type          string  `json:"type"`
 	Titre         string  `json:"titre"`
@@ -36,4 +37,12 @@ type Formation struct {
 	Adresse       string  `json:"adresse"`
 	Ville         string  `json:"ville"`
 	Code_postal   string  `json:"code_postal"`
+}
+
+type Participant struct {
+	ID          int    `json:"id"`
+	Prenom      string `json:"prenom"`
+	Nom         string `json:"nom"`
+	ImageProfil string `json:"image_profil"`
+	Role        string `json:"role"`
 }

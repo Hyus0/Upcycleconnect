@@ -47,16 +47,25 @@
                             >
                                 {{ isFollowing ? "Suivi(e)" : "+ Suivre" }}
                             </button>
+                            <button
+                                v-if="currentUserId !== user.id"
+                                class="btn-message-joint"
+                                type="button"
+                                @click="openDirectMessage"
+                            >
+                                Message
+                            </button>
                         </div>
                     </div>
 
                     <div class="profile-identity">
                         <h1 class="user-name">
                             {{ user.prenom }} {{ user.nom }}
+                            <span v-if="user.is_premium" class="premium-check" title="Membre DM Plus">✓ Premium</span>
                         </h1>
-                        <span class="badge badge--green"
-                            >Membre UpcycleConnect - Particulier</span
-                        >
+                        <span class="badge badge--green">
+                            Membre UpcycleConnect - {{ user.role || "Particulier" }}
+                        </span>
                     </div>
 
                     <div class="profile-meta-details">
@@ -311,13 +320,14 @@ import { useRoute, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 import imageParDefaut from "../components/upcycling-concept.jpg";
+import { startConversation } from "../services/messagesApi";
 
 import basicBanner from "../components/basicBanner.jpg";
 import basicAvatar from "../components/basicAvatar.png";
 
 const route = useRoute();
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const loading = ref(true);
 const user = ref(null);
@@ -416,6 +426,30 @@ const toggleFollow = async () => {
         isFollowing.value = !isFollowing.value;
         followersCount.value += isFollowing.value ? 1 : -1;
         console.error(e);
+    }
+};
+
+const openDirectMessage = async () => {
+    if (!isLoggedIn.value) {
+        router.push("/connexion");
+        return;
+    }
+
+    try {
+        const result = await startConversation({
+            targetUserId: Number(user.value.id),
+            annonceId: null
+        });
+        router.push(`/messages?conversation=${result.conversation_id}`);
+    } catch (error) {
+        if (error.status === 402) {
+            const message = error.payload?.message || "DM Plus est requis pour contacter directement ce membre.";
+            if (window.confirm(`${message}\n\nVoulez-vous prendre DM Plus a 2,99 € / mois ?`)) {
+                router.push("/abonnement");
+            }
+            return;
+        }
+        alert(error.message || "Impossible d'ouvrir la conversation.");
     }
 };
 
@@ -587,6 +621,9 @@ watch(() => route.params.id, loadProfile);
 
 .action-buttons-wrapper {
     margin-top: 80px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .profile-identity {
@@ -603,6 +640,19 @@ watch(() => route.params.id, loadProfile);
     color: #1a1a1a;
     margin: 0;
     line-height: 1.1;
+}
+.premium-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 10px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    color: #102018;
+    background: #8ef0a8;
+    font-size: 0.78rem;
+    font-weight: 900;
+    vertical-align: middle;
 }
 .badge {
     padding: 4px 10px;
@@ -638,6 +688,22 @@ watch(() => route.params.id, loadProfile);
 }
 .btn-follow-joint.is-following:hover {
     background-color: #f0f4f1;
+}
+
+.btn-message-joint {
+    padding: 10px 24px;
+    background-color: #102018;
+    color: #ffffff;
+    border: 1px solid #102018;
+    border-radius: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-message-joint:hover {
+    background-color: #2d7a4f;
+    border-color: #2d7a4f;
 }
 
 .profile-meta-details {

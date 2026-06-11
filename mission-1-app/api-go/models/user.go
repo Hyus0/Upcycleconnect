@@ -6,7 +6,7 @@ type User struct {
 	Nom                string `json:"nom"`
 	Password           string `json:"password,omitempty"`
 	ImageProfil        string `json:"image_profil"`
-	Banniere           string `json:"banniere"`    
+	Banniere           string `json:"banniere"`
 	Mail               string `json:"mail"`
 	Adresse            string `json:"adresse"`
 	Ville              string `json:"ville"`
@@ -17,14 +17,15 @@ type User struct {
 	Role               string `json:"role"`
 	Statut             string `json:"statut"`
 	IdLangue           int    `json:"id_langue"`
+	IsPremium          bool   `json:"is_premium"`
 }
 
 type GetUser struct {
 	Id                 int    `json:"id"`
 	Prenom             string `json:"prenom"`
 	Nom                string `json:"nom"`
-	ImageProfil        string `json:"image_profil"` 
-	Banniere           string `json:"banniere"` 
+	ImageProfil        string `json:"image_profil"`
+	Banniere           string `json:"banniere"`
 	Mail               string `json:"mail"`
 	Adresse            string `json:"adresse"`
 	Ville              string `json:"ville"`
@@ -35,12 +36,13 @@ type GetUser struct {
 	Role               string `json:"role"`
 	Statut             string `json:"statut"`
 	IdLangue           int    `json:"id_langue"`
+	IsPremium          bool   `json:"is_premium"`
 }
 
 type UserStats struct {
-	Points           int     `json:"total_points"`
-	Niveau           string  `json:"niveau"`
-	Co2Evite         float64 `json:"co2_total_evite_kg"`
-	ObjetsRecycles   int     `json:"nb_objets_recycles"`
-	ArgentEconomise  float64 `json:"ressources_economisees"`
+	Points          int     `json:"total_points"`
+	Niveau          string  `json:"niveau"`
+	Co2Evite        float64 `json:"co2_total_evite_kg"`
+	ObjetsRecycles  int     `json:"nb_objets_recycles"`
+	ArgentEconomise float64 `json:"ressources_economisees"`
 }

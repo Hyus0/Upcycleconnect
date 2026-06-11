@@ -198,7 +198,7 @@ const isLoggedIn = ref(!!sessionStorage.getItem("userToken"));
 
 const fetchStats = async () => {
     try {
-        const res = await fetch("http://localhost:8081/stats/platform");
+        const res = await fetch("/go/stats/platform");
         if (res.ok) {
             stats.value = await res.json();
         }
@@ -229,7 +229,7 @@ const pickRandomComment = () => {
 
 const fetchCommentaires = async () => {
     try {
-        const res = await fetch("http://localhost:8081/commentaires");
+        const res = await fetch("/go/commentaires");
         if (res.ok) {
             commentaires.value = await res.json();
             if (commentaires.value && commentaires.value.length > 0) {
@@ -271,7 +271,7 @@ async function handleLogin() {
     };
 
     try {
-        const response = await fetch("http://localhost:8081/login", {
+        const response = await fetch("/go/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData),
@@ -288,6 +288,7 @@ async function handleLogin() {
             sessionStorage.setItem("userPrenom", data.prenom || "");
             sessionStorage.setItem("userNom", data.nom || "");
             sessionStorage.setItem("userRole", data.role || "Particulier");
+            sessionStorage.setItem("isPremium", data.is_premium || data.isPremium ? "true" : "false");
             router.push("/profil");
         } else {
             errorMessages.value = Array.isArray(data)

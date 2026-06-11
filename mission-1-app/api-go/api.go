@@ -32,12 +32,20 @@ func enableCORS(next http.Handler) http.Handler {
 
 func main() {
 	db.Conn = db.NewDB()
+	if err := db.EnsureMessagingTables(); err != nil {
+		panic(err.Error())
+	}
+	if err := app.EnsureAdminSchema(); err != nil {
+		panic(err.Error())
+	}
 
 	http.HandleFunc("GET /", healthCheck)
 	http.HandleFunc("GET /health", healthCheck)
 
 	// Admin API consumed by the Vue backoffice.
 	http.HandleFunc("GET /api/admin/metrics", app.AdminMetrics)
+	http.HandleFunc("GET /api/admin/system/overview", app.AdminSystemOverview)
+	http.HandleFunc("GET /api/admin/system/raw", app.AdminRawDump)
 	http.HandleFunc("GET /{$}", healthCheck)
 	http.HandleFunc("GET /api/admin/users", app.AdminListUsers)
 	http.HandleFunc("GET /api/admin/users/{id}", app.AdminGetUser)
@@ -66,6 +74,9 @@ func main() {
 	http.HandleFunc("PATCH /api/admin/moderation/events/{id}/publish", app.AdminPublishEvent)
 	http.HandleFunc("PATCH /api/admin/moderation/events/{id}/archive", app.AdminArchiveEvent)
 	http.HandleFunc("GET /api/admin/finance/overview", app.AdminFinanceOverview)
+	http.HandleFunc("GET /api/admin/subscriptions", app.AdminListSubscriptions)
+	http.HandleFunc("GET /api/admin/messages", app.AdminListMessages)
+	http.HandleFunc("GET /api/admin/commerce", app.AdminListCommerce)
 	http.HandleFunc("GET /api/admin/notifications", app.AdminListNotifications)
 	http.HandleFunc("POST /api/admin/notifications", app.AdminCreateNotification)
 	http.HandleFunc("PATCH /api/admin/notifications/{id}/status", app.AdminUpdateNotificationStatus)
@@ -77,7 +88,7 @@ func main() {
 	//Stat
 
 	http.HandleFunc("GET /stats/platform", app.GetPlatformStatsHandler)
-	
+
 	//Utilisateur
 	http.HandleFunc("GET /users", app.GetAllUsers)
 	http.HandleFunc("POST /users", app.CreateUser)
@@ -91,9 +102,9 @@ func main() {
 	http.HandleFunc("GET /user/planning/{id}", app.GetPlanningHandler)
 	http.HandleFunc("POST /users/{id}/images", app.UploadUserImages)
 	http.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./uploads"))))
-	
+
 	// Avis
-	http.HandleFunc("GET /users/{id}/avis", app.GetUserAvisHandler) 
+	http.HandleFunc("GET /users/{id}/avis", app.GetUserAvisHandler)
 	http.HandleFunc("POST /users/{id}/avis", app.AddAvisHandler)
 
 	// Follow
@@ -112,7 +123,7 @@ func main() {
 	http.HandleFunc("GET /users/{id}/favoris", app.GetMesFavorisHandler)
 	http.HandleFunc("GET /users/{id}/achats", app.GetUserAchatsHandler)
 	http.HandleFunc("POST /annonces/{id}/image", app.UploadAnnonceImage)
-	
+
 	//Evenement
 	http.HandleFunc("GET /evenements", app.GetAllEvenements)
 	http.HandleFunc("GET /evenements/{id}", app.GetEvenement)
@@ -139,7 +150,7 @@ func main() {
 	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormation)
 	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormation)
 	http.HandleFunc("GET /api/formations/{id}/participants", app.GetFormationParticipantsHandler)
-	
+
 	//Logistique
 	http.HandleFunc("GET /sites", app.GetAllSites)
 	http.HandleFunc("GET /site/{id}", app.GetSiteHandler)
@@ -148,7 +159,7 @@ func main() {
 	http.HandleFunc("POST /annonces/{id}/acheter", app.AcheterAnnonceHandler)
 	http.HandleFunc("POST /annonces/{id}/reserver", app.ReserverCasierHandler)
 	http.HandleFunc("POST /depot", app.DeposerObjetHandler)
-	
+
 	//Projets
 	http.HandleFunc("GET /projets", app.GetAllProjets)
 	http.HandleFunc("GET /projet/{id}", app.GetProjet)
@@ -161,7 +172,7 @@ func main() {
 	http.HandleFunc("POST /projets", app.CreateProjetHandler)
 	http.HandleFunc("PUT /projets/{id}", app.UpdateProjetHandler)
 	http.HandleFunc("POST /projets/upload-image", app.UploadProjetImageHandler)
-	
+
 	//tips
 	http.HandleFunc("GET /tips/role/{role}", app.GetTipByRoleHandler)
 	http.HandleFunc("GET /tips", app.GetAllTipsHandler)
@@ -169,30 +180,45 @@ func main() {
 	http.HandleFunc("POST /tips", app.CreateTipHandler)
 	http.HandleFunc("PUT /tips/{id}", app.UpdateTipHandler)
 	http.HandleFunc("DELETE /tips/{id}", app.DeleteTipHandler)
-	
+
 	//commentaires
 	http.HandleFunc("GET /commentaires", app.GetAllCommentairesHandler)
 
 	//forums
 	http.HandleFunc("GET /forums", app.GetForumsHandler)
-    http.HandleFunc("POST /forums/message", app.SendMessageHandler)
-    http.HandleFunc("POST /forums/topic", app.CreateTopicHandler)
-    http.HandleFunc("DELETE /forums/message/{id}", app.DeleteMessageHandler)
-    http.HandleFunc("DELETE /forums/topic/{id}", app.DeleteTopicHandler)    
-    http.HandleFunc("GET /forums/messages/recent", app.GetRecentMessagesHandler)
-    http.HandleFunc("POST /forums/message/{id}/signaler", app.SignalerMessageHandler)
-    http.HandleFunc("GET /api/moderation/forums/signales", app.TopMessageSignaleHandler)
-    http.HandleFunc("PUT /api/moderation/user/{id}/ban-forum", app.BanUserForumHandler)	
-    http.HandleFunc("GET /api/moderation/users/banned", app.GetBannedUsersHandler)
+	http.HandleFunc("POST /forums/message", app.SendMessageHandler)
+	http.HandleFunc("POST /forums/topic", app.CreateTopicHandler)
+	http.HandleFunc("DELETE /forums/message/{id}", app.DeleteMessageHandler)
+	http.HandleFunc("DELETE /forums/topic/{id}", app.DeleteTopicHandler)
+	http.HandleFunc("GET /forums/messages/recent", app.GetRecentMessagesHandler)
+	http.HandleFunc("POST /forums/message/{id}/signaler", app.SignalerMessageHandler)
+	http.HandleFunc("GET /api/moderation/forums/signales", app.TopMessageSignaleHandler)
+	http.HandleFunc("PUT /api/moderation/user/{id}/ban-forum", app.BanUserForumHandler)
+	http.HandleFunc("GET /api/moderation/users/banned", app.GetBannedUsersHandler)
 	http.HandleFunc("GET /api/moderation/topics", app.GetModerationTopicsHandler)
 	//panier
 	http.HandleFunc("GET /users/{id}/panier", app.GetPanierHandler)
 	http.HandleFunc("POST /users/{id}/panier", app.AddToPanierHandler)
 	http.HandleFunc("DELETE /users/{id}/panier/{itemId}", app.RemoveFromPanierHandler)
-	http.HandleFunc("POST /users/{id}/checkout", app.CheckoutHandler)
+	http.HandleFunc("POST /users/{id}/checkout", app.CheckoutWithInvoiceHandler)
+	http.HandleFunc("GET /users/{id}/factures", app.GetFacturesHandler)
+	http.HandleFunc("GET /users/{id}/factures/{factureId}/download", app.DownloadFactureHandler)
+	http.HandleFunc("POST /users/{id}/factures/{factureId}/send", app.SendFactureByMailHandler)
+
+	// Messagerie privee
+	http.HandleFunc("GET /users/{id}/subscription", app.GetSubscriptionStatusHandler)
+	http.HandleFunc("GET /users/{id}/messages", app.GetConversationsHandler)
+	http.HandleFunc("POST /users/{id}/messages/start", app.StartConversationHandler)
+	http.HandleFunc("GET /users/{id}/messages/{conversationId}", app.GetConversationMessagesHandler)
+	http.HandleFunc("POST /users/{id}/messages/{conversationId}", app.SendDMMessageHandler)
+	http.HandleFunc("GET /users/{id}/messages/{conversationId}/state", app.GetConversationStateHandler)
+	http.HandleFunc("POST /users/{id}/messages/{conversationId}/offers", app.CreateDMOfferHandler)
+	http.HandleFunc("PATCH /users/{id}/messages/offers/{offerId}", app.RespondDMOfferHandler)
+	http.HandleFunc("POST /users/{id}/messages/sales/{saleId}/reception", app.ConfirmDMSaleReceptionHandler)
+	http.HandleFunc("POST /users/{id}/messages/sales/{saleId}/review", app.ReviewDMSaleHandler)
 
 	//notification
-	http.HandleFunc("GET /notifications", app.GetAllNotificationsHandler)	
+	http.HandleFunc("GET /notifications", app.GetAllNotificationsHandler)
 	http.HandleFunc("GET /notifications/{id}", app.GetNotificationHandler)
 	http.HandleFunc("GET /users/{id}/notifications", app.GetNotificationsHandler)
 	http.HandleFunc("POST /notifications/{id}/read", app.MarquerNotificationLueHandler)
@@ -201,7 +227,7 @@ func main() {
 	http.HandleFunc("GET /langues", app.GetLanguesHandler)
 	http.HandleFunc("GET /traductions/{code}", app.GetTraductionsHandler)
 	http.HandleFunc("PUT /users/{id}/langue", app.UpdateLangueHandler)
-	
+
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))
 }

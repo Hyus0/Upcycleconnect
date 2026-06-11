@@ -14,6 +14,54 @@ func adminDBEnabled() bool {
 	return db.Conn != nil
 }
 
+func EnsureAdminSchema() error {
+	if !adminDBEnabled() {
+		return nil
+	}
+
+	statements := []struct {
+		table  string
+		column string
+		query  string
+	}{
+		{"ANNONCE", "provider", "ALTER TABLE ANNONCE ADD COLUMN provider VARCHAR(150) NULL AFTER code_postal"},
+		{"EVENEMENT", "capacite_max", "ALTER TABLE EVENEMENT ADD COLUMN capacite_max INT DEFAULT 0 AFTER date_evenement"},
+		{"EVENEMENT", "statut", "ALTER TABLE EVENEMENT ADD COLUMN statut ENUM('planned', 'published', 'archived') DEFAULT 'planned' AFTER capacite_max"},
+		{"NOTIFICATION", "canal", "ALTER TABLE NOTIFICATION ADD COLUMN canal ENUM('email', 'push', 'sms') DEFAULT 'email' AFTER type"},
+		{"NOTIFICATION", "audience", "ALTER TABLE NOTIFICATION ADD COLUMN audience ENUM('all', 'particuliers', 'prestataires', 'admins') DEFAULT 'all' AFTER canal"},
+		{"NOTIFICATION", "statut", "ALTER TABLE NOTIFICATION ADD COLUMN statut ENUM('draft', 'scheduled', 'sent') DEFAULT 'sent' AFTER audience"},
+		{"NOTIFICATION", "scheduled_at", "ALTER TABLE NOTIFICATION ADD COLUMN scheduled_at DATETIME NULL AFTER date_envoi"},
+	}
+
+	for _, statement := range statements {
+		exists, err := adminColumnExists(statement.table, statement.column)
+		if err != nil {
+			return err
+		}
+		if exists {
+			continue
+		}
+		if _, err := db.Conn.Exec(statement.query); err != nil {
+			return err
+		}
+	}
+
+	_, _ = db.Conn.Exec("ALTER TABLE ANNONCE MODIFY COLUMN type ENUM('Don', 'Vente', 'Service')")
+	return nil
+}
+
+func adminColumnExists(tableName, columnName string) (bool, error) {
+	var count int
+	err := db.Conn.QueryRow(`
+		SELECT COUNT(*)
+		FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = ?
+		  AND COLUMN_NAME = ?
+	`, tableName, columnName).Scan(&count)
+	return count > 0, err
+}
+
 func parseAdminIntID(id string) (int, error) {
 	value, err := strconv.Atoi(strings.TrimSpace(id))
 	if err != nil || value <= 0 {
@@ -325,7 +373,15 @@ func deleteAdminUserInDB(id string) error {
 
 func listAdminPrestationsFromDB(filterType string) ([]AdminPrestation, error) {
 	query := `
-		SELECT id, titre, description, type, prix, statut, est_valide, provider, date_creation
+		SELECT id,
+			COALESCE(titre, ''),
+			COALESCE(description, ''),
+			COALESCE(type, 'Don'),
+			COALESCE(prix, 0),
+			COALESCE(statut, 'Disponible'),
+			COALESCE(est_valide, 'En attente'),
+			COALESCE(provider, ''),
+			COALESCE(date_creation, NOW())
 		FROM ANNONCE
 	`
 	args := []any{}
@@ -366,7 +422,15 @@ func getAdminPrestationFromDB(id string) (*AdminPrestation, error) {
 	var dbType, statut, estValide string
 	var createdAt time.Time
 	err := db.Conn.QueryRow(`
-		SELECT id, titre, description, type, prix, statut, est_valide, provider, date_creation
+		SELECT id,
+			COALESCE(titre, ''),
+			COALESCE(description, ''),
+			COALESCE(type, 'Don'),
+			COALESCE(prix, 0),
+			COALESCE(statut, 'Disponible'),
+			COALESCE(est_valide, 'En attente'),
+			COALESCE(provider, ''),
+			COALESCE(date_creation, NOW())
 		FROM ANNONCE WHERE id = ?
 	`, id).Scan(&intIDValue, &item.Title, &item.Description, &dbType, &item.Price, &statut, &estValide, &item.Provider, &createdAt)
 	if err == sql.ErrNoRows {
@@ -417,7 +481,7 @@ func deleteAdminPrestationInDB(id string) error {
 }
 
 func listAdminCategoriesFromDB() ([]AdminCategory, error) {
-	rows, err := db.Conn.Query(`SELECT id, nom, id_parent, description, statut FROM CATEGORIE ORDER BY id DESC`)
+	rows, err := db.Conn.Query(`SELECT id, COALESCE(nom, ''), id_parent, COALESCE(description, ''), COALESCE(statut, 'active') FROM CATEGORIE ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +511,7 @@ func getAdminCategoryFromDB(id string) (*AdminCategory, error) {
 	var intIDValue int
 	var parentID sql.NullInt64
 	var statut string
-	err := db.Conn.QueryRow(`SELECT id, nom, id_parent, description, statut FROM CATEGORIE WHERE id = ?`, id).Scan(&intIDValue, &item.Name, &parentID, &item.Description, &statut)
+	err := db.Conn.QueryRow(`SELECT id, COALESCE(nom, ''), id_parent, COALESCE(description, ''), COALESCE(statut, 'active') FROM CATEGORIE WHERE id = ?`, id).Scan(&intIDValue, &item.Name, &parentID, &item.Description, &statut)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -518,7 +582,13 @@ func deleteAdminCategoryInDB(id string) error {
 
 func listAdminEventsFromDB() ([]AdminEvent, error) {
 	rows, err := db.Conn.Query(`
-		SELECT id, titre, CONCAT_WS(', ', adresse, ville, code_postal) AS location, date_evenement, statut, capacite_max, description
+		SELECT id,
+			COALESCE(titre, ''),
+			CONCAT_WS(', ', adresse, ville, code_postal) AS location,
+			COALESCE(date_evenement, NOW()),
+			COALESCE(statut, 'planned'),
+			COALESCE(capacite_max, 0),
+			COALESCE(description, '')
 		FROM EVENEMENT
 		ORDER BY date_evenement ASC, id DESC
 	`)
@@ -547,7 +617,13 @@ func getAdminEventFromDB(id string) (*AdminEvent, error) {
 	var intIDValue int
 	var eventDate time.Time
 	err := db.Conn.QueryRow(`
-		SELECT id, titre, CONCAT_WS(', ', adresse, ville, code_postal) AS location, date_evenement, statut, capacite_max, description
+		SELECT id,
+			COALESCE(titre, ''),
+			CONCAT_WS(', ', adresse, ville, code_postal) AS location,
+			COALESCE(date_evenement, NOW()),
+			COALESCE(statut, 'planned'),
+			COALESCE(capacite_max, 0),
+			COALESCE(description, '')
 		FROM EVENEMENT
 		WHERE id = ?
 	`, id).Scan(&intIDValue, &item.Title, &item.Location, &eventDate, &item.Status, &item.Capacity, &item.Description)
@@ -614,7 +690,7 @@ func financeOverviewFromDB() (map[string]any, []AdminFinanceRecord, error) {
 	items := []AdminFinanceRecord{}
 
 	rows, err := db.Conn.Query(`
-		SELECT id, type, montant_ht, statut_paiement, date_transaction
+		SELECT id, CONCAT('commande-', id_commande), COALESCE(montant_total, 0), COALESCE(statut_paiement, 'En attente'), COALESCE(date_transaction, NOW())
 		FROM ` + "`TRANSACTION`" + `
 		ORDER BY date_transaction DESC, id DESC
 	`)
@@ -667,7 +743,7 @@ func financeOverviewFromDB() (map[string]any, []AdminFinanceRecord, error) {
 
 func listAdminNotificationsFromDB() ([]AdminNotification, error) {
 	rows, err := db.Conn.Query(`
-		SELECT id, titre, canal, audience, statut, scheduled_at, message
+		SELECT id, COALESCE(titre, ''), COALESCE(canal, 'email'), COALESCE(audience, 'all'), COALESCE(statut, 'sent'), scheduled_at, COALESCE(message, '')
 		FROM NOTIFICATION
 		ORDER BY date_envoi DESC, id DESC
 	`)

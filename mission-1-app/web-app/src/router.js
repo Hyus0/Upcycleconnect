@@ -14,18 +14,23 @@ import Projets from "./pages/Projets.vue";
 import Conseils from "./pages/Conseils.vue";
 import Panier from "./pages/PanierDetail.vue";
 import ClaimObjet from "./pages/ClaimObjet.vue";
+import Messages from "./pages/Messages.vue";
+import Abonnement from "./pages/Abonnement.vue";
 
 const routes = [
   { path: "/", component: Home },
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
   { path: "/catalogue", component: Annonces },
+  { path: "/annonces", component: Annonces },
   { path: "/forums", component: Forums },
   { path: "/formations", component: Formations },
   { path: "/evenements", component: Evenements },
   { path: "/projets", component: Projets },
   { path: "/conseils", component: Conseils },
   { path: "/panier", component: Panier },
+  { path: "/messages", component: Messages, meta: { requiresAuth: true } },
+  { path: "/abonnement", component: Abonnement, meta: { requiresAuth: true } },
   {
     path: '/annonce/:id',
     name: 'annonce-detail',
@@ -290,7 +295,7 @@ router.beforeEach(async (to, from, next) => {
 
     try {
       const response = await fetch(
-        `http://localhost:8081/check-session?id=${id}`,
+        `/go/check-session?id=${id}`,
         {
           headers: { Authorization: token },
         }

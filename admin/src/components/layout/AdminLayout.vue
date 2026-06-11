@@ -9,7 +9,7 @@
       </div>
 
       <nav class="nav-group">
-        <div class="nav-heading">Admin</div>
+        <div class="nav-heading">Pilotage front</div>
         <RouterLink
           v-for="item in adminItems"
           :key="item.name"
@@ -46,14 +46,15 @@ const sidebarOpen = ref(false);
 const route = useRoute();
 
 const adminItems = [
-  { name: "dashboard", label: "Dashboard", to: { name: "dashboard" }, icon: "01" },
-  { name: "users", label: "Utilisateurs", to: { name: "users" }, icon: "02" },
-  { name: "prestations", label: "Annonces / Prestations", to: { name: "prestations" }, icon: "03" },
+  { name: "dashboard", label: "Vue globale", to: { name: "dashboard" }, icon: "01" },
+  { name: "users", label: "Comptes", to: { name: "users" }, icon: "02" },
+  { name: "prestations", label: "Catalogue", to: { name: "prestations" }, icon: "03" },
   { name: "categories", label: "Categories", to: { name: "categories" }, icon: "04" },
-  { name: "events", label: "Evenements", to: { name: "events" }, icon: "05" },
+  { name: "events", label: "Planning", to: { name: "events" }, icon: "05" },
   { name: "moderation", label: "Moderation", to: { name: "moderation" }, icon: "06" },
-  { name: "finance", label: "Finances", to: { name: "finance" }, icon: "07" },
-  { name: "notifications", label: "Notifications", to: { name: "notifications" }, icon: "08" }
+  { name: "finance", label: "Paiements", to: { name: "finance" }, icon: "07" },
+  { name: "notifications", label: "Notifications", to: { name: "notifications" }, icon: "08" },
+  { name: "system", label: "Messages & ventes", to: { name: "system" }, icon: "09" }
 ];
 
 const currentRouteName = computed(() => route.name);
@@ -63,7 +64,7 @@ const currentRouteName = computed(() => route.name);
 .admin-layout {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 272px 1fr;
+  grid-template-columns: 292px 1fr;
   gap: 20px;
   padding: 20px;
 }
@@ -76,13 +77,13 @@ const currentRouteName = computed(() => route.name);
 }
 
 .sidebar {
-  padding: 28px 22px;
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
   gap: 18px;
   background:
-    radial-gradient(circle at top, rgba(75, 171, 115, 0.12), transparent 28%),
-    linear-gradient(180deg, rgba(24, 29, 27, 0.99) 0%, rgba(39, 45, 42, 0.98) 100%);
+    radial-gradient(circle at 50% 0%, rgba(98, 196, 136, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(16, 27, 23, 0.98) 0%, rgba(23, 33, 29, 0.98) 100%);
   color: rgba(255, 255, 255, 0.92);
   position: sticky;
   top: 20px;
@@ -94,17 +95,20 @@ const currentRouteName = computed(() => route.name);
 .sidebar-brand {
   margin-bottom: 6px;
   display: grid;
-  gap: 14px;
+  gap: 18px;
+  padding: 8px 8px 18px;
+  border-bottom: 1px solid rgba(152, 179, 163, 0.14);
 }
 
 .sidebar-logo {
   display: block;
-  width: min(100%, 88px);
+  width: min(100%, 92px);
   object-fit: contain;
 }
 
 .sidebar-badge {
   display: inline-flex;
+  width: fit-content;
   padding: 8px 14px;
   border-radius: 999px;
   background: rgba(45, 122, 79, 0.2);
@@ -131,19 +135,21 @@ const currentRouteName = computed(() => route.name);
 
 .nav-link {
   display: grid;
-  grid-template-columns: 42px 1fr;
+  grid-template-columns: 46px 1fr;
   gap: 12px;
   align-items: center;
-  padding: 14px 14px 14px 12px;
-  border-radius: 20px;
+  padding: 13px 14px 13px 12px;
+  border-radius: 18px;
   color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(152, 179, 163, 0.08);
+  background: rgba(255, 255, 255, 0.02);
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .nav-link-active {
   background:
-    linear-gradient(180deg, rgba(54, 141, 92, 0.34), rgba(30, 79, 52, 0.4));
+    radial-gradient(circle at 0% 50%, rgba(118, 230, 160, 0.28), transparent 38%),
+    linear-gradient(180deg, rgba(54, 141, 92, 0.42), rgba(30, 79, 52, 0.44));
   border-color: rgba(98, 196, 136, 0.45);
   color: white;
   box-shadow:

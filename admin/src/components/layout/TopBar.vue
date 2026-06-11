@@ -12,6 +12,7 @@
     </div>
 
     <div class="topbar-actions">
+      <span class="sync-dot"></span>
       <span class="page-chip">{{ pageTitle }}</span>
       <div class="admin-avatar">AD</div>
     </div>
@@ -32,13 +33,15 @@ const pageTitle = computed(() => route.meta.title ?? "Admin");
 <style scoped>
 .topbar {
   margin: 20px 20px 0 0;
-  padding: 14px 18px;
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  border-radius: 24px;
-  background: rgba(23, 30, 27, 0.95);
+  border-radius: 28px;
+  background:
+    linear-gradient(90deg, rgba(14, 26, 21, 0.98), rgba(21, 33, 28, 0.94)),
+    rgba(23, 30, 27, 0.95);
 }
 
 .left {
@@ -73,7 +76,7 @@ const pageTitle = computed(() => route.meta.title ?? "Admin");
 }
 
 .brand-logo {
-  width: 180px;
+  width: 164px;
   height: auto;
   object-fit: contain;
 }
@@ -88,12 +91,20 @@ const pageTitle = computed(() => route.meta.title ?? "Admin");
 .page-chip {
   padding: 0 14px;
   min-height: 40px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: inline-flex;
   align-items: center;
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
   font-weight: 700;
+}
+
+.sync-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--brand-green);
+  box-shadow: 0 0 0 8px rgba(98, 196, 136, 0.12);
 }
 
 .admin-avatar {

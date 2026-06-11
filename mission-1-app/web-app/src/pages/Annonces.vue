@@ -107,7 +107,7 @@
                 <button class="btn-main-action btn-small" type="button" @click="modifierAnnonce(annonce.id)">Modifier</button>
               </template>
               <template v-else>
-                <RouterLink class="btn-main-action btn-small" to="/profil/annonces">Contacter</RouterLink>
+                <button class="btn-main-action btn-small" type="button" @click="contactSeller(annonce)">Contacter</button>
               </template>
           </div>
         </article>
@@ -124,13 +124,14 @@ import { RouterLink, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 import imageParDefaut from "../components/upcycling-concept.jpg";
+import { fetchAnnonces } from "../services/annoncesApi";
+import { startConversation } from "../services/messagesApi";
 
 
 const router = useRouter();
 const loading = ref(true);
 const source = ref("api");
 const annonces = ref([]);
-const API_URL = "http://localhost:8081";
 
 const isParticulier = computed(() => {
   const role = sessionStorage.getItem("userRole");
@@ -198,6 +199,29 @@ function goToAnnonce(id) {
   router.push(`/annonce/${id}`); 
 }
 
+async function contactSeller(annonce) {
+  if (!isLoggedIn.value) {
+    router.push("/connexion");
+    return;
+  }
+
+  try {
+    const result = await startConversation({
+      targetUserId: Number(annonce.id_vendeur),
+      annonceId: Number(annonce.id)
+    });
+    router.push(`/messages?conversation=${result.conversation_id}`);
+  } catch (error) {
+    if (error.status === 402) {
+      const message = error.payload?.message || "Limite gratuite atteinte.";
+      const goPremium = window.confirm(`${message}\n\nVoulez-vous prendre DM Plus a 2,99 € / mois ?`);
+      if (goPremium) router.push("/abonnement");
+      return;
+    }
+    alert(error.message || "Impossible d'ouvrir la conversation.");
+  }
+}
+
 function formatPrice(value, type) {
   if (value === null || value === undefined || value === "") return "N/A";
   if ((type || "").toLowerCase() === "don" || Number(value) === 0) return "Gratuit";
@@ -210,13 +234,8 @@ function formatPrice(value, type) {
 onMounted(async () => {
   loading.value = true;
   try {
-    const res = await fetch(`${API_URL}/annonces`);
-    if (res.ok) {
-      annonces.value = await res.json() || [];
-      source.value = "api";
-    } else {
-      throw new Error("Erreur HTTP");
-    }
+    annonces.value = await fetchAnnonces();
+    source.value = "api";
   } catch (error) {
     console.error("Erreur lors de la récupération des annonces :", error);
     annonces.value = [];

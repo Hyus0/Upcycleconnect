@@ -1,6 +1,6 @@
 import { request } from "./http";
 
-const GO_API_BASE = import.meta.env.VITE_GO_API_BASE ?? "/api-go";
+const GO_API_BASE = import.meta.env.VITE_GO_API_BASE ?? "/go/api";
 
 function buildQuery(params = {}) {
   const searchParams = new URLSearchParams();
@@ -314,21 +314,42 @@ export const capabilities = {
 
 export const adminApi = {
   async getDashboard() {
-    const [metricsResponse, users, prestations, categories, events] = await Promise.all([
-      request(`${GO_API_BASE}/admin/metrics`),
+    const results = await Promise.allSettled([
+      request(`${GO_API_BASE}/admin/system/overview`),
       readUsersFromApi(),
       readPrestationsFromApi(),
       readCategoriesFromApi(),
-      readEventsFromApi()
+      readEventsFromApi(),
+      readModerationQueueFromApi(),
+      readFinanceFromApi(),
+      request(`${GO_API_BASE}/admin/subscriptions`),
+      request(`${GO_API_BASE}/admin/messages`),
+      request(`${GO_API_BASE}/admin/commerce`),
+      readNotificationsFromApi()
     ]);
 
+    const valueAt = (index, fallback) =>
+      results[index].status === "fulfilled" ? results[index].value : fallback;
+
     return buildDashboard({
-      users,
-      prestations,
-      categories,
-      events,
-      metrics: metricsResponse.metrics ?? {},
-      source: metricsResponse.source ?? "api"
+      overview: valueAt(0, { metrics: [] }),
+      users: valueAt(1, []),
+      prestations: valueAt(2, []),
+      categories: valueAt(3, []),
+      events: valueAt(4, []),
+      moderation: valueAt(5, []),
+      finance: valueAt(6, { summary: {}, items: [] }),
+      subscriptions: valueAt(7, { items: [] }),
+      messages: valueAt(8, { conversations: [], messages: [] }),
+      commerce: valueAt(9, { offers: [], sales: [] }),
+      notifications: valueAt(10, []),
+      errors: results
+        .map((result, index) => ({ result, index }))
+        .filter(({ result }) => result.status === "rejected")
+        .map(({ result, index }) => ({
+          index,
+          message: result.reason?.message ?? "Endpoint indisponible"
+        }))
     });
   },
 
@@ -530,6 +551,26 @@ export const adminApi = {
     return paginate(filterNotifications(items, filters), filters.page, filters.pageSize);
   },
 
+  async getSystemOverview() {
+    return request(`${GO_API_BASE}/admin/system/overview`);
+  },
+
+  async listSubscriptions() {
+    return request(`${GO_API_BASE}/admin/subscriptions`);
+  },
+
+  async listMessages() {
+    return request(`${GO_API_BASE}/admin/messages`);
+  },
+
+  async listCommerce() {
+    return request(`${GO_API_BASE}/admin/commerce`);
+  },
+
+  async rawDump(target) {
+    return request(`${GO_API_BASE}/admin/system/raw${buildQuery({ target })}`);
+  },
+
   async createNotification(payload) {
     const response = await request(`${GO_API_BASE}/admin/notifications`, {
       method: "POST",
@@ -555,20 +596,47 @@ export const adminApi = {
   }
 };
 
-function buildDashboard({ users, prestations, categories, events, metrics, source }) {
+function metricValue(metrics, key, fallback = 0) {
+  if (Array.isArray(metrics)) {
+    return metrics.find((item) => item.key === key)?.value ?? fallback;
+  }
+  return metrics?.[key] ?? fallback;
+}
+
+function buildDashboard({
+  overview,
+  users,
+  prestations,
+  categories,
+  events,
+  moderation,
+  finance,
+  subscriptions,
+  messages,
+  commerce,
+  notifications,
+  errors
+}) {
+  const metrics = overview.metrics ?? [];
   const usersByRole = users.reduce((acc, user) => {
     const key = user.role.toLowerCase();
     acc[key] = (acc[key] ?? 0) + 1;
     return acc;
   }, {});
 
+  const activeUsers = users.filter((user) => user.status === "active").length;
+  const pendingContent = moderation.length;
+  const activeSubscriptions = subscriptions.items?.filter((item) => item.status === "Actif").length ?? 0;
+  const openSales = commerce.sales?.filter((item) => item.status !== "Evaluee").length ?? 0;
+  const messageCount = messages.messages?.length ?? 0;
+
   return {
-    source,
+    source: errors.length === 0 ? "api" : "partial",
     stats: [
-      { label: "Utilisateurs", value: metrics.users ?? users.length, tone: "green" },
-      { label: "Prestations", value: metrics.annonces ?? prestations.length, tone: "teal" },
-      { label: "Categories", value: categories.length, tone: "sand" },
-      { label: "Evenements", value: events.length, tone: "amber" }
+      { label: "Utilisateurs", value: metricValue(metrics, "users", users.length), tone: "green" },
+      { label: "Annonces", value: metricValue(metrics, "annonces", prestations.length), tone: "teal" },
+      { label: "Messages", value: metricValue(metrics, "conversations", messages.conversations?.length ?? 0), tone: "sand" },
+      { label: "Ventes suivies", value: metricValue(metrics, "sales", commerce.sales?.length ?? 0), tone: "amber" }
     ],
     charts: {
       usersByRole: [
@@ -577,22 +645,83 @@ function buildDashboard({ users, prestations, categories, events, metrics, sourc
         { label: "Admins", value: usersByRole.admin ?? 0 }
       ],
       resources: [
-        { label: "Prestations", value: prestations.length },
+        { label: "Annonces", value: prestations.length },
         { label: "Categories", value: categories.length },
-        { label: "Evenements", value: events.length }
+        { label: "Evenements", value: events.length },
+        { label: "Notifications", value: notifications.length }
       ]
     },
-    quickNotes: [
-      { tone: "green", text: `${users.length} utilisateurs disponibles.` },
-      { tone: "green", text: `${prestations.length} prestations visibles.` },
-      { tone: source === "local" ? "amber" : "green", text: source === "local" ? "Mode local actif." : "Donnees API actives." }
+    domains: [
+      {
+        title: "Comptes",
+        value: activeUsers,
+        label: "actifs",
+        description: "Utilisateurs, roles, statuts et acces premium.",
+        route: "users"
+      },
+      {
+        title: "Catalogue",
+        value: prestations.length,
+        label: "annonces",
+        description: "Dons, ventes, prestations, prix et validation.",
+        route: "prestations"
+      },
+      {
+        title: "Planning",
+        value: events.length,
+        label: "evenements",
+        description: "Ateliers, formations, capacites et dates.",
+        route: "events"
+      },
+      {
+        title: "Moderation",
+        value: pendingContent,
+        label: "a traiter",
+        description: "Publications, contenus signales et archivage.",
+        route: "moderation"
+      },
+      {
+        title: "Messagerie",
+        value: messageCount,
+        label: "messages",
+        description: "DM, negociations, reception et avis.",
+        route: "system"
+      },
+      {
+        title: "Finance",
+        value: activeSubscriptions,
+        label: "abonnements",
+        description: "Paniers, commandes, factures et abonnements.",
+        route: "finance"
+      }
     ],
-    recentActivity: [...prestations, ...events]
+    quickNotes: [
+      { tone: "green", text: `${users.length} utilisateurs synchronises depuis l'API.` },
+      { tone: "green", text: `${prestations.length} annonces/prestations pilotables.` },
+      { tone: openSales > 0 ? "amber" : "green", text: `${openSales} ventes necessitent encore un suivi reception/avis.` },
+      {
+        tone: errors.length > 0 ? "amber" : "green",
+        text: errors.length > 0 ? `${errors.length} endpoints partiellement indisponibles.` : "Tous les domaines admin repondent."
+      }
+    ],
+    alerts: errors,
+    recentActivity: [
+      ...prestations.map((item) => ({ ...item, kind: "Annonce" })),
+      ...events.map((item) => ({ ...item, kind: "Evenement" })),
+      ...(commerce.offers ?? []).map((item) => ({
+        id: `offer-${item.id}`,
+        title: `Offre #${item.id} - ${item.amount} EUR`,
+        subtitle: item.status,
+        kind: "Negociation"
+      })),
+      ...(notifications ?? []).map((item) => ({ ...item, kind: "Notification" }))
+    ]
       .slice(0, 5)
       .map((item) => ({
         id: item.id,
         title: item.title,
-        subtitle: item.description || item.location || "Activite"
+        subtitle: item.subtitle || item.description || item.location || item.status || "Activite",
+        kind: item.kind
       }))
   };
 }

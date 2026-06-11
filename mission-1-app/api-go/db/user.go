@@ -1,10 +1,10 @@
 package db
 
 import (
-	"upcycleconnect/api-go/models"
-	"upcycleconnect/api-go/passwordHashing"
 	"database/sql"
 	"fmt"
+	"upcycleconnect/api-go/models"
+	"upcycleconnect/api-go/passwordHashing"
 )
 
 func GetAllUsers() ([]models.GetUser, error) {
@@ -12,7 +12,15 @@ func GetAllUsers() ([]models.GetUser, error) {
 	query := `SELECT id, prenom, nom, mail, adresse, ville, code_postal,
 		          COALESCE(date_naissance, ''),
 		          COALESCE(date_inscription, ''),
-		          role, id_langue
+		          role, id_langue,
+		          EXISTS (
+		              SELECT 1 FROM ABONNEMENT a
+		              JOIN TYPE_ABONNEMENT ta ON ta.id = a.id_type_abonnement
+		              WHERE a.id_acheteur = UTILISATEUR.id
+		                AND a.statut = 'Actif'
+		                AND (a.date_fin IS NULL OR a.date_fin >= NOW())
+		                AND ta.nom = 'DM Plus'
+		          ) AS is_premium
 		          FROM UTILISATEUR`
 	rows, err := Conn.Query(query)
 	if err != nil {
@@ -22,7 +30,7 @@ func GetAllUsers() ([]models.GetUser, error) {
 
 	for rows.Next() {
 		var u models.GetUser
-		err := rows.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal, &u.DateNaissance, &u.DateInscription, &u.Role, &u.IdLangue)
+		err := rows.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal, &u.DateNaissance, &u.DateInscription, &u.Role, &u.IdLangue, &u.IsPremium)
 		if err != nil {
 			return nil, fmt.Errorf("GetAllUsers scan: %v", err)
 		}
@@ -33,21 +41,29 @@ func GetAllUsers() ([]models.GetUser, error) {
 
 func GetUser(userId int) (*models.GetUser, error) {
 	var u models.GetUser
-	
+
 	query := `SELECT id, prenom, nom, mail, adresse, ville, code_postal,
 		          COALESCE(image_profil, ''), COALESCE(banniere, ''),
 		          COALESCE(date_naissance, ''),
 		          COALESCE(date_inscription, ''),
 		          COALESCE(date_update_password, ''),
-		          role, id_langue
+		          role, id_langue,
+		          EXISTS (
+		              SELECT 1 FROM ABONNEMENT a
+		              JOIN TYPE_ABONNEMENT ta ON ta.id = a.id_type_abonnement
+		              WHERE a.id_acheteur = UTILISATEUR.id
+		                AND a.statut = 'Actif'
+		                AND (a.date_fin IS NULL OR a.date_fin >= NOW())
+		                AND ta.nom = 'DM Plus'
+		          ) AS is_premium
 		          FROM UTILISATEUR WHERE id = ?`
-	
+
 	row := Conn.QueryRow(query, userId)
 
 	err := row.Scan(
 		&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal,
-		&u.ImageProfil, &u.Banniere, 
-		&u.DateNaissance, &u.DateInscription, &u.DateUpdatePassword, &u.Role, &u.IdLangue,
+		&u.ImageProfil, &u.Banniere,
+		&u.DateNaissance, &u.DateInscription, &u.DateUpdatePassword, &u.Role, &u.IdLangue, &u.IsPremium,
 	)
 
 	if err == sql.ErrNoRows {
@@ -61,14 +77,14 @@ func GetUser(userId int) (*models.GetUser, error) {
 }
 
 func EmailExists(email string) (bool, error) {
-    var count int
-    query := "SELECT COUNT(*) FROM UTILISATEUR WHERE mail = ?"
+	var count int
+	query := "SELECT COUNT(*) FROM UTILISATEUR WHERE mail = ?"
 
-    err := Conn.QueryRow(query, email).Scan(&count)
-    if err != nil {
-        return false, err
-    }
-    return count > 0, nil
+	err := Conn.QueryRow(query, email).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func CreateUser(user models.User) error {
@@ -94,25 +110,25 @@ func CreateUser(user models.User) error {
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	result, err := Conn.Exec(query,
-		user.Prenom, 
-		user.Nom, 
-		user.Password, 
+		user.Prenom,
+		user.Nom,
+		user.Password,
 		user.Mail,
-		user.Adresse, 
-		user.Ville, 
+		user.Adresse,
+		user.Ville,
 		user.CodePostal,
 		dateN,
-		user.Role, 
+		user.Role,
 		user.IdLangue,
 	)
 	if err != nil {
-		return err 
+		return err
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
-	
+
 	queryScore := `INSERT INTO UPCYCLING_SCORE (id_utilisateur, ressources_economisees, co2_total_evite_kg, nb_objets_recycles, total_points, niveau) 
 	               VALUES (?, 0, 0, 0, 0, 'Débutant 🌱')`
 
@@ -141,22 +157,25 @@ func ModifyUserPassword(userId int, user models.User) error {
 }
 
 func GetPasswordHashed(userId int) (string, error) {
-    var hash string
-    query := `SELECT password FROM UTILISATEUR WHERE id = ?`
-    err := Conn.QueryRow(query, userId).Scan(&hash)
-    if err != nil {
-        return "", err
-    }
-    return hash, nil
+	var hash string
+	query := `SELECT password FROM UTILISATEUR WHERE id = ?`
+	err := Conn.QueryRow(query, userId).Scan(&hash)
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
 }
 
 func DeleteUser(id int) error {
 	result, err := Conn.Exec("DELETE FROM UTILISATEUR WHERE id = ?", id)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	count, _ := result.RowsAffected()
 	if count == 0 {
-		return fmt.Errorf("aucun utilisateur trouvé") }
+		return fmt.Errorf("aucun utilisateur trouvé")
+	}
 	return nil
 }
 
@@ -180,22 +199,22 @@ func GetUserByEmail(email string) (*models.User, error) {
 }
 
 func UpdateUserToken(userId int, token string) error {
-    query := "UPDATE UTILISATEUR SET token = ? WHERE id = ?"
-    _, err := Conn.Exec(query, token, userId)
-    return err
+	query := "UPDATE UTILISATEUR SET token = ? WHERE id = ?"
+	_, err := Conn.Exec(query, token, userId)
+	return err
 }
 
 func VerifyUserByToken(userId int, token string) bool {
-    var dbToken string
-    query := "SELECT token FROM UTILISATEUR WHERE id = ?"
+	var dbToken string
+	query := "SELECT token FROM UTILISATEUR WHERE id = ?"
 
-    err := Conn.QueryRow(query, userId).Scan(&dbToken)
+	err := Conn.QueryRow(query, userId).Scan(&dbToken)
 
-    if err != nil || dbToken != token || token == "" {
-        return false
-    }
+	if err != nil || dbToken != token || token == "" {
+		return false
+	}
 
-    return true
+	return true
 }
 
 func GetUserStats(userId int) (*models.UserStats, error) {

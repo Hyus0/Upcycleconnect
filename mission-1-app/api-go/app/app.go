@@ -4,16 +4,16 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"upcycleconnect/api-go/db"
 	"upcycleconnect/api-go/models"
 	"upcycleconnect/api-go/passwordHashing"
-	"io"
-	"os"
-	"path/filepath"
 )
 
 //Stats
@@ -175,7 +175,7 @@ func ValidateUserModify(userDto models.User) []string {
 		}
 	}
 
-	validRoles := map[string]bool{"Particulier": true, "Prestataire": true, "Salarie": true,  "Admin": true}
+	validRoles := map[string]bool{"Particulier": true, "Prestataire": true, "Salarie": true, "Admin": true}
 	if !validRoles[userDto.Role] {
 		errsMsg = append(errsMsg, "Rôle invalide")
 	}
@@ -438,13 +438,16 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	isPremium, _ := db.HasActiveDMSubscription(user.Id)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "Bienvenue !",
-		"token":   randomToken,
-		"userId":  user.Id,
-		"prenom":  user.Prenom,
-		"role": user.Role,
-		"nom":     user.Nom,
+		"message":    "Bienvenue !",
+		"token":      randomToken,
+		"userId":     user.Id,
+		"prenom":     user.Prenom,
+		"role":       user.Role,
+		"nom":        user.Nom,
+		"isPremium":  isPremium,
+		"is_premium": isPremium,
 	})
 }
 
@@ -832,11 +835,11 @@ func UploadAnnonceImage(w http.ResponseWriter, r *http.Request) {
 	os.MkdirAll(dossierAnnonces, os.ModePerm)
 
 	ext := filepath.Ext(headerImage.Filename)
-	timestamp := time.Now().Unix() 
+	timestamp := time.Now().Unix()
 	nomFichier := fmt.Sprintf("annonce_%s_%d%s", annonceID, timestamp, ext)
-	
+
 	cheminComplet := fmt.Sprintf("%s/%s", dossierAnnonces, nomFichier)
-	
+
 	out, errCreate := os.Create(cheminComplet)
 	if errCreate != nil {
 		http.Error(w, `{"message": "Erreur d'écriture sur le disque"}`, http.StatusInternalServerError)
@@ -846,7 +849,7 @@ func UploadAnnonceImage(w http.ResponseWriter, r *http.Request) {
 	io.Copy(out, fileImage)
 
 	cheminImageDB := fmt.Sprintf("http://localhost:8081/img/annonces/%s", nomFichier)
-	
+
 	_, errDb := db.Conn.Exec("UPDATE ANNONCE SET image = ? WHERE id = ?", cheminImageDB, annonceID)
 	if errDb != nil {
 		fmt.Println("❌ Erreur DB image annonce:", errDb)
@@ -1041,7 +1044,7 @@ func QuitEvenement(w http.ResponseWriter, r *http.Request) {
 func GetPlanningHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	userID, err := strconv.Atoi(idStr)
-	
+
 	if err != nil || userID <= 0 {
 		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
 		return
@@ -1102,7 +1105,7 @@ func GetEvenementParticipantsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(participants)
 }
 
-//Categorie
+// Categorie
 func GetAllCategories(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -1498,7 +1501,7 @@ func DeposerObjetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenRetrait, err := db.DeposerObjet(req.Token, req.SiteID) 
+	tokenRetrait, err := db.DeposerObjet(req.Token, req.SiteID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1506,7 +1509,7 @@ func DeposerObjetHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Objet déposé avec succès",
+		"message":       "Objet déposé avec succès",
 		"token_retrait": tokenRetrait,
 	})
 }
@@ -1525,7 +1528,7 @@ func RetireObjetCasierHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Token manquant", http.StatusBadRequest)
 		return
 	}
-	err = db.RecupererObjet(req.Token, conteneurID) 
+	err = db.RecupererObjet(req.Token, conteneurID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1697,14 +1700,16 @@ func GetProjetsByUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-    if projets == nil { projets = []models.ProjetUpcycling{} }
+	if projets == nil {
+		projets = []models.ProjetUpcycling{}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(projets)
 }
 
 func CreateProjetHandler(w http.ResponseWriter, r *http.Request) {
 	var p models.ProjetUpcycling
-	
+
 	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
 		http.Error(w, "Données JSON invalides : "+err.Error(), http.StatusBadRequest)
@@ -1718,8 +1723,8 @@ func CreateProjetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, etape := range p.Etapes {
-		etape.IdProjet = projetID 
-		
+		etape.IdProjet = projetID
+
 		err := db.CreateEtape(etape)
 		if err != nil {
 			println("Erreur lors de l'insertion de l'étape ", etape.NumeroOrdre, ": ", err.Error())
@@ -1746,27 +1751,27 @@ func DeleteProjetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateProjetHandler(w http.ResponseWriter, r *http.Request) {
-    idStr := r.PathValue("id")
-    projetID, err := strconv.Atoi(idStr)
-    if err != nil {
-        http.Error(w, "ID invalide", http.StatusBadRequest)
-        return
-    }
+	idStr := r.PathValue("id")
+	projetID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
 
-    var p models.ProjetUpcycling
-    if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-        http.Error(w, "Données invalides", http.StatusBadRequest)
-        return
-    }
+	var p models.ProjetUpcycling
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		http.Error(w, "Données invalides", http.StatusBadRequest)
+		return
+	}
 
-    err = db.UpdateProjet(projetID, p)
-    if err != nil {
-        http.Error(w, "Erreur lors de la mise à jour : "+err.Error(), http.StatusInternalServerError)
-        return
-    }
+	err = db.UpdateProjet(projetID, p)
+	if err != nil {
+		http.Error(w, "Erreur lors de la mise à jour : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]string{"message": "Projet mis à jour avec succès"})
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Projet mis à jour avec succès"})
 }
 
 func UploadProjetImageHandler(w http.ResponseWriter, r *http.Request) {
@@ -1809,11 +1814,12 @@ func UploadProjetImageHandler(w http.ResponseWriter, r *http.Request) {
 		"url": urlImage,
 	})
 }
+
 //Tips
 
 func GetTipByRoleHandler(w http.ResponseWriter, r *http.Request) {
 	role := r.PathValue("role")
-	
+
 	if role == "" {
 		http.Error(w, "Rôle non spécifié", http.StatusBadRequest)
 		return
@@ -1844,7 +1850,7 @@ func GetAllTipsHandler(w http.ResponseWriter, r *http.Request) {
 func GetTipByIDHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
-	
+
 	if err != nil || id <= 0 {
 		http.Error(w, "ID invalide", http.StatusBadRequest)
 		return
@@ -1861,8 +1867,8 @@ func GetTipByIDHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateTipHandler(w http.ResponseWriter, r *http.Request) {
-	var t models.Tip 
-	
+	var t models.Tip
+
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		http.Error(w, "Données JSON invalides", http.StatusBadRequest)
 		return
@@ -1891,8 +1897,8 @@ func UpdateTipHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Données JSON invalides", http.StatusBadRequest)
 		return
 	}
-	
-	t.ID = id 
+
+	t.ID = id
 
 	err = db.ModifierTip(t)
 	if err != nil {
@@ -1950,22 +1956,22 @@ func GetForumsHandler(w http.ResponseWriter, r *http.Request) {
 func CreateTopicHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		UserID  int    `json:"user_id"`
-		SalonID int    `json:"salon_id"` 
+		SalonID int    `json:"salon_id"`
 		Title   string `json:"title"`
 		Sujet   string `json:"sujet"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Erreur de format de requête", http.StatusBadRequest)
 		return
 	}
-	
+
 	err := db.CreateForumTopic(req.UserID, req.SalonID, req.Title, req.Sujet)
 	if err != nil {
 		http.Error(w, "Erreur lors de la création de la discussion", http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -1986,7 +1992,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SignalerMessageHandler(w http.ResponseWriter, r *http.Request) {
-	messageIDStr := r.PathValue("id") 
+	messageIDStr := r.PathValue("id")
 	messageID, err := strconv.Atoi(messageIDStr)
 	if err != nil {
 		http.Error(w, "ID message invalide", http.StatusBadRequest)
@@ -2027,7 +2033,7 @@ func TopMessageSignaleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func BanUserForumHandler(w http.ResponseWriter, r *http.Request) {
-	userIDStr := r.PathValue("id") 
+	userIDStr := r.PathValue("id")
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
 		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
@@ -2035,7 +2041,7 @@ func BanUserForumHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Ban bool `json:"ban"` 
+		Ban bool `json:"ban"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -2155,7 +2161,7 @@ func ToggleFavoriHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -2247,7 +2253,7 @@ func GetFollowStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"followers":    followers,
-		"following":    following, 
+		"following":    following,
 		"is_following": isFollowing,
 	})
 }
@@ -2260,18 +2266,18 @@ func ToggleFollowHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Vous devez être connecté", http.StatusUnauthorized)
 		return
 	}
-    
-    if idSuivi == idAbonne {
-        http.Error(w, "Vous ne pouvez pas vous suivre vous-même", http.StatusBadRequest)
+
+	if idSuivi == idAbonne {
+		http.Error(w, "Vous ne pouvez pas vous suivre vous-même", http.StatusBadRequest)
 		return
-    }
+	}
 
 	err = db.ToggleFollowUser(idSuivi, idAbonne)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -2320,7 +2326,7 @@ func RemoveFromPanierHandler(w http.ResponseWriter, r *http.Request) {
 
 	userIDStr := r.PathValue("id")
 	itemIDStr := r.PathValue("itemId")
-	
+
 	fmt.Printf("Données URL -> UserID: %s | ItemID: %s\n", userIDStr, itemIDStr)
 
 	userID, err1 := strconv.Atoi(userIDStr)
@@ -2346,7 +2352,7 @@ func RemoveFromPanierHandler(w http.ResponseWriter, r *http.Request) {
 
 func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Requête de Checkout reçue !")
-	
+
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
@@ -2367,6 +2373,336 @@ func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
 		"message":     "Commande créée avec succès",
 		"commande_id": commandeID,
 	})
+}
+
+func CheckoutWithInvoiceHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	checkout, err := db.Checkout(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":        "Commande creee avec succes",
+		"commande_id":    checkout.CommandeID,
+		"transaction_id": checkout.TransactionID,
+		"facture_id":     checkout.FactureID,
+		"numero_facture": checkout.NumeroFacture,
+		"facture_url":    fmt.Sprintf("/users/%d/factures/%d/download", userID, checkout.FactureID),
+	})
+}
+
+func GetFacturesHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	factures, err := db.GetFacturesByUser(userID)
+	if err != nil {
+		http.Error(w, "Erreur lors de la recuperation des factures", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(factures)
+}
+
+func DownloadFactureHandler(w http.ResponseWriter, r *http.Request) {
+	userID, errUser := strconv.Atoi(r.PathValue("id"))
+	factureID, errFacture := strconv.Atoi(r.PathValue("factureId"))
+	if errUser != nil || errFacture != nil || userID <= 0 || factureID <= 0 {
+		http.Error(w, "Parametres invalides", http.StatusBadRequest)
+		return
+	}
+
+	document, facture, err := db.BuildFactureHTML(userID, factureID)
+	if err != nil {
+		http.Error(w, "Facture introuvable", http.StatusNotFound)
+		return
+	}
+
+	fileName := fmt.Sprintf("%s.html", strings.ReplaceAll(facture.NumeroFacture, "/", "-"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fileName))
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(document))
+}
+
+func SendFactureByMailHandler(w http.ResponseWriter, r *http.Request) {
+	userID, errUser := strconv.Atoi(r.PathValue("id"))
+	factureID, errFacture := strconv.Atoi(r.PathValue("factureId"))
+	if errUser != nil || errFacture != nil || userID <= 0 || factureID <= 0 {
+		http.Error(w, "Parametres invalides", http.StatusBadRequest)
+		return
+	}
+
+	facture, err := db.GetFactureByIDForUser(userID, factureID)
+	if err != nil {
+		http.Error(w, "Facture introuvable", http.StatusNotFound)
+		return
+	}
+
+	message := fmt.Sprintf("Votre facture %s est disponible dans votre espace Factures. Envoi SMTP a brancher pour un mail reel vers %s.", facture.NumeroFacture, facture.AcheteurEmail)
+	if err := db.CreerNotification(userID, userID, "Message", "Facture disponible", message); err != nil {
+		http.Error(w, "Facture preparee mais notification impossible", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Facture preparee. Sans SMTP configure, une notification locale a ete creee.",
+		"email":   facture.AcheteurEmail,
+	})
+}
+
+// Messagerie privee
+
+func GetSubscriptionStatusHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	isSubscriber, err := db.HasActiveDMSubscription(userID)
+	if err != nil {
+		http.Error(w, "Erreur abonnement", http.StatusInternalServerError)
+		return
+	}
+
+	used, err := db.CountDistinctAnnonceVendorsContacted(userID)
+	if err != nil {
+		http.Error(w, "Erreur compteur messagerie", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"is_subscriber": isSubscriber,
+		"used":          used,
+		"limit":         5,
+		"price":         2.99,
+	})
+}
+
+func GetConversationsHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	conversations, err := db.ListConversations(userID)
+	if err != nil {
+		http.Error(w, "Erreur conversations", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(conversations)
+}
+
+func StartConversationHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		TargetUserID int  `json:"target_user_id"`
+		AnnonceID    *int `json:"annonce_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Requete invalide", http.StatusBadRequest)
+		return
+	}
+
+	result, err := db.StartConversation(userID, req.TargetUserID, req.AnnonceID)
+	if err != nil {
+		http.Error(w, "Erreur creation conversation", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if !result.Allowed {
+		w.WriteHeader(http.StatusPaymentRequired)
+	}
+	json.NewEncoder(w).Encode(result)
+}
+
+func GetConversationMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	conversationID, errConv := strconv.Atoi(r.PathValue("conversationId"))
+	if err != nil || errConv != nil || userID <= 0 || conversationID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	messages, err := db.GetConversationMessages(userID, conversationID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(messages)
+}
+
+func SendDMMessageHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	conversationID, errConv := strconv.Atoi(r.PathValue("conversationId"))
+	if err != nil || errConv != nil || userID <= 0 || conversationID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Requete invalide", http.StatusBadRequest)
+		return
+	}
+
+	message, err := db.SendDMMessage(userID, conversationID, req.Content)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(message)
+}
+
+func GetConversationStateHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	conversationID, errConv := strconv.Atoi(r.PathValue("conversationId"))
+	if err != nil || errConv != nil || userID <= 0 || conversationID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	state, err := db.GetDMThreadState(userID, conversationID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(state)
+}
+
+func CreateDMOfferHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	conversationID, errConv := strconv.Atoi(r.PathValue("conversationId"))
+	if err != nil || errConv != nil || userID <= 0 || conversationID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Amount float64 `json:"amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Requete invalide", http.StatusBadRequest)
+		return
+	}
+
+	offer, err := db.CreateDMOffer(userID, conversationID, req.Amount)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(offer)
+}
+
+func RespondDMOfferHandler(w http.ResponseWriter, r *http.Request) {
+	userID, errUser := strconv.Atoi(r.PathValue("id"))
+	offerID, errOffer := strconv.Atoi(r.PathValue("offerId"))
+	if errUser != nil || errOffer != nil || userID <= 0 || offerID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Action string `json:"action"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Requete invalide", http.StatusBadRequest)
+		return
+	}
+
+	offer, sale, err := db.RespondDMOffer(userID, offerID, strings.ToLower(strings.TrimSpace(req.Action)))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"offer": offer,
+		"sale":  sale,
+	})
+}
+
+func ConfirmDMSaleReceptionHandler(w http.ResponseWriter, r *http.Request) {
+	userID, errUser := strconv.Atoi(r.PathValue("id"))
+	saleID, errSale := strconv.Atoi(r.PathValue("saleId"))
+	if errUser != nil || errSale != nil || userID <= 0 || saleID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	sale, err := db.ConfirmDMSaleReception(userID, saleID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sale)
+}
+
+func ReviewDMSaleHandler(w http.ResponseWriter, r *http.Request) {
+	userID, errUser := strconv.Atoi(r.PathValue("id"))
+	saleID, errSale := strconv.Atoi(r.PathValue("saleId"))
+	if errUser != nil || errSale != nil || userID <= 0 || saleID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Note        int    `json:"note"`
+		Commentaire string `json:"commentaire"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Requete invalide", http.StatusBadRequest)
+		return
+	}
+
+	sale, err := db.ReviewDMSale(userID, saleID, req.Note, req.Commentaire)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sale)
 }
 
 //Notification
@@ -2433,7 +2769,7 @@ func MarquerNotificationLueHandler(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		UserID int `json:"user_id"`
 	}
-	
+
 	err = json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		fmt.Println("Erreur de lecture JSON :", err)
@@ -2450,7 +2786,7 @@ func MarquerNotificationLueHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-//Traduction
+// Traduction
 func GetLanguesHandler(w http.ResponseWriter, r *http.Request) {
 	langues, err := db.GetLangues()
 	if err != nil {
@@ -2463,7 +2799,7 @@ func GetLanguesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetTraductionsHandler(w http.ResponseWriter, r *http.Request) {
-	code := r.PathValue("code") 
+	code := r.PathValue("code")
 	if code == "" {
 		code = "fr"
 	}

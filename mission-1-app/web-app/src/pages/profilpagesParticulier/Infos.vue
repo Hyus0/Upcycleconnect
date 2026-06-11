@@ -92,10 +92,14 @@
                             class="disabled-input"/>
                         </div>
                         <div class="input-field">
-                            <label>Email (Identifiant)</label>
-                            <input
-                                type="email"
-                                v-model="form.mail"
+                            <label>
+                                Email (Identifiant)
+                                <span v-if="form.mail_valide === '1'" class="badge-valid">Validé</span>
+                                <span v-else class="badge-pending">En attente de validation</span>
+                            </label>
+                            <input 
+                                type="email" 
+                                v-model="form.mail" 
                             />
                         </div>
                     </div>
@@ -170,6 +174,7 @@ const form = ref({
     prenom: "",
     nom: "",
     mail: "",
+    mail_valide: false,
     adresse: "",
     ville: "",
     code_postal: "",
@@ -225,6 +230,10 @@ onMounted(async () => {
         if (response.ok) {
             const data = await response.json();
             form.value = data;
+
+            if (form.value.date_naissance) {
+                form.value.date_naissance = form.value.date_naissance.split('T')[0];
+            }
             
             if (data.image_profil && data.image_profil.trim() !== "") {
                 profilePreview.value = data.image_profil;
@@ -527,5 +536,23 @@ input:focus {
     .info-side-col {
         order: -1;
     }
+}
+
+.badge-valid {
+    background-color: #eaf4ed;
+    color: #2d7a4f;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.badge-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
 }
 </style>

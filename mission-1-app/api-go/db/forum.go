@@ -7,8 +7,8 @@ import (
 
 func GetAllForums() ([]models.ForumCategory, error) {
 	salonRows, err := Conn.Query("SELECT id, nom, description FROM FORUM_SALON")
-	if err != nil { 
-		return nil, err 
+	if err != nil {
+		return nil, err
 	}
 	defer salonRows.Close()
 
@@ -27,54 +27,63 @@ func GetAllForums() ([]models.ForumCategory, error) {
 	}
 
 	topicRows, err := Conn.Query("SELECT id, id_salon, titre, sujet, date_creation FROM FORUM WHERE id_salon IS NOT NULL ORDER BY date_creation DESC")
-	if err != nil { 
-		return nil, err 
+	if err != nil {
+		return nil, err
 	}
 	defer topicRows.Close()
 
-	topicsMap := make(map[int]*models.ForumTopic)
+	type TempTopic struct {
+		Topic   models.ForumTopic
+		SalonID int
+	}
+	var allTopics []*TempTopic
+	topicsMap := make(map[int]*TempTopic)
+
 	for topicRows.Next() {
-		var t models.ForumTopic
-		var idSalon int
-		if err := topicRows.Scan(&t.ID, &idSalon, &t.Title, &t.Preview, &t.LastActivity); err == nil {
-			t.Messages = []models.ForumMessage{}
-			if salon, ok := salonsMap[idSalon]; ok {
-				salon.Topics = append(salon.Topics, t)
-				topicsMap[t.ID] = &salon.Topics[len(salon.Topics)-1]
-			}
+		t := &TempTopic{Topic: models.ForumTopic{Messages: []models.ForumMessage{}}}
+		if err := topicRows.Scan(&t.Topic.ID, &t.SalonID, &t.Topic.Title, &t.Topic.Preview, &t.Topic.LastActivity); err == nil {
+			allTopics = append(allTopics, t)
+			topicsMap[t.Topic.ID] = t
 		}
 	}
 
 	msgQuery := `
-			SELECT m.id, m.id_forum, m.id_utilisateur, m.contenu, m.date_envoi, u.prenom, u.nom, u.role, COALESCE(u.image_profil, '') as image_profil
-			FROM FORUM_MESSAGE m
-			JOIN UTILISATEUR u ON m.id_utilisateur = u.id
-			ORDER BY m.date_envoi ASC`
-			
-		msgRows, err := Conn.Query(msgQuery)
-		if err != nil { 
-			return nil, err 
-		}
-		defer msgRows.Close()
+		SELECT m.id, m.id_forum, m.id_utilisateur, m.contenu, m.date_envoi, u.prenom, u.nom, u.role, COALESCE(u.image_profil, '') as image_profil
+		FROM FORUM_MESSAGE m
+		JOIN UTILISATEUR u ON m.id_utilisateur = u.id
+		ORDER BY m.date_envoi ASC`
 
-		for msgRows.Next() {
-			var m models.ForumMessage
-			var topicID int
-			var prenom, nom string
-			
-			if err := msgRows.Scan(&m.ID, &topicID, &m.UserID, &m.Content, &m.PostedAt, &prenom, &nom, &m.Role, &m.ImageProfil,); err == nil {
-				m.Author = prenom + " " + nom
-				if topic, ok := topicsMap[topicID]; ok {
-					topic.Messages = append(topic.Messages, m)
-					topic.LastActivity = m.PostedAt
-				}
-			} else {
-				println("Erreur de scan message:", err.Error())
+	msgRows, err := Conn.Query(msgQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer msgRows.Close()
+
+	for msgRows.Next() {
+		var m models.ForumMessage
+		var topicID int
+		var prenom, nom string
+
+		if err := msgRows.Scan(&m.ID, &topicID, &m.UserID, &m.Content, &m.PostedAt, &prenom, &nom, &m.Role, &m.ImageProfil); err == nil {
+			m.Author = prenom + " " + nom
+			if temp, ok := topicsMap[topicID]; ok {
+				temp.Topic.Messages = append(temp.Topic.Messages, m)
+				temp.Topic.LastActivity = m.PostedAt
 			}
+		} else {
+			println("Erreur de scan message:", err.Error())
 		}
+	}
 
-		return salons, nil
+	for _, temp := range allTopics {
+		if salon, ok := salonsMap[temp.SalonID]; ok {
+			salon.Topics = append(salon.Topics, temp.Topic)
+		}
+	}
+
+	return salons, nil
 }
+
 
 func CreateForumTopic(userID int, salonID int, titre string, sujet string) error {
 	res, err := Conn.Exec("INSERT INTO FORUM (id_utilisateur, id_salon, titre, sujet) VALUES (?, ?, ?, ?)", userID, salonID, titre, sujet)
@@ -108,7 +117,7 @@ func GetTopMessagesSignales() ([]models.ReportedMessage, error) {
 		SELECT 
 			m.id, m.contenu, m.date_envoi, 
 			u.id as author_id, u.prenom as author_prenom, u.nom as author_nom, COALESCE(u.image_profil, '') as author_image,
-			r.prenom as reporter_prenom, r.nom as reporter_nom, s.motif
+			r.prenom as reporter_prenom, r.nom as reporter_nom, s.motif, s.date_signalement
 		FROM FORUM_MESSAGE m
 		JOIN MESSAGE_SIGNALEMENT s ON m.id = s.id_message
 		JOIN UTILISATEUR u ON m.id_utilisateur = u.id
@@ -124,9 +133,9 @@ func GetTopMessagesSignales() ([]models.ReportedMessage, error) {
 
 	for rows.Next() {
 		var msgID, authorID int
-		var contenu, dateEnvoi, authorP, authorN, authorImage, repP, repN, motif string
+		var contenu, dateEnvoi, authorP, authorN, authorImage, repP, repN, motif, dateSignalement string
 		
-		if err := rows.Scan(&msgID, &contenu, &dateEnvoi, &authorID, &authorP, &authorN, &authorImage, &repP, &repN, &motif); err == nil {
+		if err := rows.Scan(&msgID, &contenu, &dateEnvoi, &authorID, &authorP, &authorN, &authorImage, &repP, &repN, &motif, &dateSignalement); err == nil {
 			if _, exists := msgMap[msgID]; !exists {
 				msgMap[msgID] = &models.ReportedMessage{
 					MessageID: msgID, Contenu: contenu, DateEnvoi: dateEnvoi,
@@ -137,9 +146,11 @@ func GetTopMessagesSignales() ([]models.ReportedMessage, error) {
 				}
 			}
 			msgMap[msgID].NbSignalements++
+			
 			msgMap[msgID].Details = append(msgMap[msgID].Details, models.ReportDetail{
-				ReporterName: repP + " " + repN,
-				Motif: motif,
+				ReporterName:    repP + " " + repN,
+				DateSignalement: dateSignalement, 
+				Motif:           motif,
 			})
 		}
 	}
@@ -229,6 +240,16 @@ func truncateText(s string, max int) string {
 		return s[:max] + "..."
 	}
 	return s
+}
+
+
+func IgnoreSignalementForum(messageID int) error {
+	_, err := Conn.Exec("DELETE FROM MESSAGE_SIGNALEMENT WHERE id_message = ?", messageID)
+	
+	if err != nil {
+		return err
+	}	
+	return nil
 }
 
 func DeleteMessageForum(messageID int) error {

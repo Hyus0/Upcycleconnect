@@ -81,14 +81,14 @@
                                 <span class="status-logistique" style="background: #ffe5e5; color: #d32f2f;">Signalé {{ msg.nb_signalements }}x</span>
                                 <div style="margin-top: 5px;">
                                     <small class="table-subtext" v-for="(detail, i) in msg.details" :key="i">
-                                        <b>{{ detail.reporter_name }}</b>: {{ detail.motif }}
+                                        <b>{{ detail.reporter_name }}</b> le {{ formatDate(detail.date_signalement) }} : {{ detail.motif }}
                                     </small>
                                 </div>
                             </td>
                             <td class="actions-cell">
-                                <button class="btn-modify" style="margin-bottom: 5px; width: 100%;" @click="toggleBan(msg.author_id, msg.author_name, true)">Bannir</button>
                                 <button class="btn-remove" style="width: 100%;" @click="deleteMessage(msg.message_id)">Supprimer</button>
-                            </td>
+                                <button class="btn-ban" style="width: 100%;" @click="toggleBan(msg.author_id, msg.author_name, true)">Bannir</button>
+                                <button class="btn-ignore" style="width: 100%;" @click="ignoreMessage(msg.message_id)">Ignorer</button>                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -261,6 +261,26 @@ const deleteMessage = async (msgId) => {
     } catch (e) { console.error(e); }
 };
 
+const ignoreMessage = async (msgId) => {
+    if (!confirm("Voulez-vous vraiment ignorer ce signalement ? Le message sera conservé sur le forum.")) return;
+    
+    try {
+        const res = await fetch(`${API_URL}/forums/signalement/${msgId}`, { 
+            method: "DELETE", 
+            headers 
+        });
+        
+        if (res.ok) {
+            reportedMessages.value = reportedMessages.value.filter(m => m.message_id !== msgId);
+        } else {
+            const errorMsg = await res.text();
+            alert("Erreur côté serveur : " + errorMsg);
+        }
+    } catch (e) { 
+        console.error("Erreur réseau:", e); 
+    }
+};
+
 const deleteTopic = async (topicId, topicTitre) => {
     if (!confirm(`ATTENTION : Supprimer la discussion "${topicTitre}" et TOUS ses messages ?`)) return;
     try {
@@ -290,7 +310,10 @@ const toggleBan = async (userId, userName, isBanning) => {
 
 const formatDate = (val) => {
     if (!val) return "NULL";
-    const date = new Date(val);
+    
+    const cleanDate = val.replace(/Z$/, ''); 
+    
+    const date = new Date(cleanDate);
     return isNaN(date.getTime())
         ? "NULL"
         : new Intl.DateTimeFormat("fr-FR", {
@@ -299,7 +322,7 @@ const formatDate = (val) => {
               year: "numeric",
               hour: "2-digit",
               minute: "2-digit"
-          }).format(date);
+          }).format(date).replace(":", "h");
 };
 
 const truncateText = (text, length) => {
@@ -463,7 +486,7 @@ const truncateText = (text, length) => {
     border-color: #2d7a4f;
 }
 
-.btn-modify {
+.btn-ban {
     background: #fff3cd;
     border: 1px solid #ffeeba;
     color: #856404;
@@ -473,7 +496,7 @@ const truncateText = (text, length) => {
     font-weight: bold;
     transition: all 0.2s;
 }
-.btn-modify:hover { background: #ffe8a1; color: #664d03; }
+.btn-ban:hover { background: #ffe8a1; color: #664d03; }
 
 .btn-remove {
     background: #ffe5e5;
@@ -563,5 +586,22 @@ const truncateText = (text, length) => {
 
 .user-link:hover strong {
     color: #2d7a4f; 
+}
+
+.btn-ignore {
+    margin-top: 0;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #666;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-ignore:hover { 
+    background: #e0e0e0; 
+    color: #333; 
 }
 </style>

@@ -33,6 +33,10 @@
                         ><i class="planning-dot planning-dot--event"></i>
                         Événement</span
                     >
+                    <span class="planning-legend__item"
+                        ><i class="planning-dot planning-dot--my-creation"></i>
+                        Mes Créations</span
+                    >
                 </div>
             </div>
 
@@ -86,9 +90,9 @@
                     ✖
                 </button>
                 <div class="detail-header">
-                    <span class="tag-type" :class="`tag-${selectedEntry.kind}`">
+                    <span class="tag-type" :class="`tag-${selectedEntry.kind.replace('my-', '')}`">
                         {{
-                            selectedEntry.kind === "formation"
+                            selectedEntry.kind.includes("formation")
                                 ? "FORMATION"
                                 : "ÉVÉNEMENT"
                         }}
@@ -117,10 +121,10 @@
                     class="btn-main-action-full"
                     @click="goToEntryRoute(selectedEntry)"
                 >
-                    Voir la page de l'{{
+                    Voir la page de {{
                         selectedEntry.kind === "formation"
-                            ? "formation"
-                            : "événement"
+                            ? "la formation"
+                            : "l'événement"
                     }}
                 </button>
             </div>
@@ -213,12 +217,12 @@ const closeEntryDetail = () => (selectedEntry.value = null);
 
 const goToEntryRoute = (entry) => {
     closeEntryDetail();
-    if (entry.kind === "formation") {
+    if (entry.kind === "formation" || entry.kind === "my-formation") {
         router.push({
             name: "FormationDetail",
             params: { id: entry.originalId },
         });
-    } else if (entry.kind === "event") {
+    } else if (entry.kind === "event" || entry.kind === "my-event") {
         router.push({
             name: "evenement-detail",
             params: { id: entry.originalId },
@@ -252,28 +256,41 @@ const toCalendarEntry = (item, kind, title, dateValue) => {
 
 const loadCalendarEntries = async (id) => {
     try {
-        const res = await fetch(`${API_URL}/user/planning/${id}`, {
-            headers: {
-                Authorization: `Bearer ${sessionStorage.getItem("userToken") || ""}`,
-            },
+        const resPlanning = await fetch(`${API_URL}/user/planning/${id}`, {
+            headers: { Authorization: `Bearer ${sessionStorage.getItem("userToken") || ""}` },
         });
+        const dataPlanning = resPlanning.ok ? await resPlanning.json() : {};
 
-        if (!res.ok) return;
+        const resF = await fetch(`${API_URL}/formations`);
+        const allFormations = resF.ok ? await resF.json() : [];
+        const mesFormationsCreees = allFormations.filter(f => String(f.id_utilisateur) === String(id));
 
-        const data = await res.json();
+        const resE = await fetch(`${API_URL}/evenements`);
+        const allEvenements = resE.ok ? await resE.json() : [];
+        const mesEvenementsCrees = allEvenements.filter(e => String(e.id_utilisateur) === String(id));
+
         let entries = [];
 
-        if (data && !Array.isArray(data)) {
-            const formations = (data.formations || []).map((f) =>
+        if (dataPlanning && !Array.isArray(dataPlanning)) {
+            const inscrFormations = (dataPlanning.formations || []).map((f) =>
                 toCalendarEntry(f, "formation", f.titre, f.date_debut),
             );
-            const evenements = (data.evenements || []).map((e) =>
+            const inscrEvenements = (dataPlanning.evenements || []).map((e) =>
                 toCalendarEntry(e, "event", e.titre, e.date_evenement),
             );
-            entries = [...formations, ...evenements].filter(Boolean);
+            entries = [...inscrFormations, ...inscrEvenements];
         }
 
-        calendarEntries.value = entries.sort((a, b) =>
+        const creaFormations = mesFormationsCreees.map((f) =>
+            toCalendarEntry(f, "my-formation", + f.titre, f.date_debut),
+        );
+        const creaEvenements = mesEvenementsCrees.map((e) =>
+            toCalendarEntry(e, "my-event", + e.titre, e.date_evenement),
+        );
+
+        const allEntries = [...entries, ...creaFormations, ...creaEvenements].filter(Boolean);
+        
+        calendarEntries.value = allEntries.sort((a, b) =>
             a.date.localeCompare(b.date),
         );
     } catch (error) {
@@ -505,5 +522,22 @@ onMounted(() => {
     border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
+}
+.planning-entry--my-formation {
+    background: #d4edda;
+    color: #0f5132;
+    border-left: 4px solid #198754; /* Petite barre verte sur le côté */
+}
+
+.planning-entry--my-event {
+    background: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #ffc107; /* Petite barre jaune sur le côté */
+}
+
+/* Le point pour la légende */
+.planning-dot--my-creation {
+    background: linear-gradient(135deg, #198754, #ffc107);
+    border: 2px solid #333;
 }
 </style>

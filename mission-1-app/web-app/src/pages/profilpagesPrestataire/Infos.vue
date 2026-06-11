@@ -74,8 +74,10 @@
                         </div>
                     </div>
                 </section>
+
                 <section class="info-section">
                     <h2 class="section-title">Identité Personnelle</h2>
+                    
                     <div class="input-grid">
                         <div class="input-field">
                             <label>Prénom</label>
@@ -87,20 +89,42 @@
                         </div>
                         <div class="input-field">
                             <label>Date de naissance</label>
-                            <input type="date" v-model="form.date_naissance" />
+                            <input type="date" v-model="form.date_naissance" disabled class="disabled-input"/>
                         </div>
                         <div class="input-field">
-                            <label>Email (Identifiant)</label>
-                            <input
-                                type="email"
-                                v-model="form.mail"
-                                disabled
-                                class="disabled-input"
+                            <label class="siret-label">
+                                Email (Identifiant)
+                                <span v-if="form.mail_valide === true || form.mail_valide === 'true' || form.mail_valide === 1" class="badge-valid">Validé</span>
+                                <span v-else class="badge-pending">En attente de validation</span>
+                            </label>
+                            <input 
+                                type="email" 
+                                v-model="form.mail" 
                             />
                         </div>
                     </div>
-                </section>
 
+                    <div v-if="form.role === 'Prestataire'" class="input-field siret-box">
+                        <label class="siret-label">
+                            Numéro SIRET (14 chiffres)
+                            <span v-if="form.siret_valide" class="badge-valid">Vérifié</span>
+                            <span v-else class="badge-pending">En attente de vérification</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            v-model="form.siret" 
+                            maxlength="14" 
+                            placeholder="Ex: 12345678901234" 
+                            :disabled="form.siret_valide"
+                            :class="{ 'disabled-input': form.siret_valide }"
+                        />
+                        <small class="warning-text" style="text-align: left; margin-top: 4px;">
+                            Toute modification de votre SIRET nécessitera une nouvelle vérification par nos équipes.
+                        </small>
+                    </div>
+
+                </section>
+            
                 <section class="info-section">
                     <h2 class="section-title">Adresse et Localisation</h2>
                     <div class="input-field">
@@ -170,6 +194,7 @@ const form = ref({
     prenom: "",
     nom: "",
     mail: "",
+    mail_valide: false,
     adresse: "",
     ville: "",
     code_postal: "",
@@ -178,6 +203,8 @@ const form = ref({
     role: "",
     statut: "",
     id_langue: 1,
+    siret: "",            
+    siret_valide: false,
 });
 
 const errors = ref([]);
@@ -225,6 +252,10 @@ onMounted(async () => {
         if (response.ok) {
             const data = await response.json();
             form.value = data;
+
+            if (data.date_naissance) {
+                form.value.date_naissance = data.date_naissance.split('T')[0];
+            }
             
             if (data.image_profil && data.image_profil.trim() !== "") {
                 profilePreview.value = data.image_profil;
@@ -527,5 +558,35 @@ input:focus {
     .info-side-col {
         order: -1;
     }
+}
+
+.siret-box {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px dashed #dcdfdc;
+}
+
+.siret-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.badge-valid {
+    background-color: #eaf4ed;
+    color: #2d7a4f;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.badge-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
 }
 </style>

@@ -2051,6 +2051,25 @@ func BanUserForumHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func IgnoreSignalementHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	messageID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, `{"message": "ID invalide"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := db.IgnoreSignalementForum(messageID); err != nil {
+		http.Error(w, `{"message": "Erreur lors de la suppression du signalement"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Signalement ignoré avec succès"}`))
+}
+
+
 func DeleteMessageHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	messageID, err := strconv.Atoi(idStr)

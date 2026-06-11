@@ -2,154 +2,252 @@
     <div class="layout-wrapper public-dashboard">
         <header class="content-header">
             <div class="header-left">
-                <p class="sidebar__category2">ACCUEIL > TABLEAU DE BORD</p>
+                <p class="sidebar__category2">ACCUEIL > ESPACE SALARIÉ</p>
                 <h1 class="hero-title1">Bonjour {{ prenom }} 👋</h1>
                 <p class="classic-text">
-                    Voici un résumé de votre activité sur UpcycleConnect
+                    Voici un résumé de votre activité d'animateur sur
+                    UpcycleConnect
                 </p>
             </div>
-            <router-link to="/profil/createAnnonce" class="btn-main-action"
-                >+ Déposer une annonce</router-link
-            >
+            <div class="header-actions-group">
+                <router-link
+                    to="/profil/createFormation"
+                    class="btn-main-action"
+                >
+                    + Créer une formation
+                </router-link>
+            </div>
         </header>
 
         <div class="stats-grid dashboard-stats">
             <div class="card card--score">
-                <p class="tag-score">UPCYCLING SCORE</p>
+                <p class="tag-score">MON ACTIVITÉ</p>
                 <div class="score-value">
-                    {{ stats.total_points || 0 }} <span>pts</span>
+                    {{ stats.total_inscrits || 0 }} <span>inscrits</span>
                 </div>
                 <p class="score-level">
-                    Niveau : {{ stats.niveau || "Novice" }}
+                    {{ stats.formations_actives || 0 }} formation(s) active(s)
                 </p>
                 <div class="score-footer">
                     <div class="mini-stat">
-                        <strong>{{ stats.co2_total_evite_kg || 0 }} kg</strong
-                        ><br />CO2 évité
+                        <strong>{{ formations.length }}</strong
+                        ><br />Formations
                     </div>
                     <div class="mini-stat">
-                        <strong>{{ stats.nb_objets_recycles || 0 }}</strong
-                        ><br />Objets
+                        <strong>{{ tips.length }}</strong
+                        ><br />Conseils publiés
                     </div>
                     <div class="mini-stat">
-                        <strong
-                            >EUR {{ stats.ressources_economisees || 0 }}</strong
-                        ><br />Économisé
+                        <strong>{{ evenements.length }}</strong
+                        ><br />Événements
                     </div>
                 </div>
             </div>
 
             <div class="card card--white">
-                <div class="card-num">{{ annoncesActivesCount }}</div>
-                <p class="text-dm">Annonces actives</p>
-                <span class="badge badge--green">{{
-                    annoncesActivesCount > 0 ? "+1 ce mois" : "Aucune active"
-                }}</span>
+                <div class="card-num">{{ formationsEnAttenteCount }}</div>
+                <p class="text-dm">Formations en attente</p>
+                <span class="badge badge--orange">
+                    {{
+                        formationsEnAttenteCount > 0
+                            ? "Validation requise"
+                            : "Tout est validé"
+                    }}
+                </span>
             </div>
 
             <div class="card card--white">
-                <div class="card-num2">{{ calendarEntries.length }}</div>
-                <p class="text-dm">Inscriptions à venir</p>
-                <span class="badge badge--orange">{{ nextEntryLabel }}</span>
+                <div class="card-num2">{{ moderationStats.signales || 0 }}</div>
+                <p class="text-dm">Messages signalés</p>
+                <span
+                    class="badge"
+                    :class="
+                        moderationStats.signales > 0
+                            ? 'badge--red'
+                            : 'badge--green'
+                    "
+                >
+                    {{
+                        moderationStats.signales > 0
+                            ? "À traiter"
+                            : "Aucun signalement"
+                    }}
+                </span>
             </div>
         </div>
 
         <div class="section-container">
             <div class="section-header">
-                <h2>Mes dernières annonces</h2>
-                <div class="header-actions">
-                    <router-link
-                        to="/profil/createAnnonce"
-                        class="btn-main-action1"
-                        >+ Nouvelle annonce</router-link
+                <h2>Mes dernières formations</h2>
+                <div
+                    class="header-actions"
+                    style="display: flex; gap: 10px; align-items: center"
+                >
+                    <button
+                        v-if="formations.length > 0"
+                        class="btn-secondary"
+                        @click="goToAllFormations"
                     >
+                        Voir plus ({{ formations.length }})
+                    </button>
+                    <router-link
+                        to="/profil/createFormation"
+                        class="btn-main-action1"
+                    >
+                        + Nouvelle formation
+                    </router-link>
                 </div>
             </div>
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>OBJET</th>
+                        <th>FORMATION</th>
                         <th>TYPE</th>
-                        <th>STATUT PUBLICATION</th>
-                        <th>STATUT LOGISTIQUE</th>
+                        <th>VALIDATION</th>
+                        <th>STATUT</th>
+                        <th>INSCRITS</th>
                         <th>DATE</th>
                         <th>ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr
-                        v-for="annonce in annonces.slice(0, 4)"
-                        :key="annonce.id"
+                        v-for="formation in formations.slice(0, 3)"
+                        :key="formation.id"
                     >
                         <td>
-                            <strong>{{ annonce.titre }}</strong
+                            <strong>{{ formation.titre }}</strong
                             ><br />
                             <small class="table-subtext">{{
-                                annonce.type_materiau
+                                formation.ville
                             }}</small>
                         </td>
                         <td>
-                            <span
-                                :class="
-                                    annonce.type === 'Don'
-                                        ? 'tag-don'
-                                        : 'tag-vente'
-                                "
-                            >
-                                {{
-                                    annonce.type === "Don"
-                                        ? "DON"
-                                        : "VENTE " + annonce.prix + "EUR"
-                                }}
-                            </span>
+                            <span class="tag-formation">FORMATION</span>
                         </td>
                         <td>
                             <span
                                 :class="
-                                    annonce.est_valide === 'Valide'
+                                    formation.est_valide === 'Valide'
                                         ? 'status-valid'
                                         : 'status-pending'
                                 "
                             >
                                 {{
-                                    annonce.est_valide === "Valide"
+                                    formation.est_valide === "Valide"
                                         ? "APPROUVÉE"
-                                        : "EN ATTENTE"
+                                        : formation.est_valide === "Refuse"
+                                          ? "REFUSÉE"
+                                          : "EN ATTENTE"
                                 }}
                             </span>
                         </td>
                         <td>
-                            <span class="status-logistique">
-                                {{ annonce.statut || "En attente" }}
-                            </span>
+                            <span class="status-logistique">{{
+                                formation.statut
+                            }}</span>
                         </td>
-                        <td>{{ formatDate(annonce.date_creation) }}</td>
+                        <td>
+                            {{ formation.nb_inscrit || 0 }} /
+                            {{ formation.capacite_max }}
+                        </td>
+                        <td>{{ formatDate(formation.date_debut) }}</td>
                         <td class="actions-cell">
                             <button
                                 class="btn-view"
-                                @click="goToAnnonce(annonce.id)"
+                                @click="goToFormation(formation.id)"
                             >
                                 Voir
                             </button>
                             <button
-                                v-if="annonce.est_valide === 'En attente'"
+                                v-if="formation.est_valide !== 'Valide'"
                                 class="btn-modify"
-                                @click="goToModify(annonce.id)"
+                                @click="goToModifyFormation(formation.id)"
                             >
                                 Modifier
                             </button>
                             <button
                                 class="btn-remove"
-                                @click="removeAnnonce(annonce.id)"
+                                @click="removeFormation(formation.id)"
                             >
-                                Retirer
+                                Supprimer
                             </button>
                         </td>
                     </tr>
                 </tbody>
             </table>
-            <div v-if="annonces.length === 0" class="state-card">
-                Vous n'avez pas encore déposé d'annonces.
+            <div v-if="formations.length === 0" class="state-card">
+                Vous n'avez pas encore créé de formation.
+            </div>
+        </div>
+
+        <div class="section-container">
+            <div class="section-header">
+                <h2>Mes événements organisés</h2>
+                <div
+                    class="header-actions"
+                    style="display: flex; gap: 10px; align-items: center"
+                >
+                    <button
+                        v-if="evenements.length > 0"
+                        class="btn-secondary"
+                        @click="goToAllEvenements"
+                    >
+                        Voir plus ({{ evenements.length }})
+                    </button>
+                    <router-link
+                        to="/profil/createEvenement"
+                        class="btn-main-action1"
+                    >
+                        + Nouvel événement
+                    </router-link>
+                </div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ÉVÉNEMENT</th>
+                        <th>TYPE</th>
+                        <th>LIEU</th>
+                        <th>DATE</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="evt in evenements.slice(0, 3)" :key="evt.id">
+                        <td>
+                            <strong>{{ evt.titre }}</strong>
+                        </td>
+                        <td>
+                            <span class="tag-event">ÉVÉNEMENT</span>
+                        </td>
+                        <td>{{ evt.ville }}</td>
+                        <td>{{ formatDate(evt.date_evenement) }}</td>
+                        <td class="actions-cell">
+                            <button
+                                class="btn-view"
+                                @click="goToEvenement(evt.id)"
+                            >
+                                Voir
+                            </button>
+                            <button
+                                class="btn-modify"
+                                @click="goToModifyEvenement(evt.id)"
+                            >
+                                Modifier
+                            </button>
+                            <button
+                                class="btn-remove"
+                                @click="removeEvenement(evt.id)"
+                            >
+                                Supprimer
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div v-if="evenements.length === 0" class="state-card">
+                Vous n'avez pas encore organisé d'événement.
             </div>
         </div>
 
@@ -158,7 +256,7 @@
                 <div>
                     <h2>Mon planning ({{ planningWeekLabel }})</h2>
                     <p class="classic-text">
-                        Cliquez pour voir le calendrier complet.
+                        Vos formations et événements à venir.
                     </p>
                 </div>
                 <button class="btn-secondary" @click.stop="goToFullPlanning">
@@ -201,53 +299,114 @@
                 class="state-card"
                 style="margin-top: 1rem"
             >
-                Le planning se remplira dès que vous rejoindrez une formation ou
-                un événement.
+                Aucune formation ou événement prévu cette semaine.
             </div>
         </div>
 
         <div class="end-grid">
-            <div class="section-container-tips" v-if="tipDuJour">
-                <p class="tag-conseil">💡 Conseil du jour</p>
-
-                <div class="section-header">
-                    <h2>{{ tipDuJour.titre }}</h2>
+            <div class="dashboard-bottom-card" v-if="tips.length > 0">
+                <div class="card-top-content">
+                    <span class="tag-light-green">💡 Mon dernier conseil</span>
+                    <h2 class="mod-title">{{ tips[0].titre }}</h2>
+                    <p class="classic-text">
+                        {{
+                            tips[0].description ||
+                            "Découvrez ce conseil publié sur la plateforme."
+                        }}
+                    </p>
                 </div>
-                <p>{{ tipDuJour.description }}</p>
 
-                <router-link
-                    :to="{
-                        name: 'conseil-detail',
-                        params: { id: tipDuJour.id },
-                    }"
-                    class="btn-text-green"
-                    style="text-decoration: none"
-                >
-                    Lire la suite →
-                </router-link>
-            </div>
-            <div class="section-container-tips" v-else>
-                <p class="tag-conseil">💡 Conseil du jour</p>
-                <div class="section-header">
-                    <h2>En attente d'astuces...</h2>
+                <div class="card-bottom-actions">
+                    <router-link
+                        :to="{
+                            name: 'conseil-detail',
+                            params: { id: tips[0].id },
+                        }"
+                        class="btn-action-light-green"
+                    >
+                        Lire la suite →
+                    </router-link>
+                    <button class="btn-secondary" @click="goToAllTips">
+                        Voir tous ({{ tips.length }})
+                    </button>
                 </div>
-                <p>
-                    Restez à l'affût, de nouveaux conseils pour votre profil
-                    arrivent bientôt !
-                </p>
             </div>
 
-            <div class="section-container-tips">
-                <p class="tag-notif">🔔 Notification</p>
-
-                <div class="section-header">
-                    <h2>Votre dépôt a été récupéré !</h2>
+            <div class="dashboard-bottom-card" v-else>
+                <div class="card-top-content">
+                    <span class="tag-light-green">💡 Conseils</span>
+                    <h2 class="mod-title">Aucun conseil publié</h2>
+                    <p class="classic-text">
+                        Partagez votre expertise avec la communauté en créant
+                        votre premier conseil !
+                    </p>
                 </div>
-                <p>
-                    La chaise vintage que vous avez déposée le 12 fév. a été
-                    récupérée par un artisan. +50 points Upcycling Score !
-                </p>
-                <button class="btn-text-green">Voir le projet →</button>
+                <div class="card-bottom-actions">
+                    <router-link
+                        to="/profil/createTip"
+                        class="btn-action-light-green"
+                    >
+                        + Publier un conseil
+                    </router-link>
+                </div>
+            </div>
+
+            <div class="dashboard-bottom-card moderation-custom-layout">
+                <div class="mod-header">
+                    <div class="mod-header-text">
+                        <span class="tag-notif-yellow"
+                            >🔔 Modération du forum</span
+                        >
+                        <h2 class="mod-title">Vue d'ensemble</h2>
+                    </div>
+                    <router-link
+                        to="/profil/forum"
+                        class="btn-action-light-green"
+                    >
+                        Gérer le forum →
+                    </router-link>
+                </div>
+
+                <div class="mod-stats-grid">
+                    <div
+                        class="mod-stat-box"
+                        :class="{ 'is-danger': moderationStats.signales > 0 }"
+                    >
+                        <div class="stat-icon">
+                            <TriangleAlert :size="24" stroke-width="2.5" />
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-val">
+                                {{ moderationStats.signales || 0 }}
+                            </div>
+                            <div class="stat-lbl">Signalements</div>
+                        </div>
+                    </div>
+
+                    <div class="mod-stat-box">
+                        <div class="stat-icon">
+                            <MessageCircle :size="24" stroke-width="2.5" />
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-val">
+                                {{ moderationStats.discussions || 0 }}
+                            </div>
+                            <div class="stat-lbl">Discussions actives</div>
+                        </div>
+                    </div>
+
+                    <div class="mod-stat-box">
+                        <div class="stat-icon">
+                            <Ban :size="24" stroke-width="2.5" />
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-val">
+                                {{ moderationStats.bannis || 0 }}
+                            </div>
+                            <div class="stat-lbl">Comptes bannis</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -256,22 +415,26 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { TriangleAlert, MessageCircle, Ban } from "lucide-vue-next";
 
 const router = useRouter();
 const API_URL = "http://localhost:8081";
 
 const prenom = ref(sessionStorage.getItem("userPrenom") || "Invité");
-const annonces = ref([]);
+const formations = ref([]);
+const evenements = ref([]);
+const tips = ref([]);
 const calendarEntries = ref([]);
-const tipDuJour = ref(null);
-const userRole = ref(sessionStorage.getItem("userRole") || "Particulier");
 
 const stats = ref({
-    total_points: 0,
-    niveau: "Chargement...",
-    co2_total_evite_kg: 0,
-    nb_objets_recycles: 0,
-    ressources_economisees: 0,
+    total_inscrits: 0,
+    formations_actives: 0,
+});
+
+const moderationStats = ref({
+    signales: 0,
+    discussions: 0,
+    bannis: 0,
 });
 
 const getLocalISODate = (date) => {
@@ -282,19 +445,9 @@ const getLocalISODate = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-const annoncesActivesCount = computed(
-    () =>
-        annonces.value.filter(
-            (a) => a.est_valide === "Valide" && a.statut === "Disponible",
-        ).length,
+const formationsEnAttenteCount = computed(
+    () => formations.value.filter((f) => f.est_valide === "En attente").length,
 );
-
-const nextEntryLabel = computed(() => {
-    if (calendarEntries.value.length === 0) return "À venir";
-    return [...calendarEntries.value].sort((a, b) =>
-        a.date.localeCompare(b.date),
-    )[0].dateLabel;
-});
 
 const currentWeekStart = computed(() => {
     const now = new Date();
@@ -343,96 +496,51 @@ const formatDate = (val) => {
           }).format(date);
 };
 
-const goToAnnonce = (id) =>
-    router.push({ name: "annonce-detail", params: { id } });
-const goToModify = (id) =>
-    router.push({ name: "modification-annonce", params: { id } });
+const goToFormation = (id) =>
+    router.push({ name: "formation-detail", params: { id } });
+const goToModifyFormation = (id) =>
+    router.push({ name: "modify-formation", params: { id } });
+const goToEvenement = (id) =>
+    router.push({ name: "evenement-detail", params: { id } });
+const goToModifyEvenement = (id) =>
+    router.push({ name: "modify-evenement", params: { id } });
 const goToFullPlanning = () => router.push("/profil/planning");
 
-const removeAnnonce = async (id) => {
-    if (!confirm("Voulez-vous vraiment retirer cette annonce ?")) return;
+const goToAllFormations = () => router.push("/profil/formations");
+const goToAllEvenements = () => router.push("/profil/evenements");
+const goToAllTips = () => router.push("/profil/tips");
+
+const removeFormation = async (id) => {
+    if (!confirm("Voulez-vous vraiment supprimer cette formation ?")) return;
     try {
         const token = sessionStorage.getItem("userToken") || "";
-        const res = await fetch(`${API_URL}/annonces/${id}`, {
+        const res = await fetch(`${API_URL}/formations/${id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error("Erreur suppression");
-        annonces.value = annonces.value.filter((a) => a.id !== id);
-    } catch (e) {
-        console.error("Erreur suppression:", e);
-    }
+        if (res.ok) {
+            formations.value = formations.value.filter((f) => f.id !== id);
+        }
+    } catch (e) {}
 };
 
-const loadCalendarEntries = async (id) => {
-    if (!id || id === "null") return;
+const removeEvenement = async (id) => {
+    if (!confirm("Voulez-vous vraiment supprimer cet événement ?")) return;
     try {
         const token = sessionStorage.getItem("userToken") || "";
-        const res = await fetch(`${API_URL}/user/planning/${id}`, {
+        const res = await fetch(`${API_URL}/evenements/${id}`, {
+            method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) return;
-
-        const data = await res.json();
-        let entries = [];
-
-        if (data && !Array.isArray(data)) {
-            const mapEntry = (arr, kind, dateKey) =>
-                (arr || [])
-                    .map((item) => {
-                        const parsed = new Date(item[dateKey]);
-                        if (isNaN(parsed.getTime())) return null;
-                        return {
-                            id: `${kind}-${item.id}`,
-                            kind,
-                            title: item.titre,
-                            date: getLocalISODate(parsed),
-                            dateLabel: parsed.toLocaleDateString("fr-FR", {
-                                day: "numeric",
-                                month: "short",
-                            }),
-                            timeLabel: parsed.toLocaleTimeString("fr-FR", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                            }),
-                        };
-                    })
-                    .filter(Boolean);
-
-            entries = [
-                ...mapEntry(data.formations, "formation", "date_debut"),
-                ...mapEntry(data.evenements, "event", "date_evenement"),
-            ];
-        }
-        calendarEntries.value = entries.sort((a, b) =>
-            a.date.localeCompare(b.date),
-        );
-    } catch (e) {
-        console.error("Erreur chargement planning:", e);
-    }
-};
-
-const loadTipDuJour = async (role) => {
-    const safeRole = role || "Particulier";
-    try {
-        const res = await fetch(`${API_URL}/tips/role/${safeRole}`);
         if (res.ok) {
-            tipDuJour.value = await res.json();
-        } else {
-            tipDuJour.value = null;
+            evenements.value = evenements.value.filter((e) => e.id !== id);
         }
-    } catch (e) {
-        tipDuJour.value = null;
-    }
+    } catch (e) {}
 };
 
 onMounted(async () => {
     const rawId = sessionStorage.getItem("userId");
-
-    if (!rawId || rawId === "null" || rawId === "undefined") {
-        console.warn("Utilisateur non connecté ou ID invalide.");
-        return;
-    }
+    if (!rawId || rawId === "null" || rawId === "undefined") return;
 
     const id = parseInt(rawId, 10);
     if (isNaN(id)) return;
@@ -441,42 +549,80 @@ onMounted(async () => {
         Authorization: `Bearer ${sessionStorage.getItem("userToken") || ""}`,
     };
 
-    let currentRole = sessionStorage.getItem("userRole");
-    if (!currentRole || currentRole === "null") {
-        currentRole = "Particulier";
-    }
-    userRole.value = currentRole;
+    try {
+        const res = await fetch(`${API_URL}/formations`, { headers });
+        if (res.ok) {
+            const data = await res.json();
+            const all = Array.isArray(data) ? data : data.formations || [];
+            formations.value = all.filter((f) => f.id_formateur === id);
+            stats.value.formations_actives = formations.value.filter(
+                (f) => f.statut === "Ouvert",
+            ).length;
+            stats.value.total_inscrits = formations.value.reduce(
+                (sum, f) => sum + (f.nb_inscrit || 0),
+                0,
+            );
+        }
+    } catch (e) {}
 
     try {
-        const resStats = await fetch(`${API_URL}/users/${id}/stats`, {
-            headers,
-        });
-        if (resStats.ok) {
-            const data = await resStats.json();
-            stats.value = data;
-            if (data.total_points !== undefined) {
-                sessionStorage.setItem("userScore", String(data.total_points));
-                window.dispatchEvent(new Event("auth-change"));
-            }
+        const res = await fetch(`${API_URL}/evenements`, { headers });
+        if (res.ok) {
+            const data = await res.json();
+            const all = Array.isArray(data) ? data : data.evenements || [];
+            evenements.value = all.filter((e) => e.id_createur === id);
         }
-    } catch (e) {
-        console.error("Erreur stats:", e);
-    }
+    } catch (e) {}
 
     try {
-        const resAnnonces = await fetch(`${API_URL}/users/${id}/annonces`, {
-            headers,
-        });
-        if (resAnnonces.ok) {
-            const data = await resAnnonces.json();
-            annonces.value = Array.isArray(data) ? data : data.annonces || [];
+        const res = await fetch(`${API_URL}/tips`, { headers });
+        if (res.ok) {
+            const data = await res.json();
+            const all = Array.isArray(data) ? data : data.tips || [];
+            tips.value = all.filter((t) => t.id_createur === id).reverse();
         }
-    } catch (e) {
-        console.error("Erreur annonces:", e);
-    }
+    } catch (e) {}
 
-    await loadCalendarEntries(id);
-    await loadTipDuJour(userRole.value);
+    try {
+        const [signalesRes, topicsRes, bannedRes] = await Promise.all([
+            fetch(`${API_URL}/api/moderation/forums/signales`, { headers }),
+            fetch(`${API_URL}/api/moderation/topics`, { headers }),
+            fetch(`${API_URL}/api/moderation/users/banned`, { headers }),
+        ]);
+
+        const signales = signalesRes.ok ? await signalesRes.json() : [];
+        const topics = topicsRes.ok ? await topicsRes.json() : [];
+        const banned = bannedRes.ok ? await bannedRes.json() : [];
+
+        moderationStats.value = {
+            signales: Array.isArray(signales) ? signales.length : 0,
+            discussions: Array.isArray(topics) ? topics.length : 0,
+            bannis: Array.isArray(banned) ? banned.length : 0,
+        };
+    } catch (e) {}
+
+    const mapEntry = (arr, kind, dateKey) =>
+        (arr || [])
+            .map((item) => {
+                const parsed = new Date(item[dateKey]);
+                if (isNaN(parsed.getTime())) return null;
+                return {
+                    id: `${kind}-${item.id}`,
+                    kind,
+                    title: item.titre,
+                    date: getLocalISODate(parsed),
+                    timeLabel: parsed.toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    }),
+                };
+            })
+            .filter(Boolean);
+
+    calendarEntries.value = [
+        ...mapEntry(formations.value, "formation", "date_debut"),
+        ...mapEntry(evenements.value, "event", "date_evenement"),
+    ].sort((a, b) => a.date.localeCompare(b.date));
 });
 </script>
 
@@ -494,18 +640,9 @@ onMounted(async () => {
     margin-bottom: 2rem;
 }
 
-.btn-main-action,
-.btn-main-action1 {
-    display: inline-flex;
-    align-items: center;
-    background: #2d7a4f;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 10px;
-    text-decoration: none;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
+.header-actions-group {
+    display: flex;
+    gap: 0.8rem;
 }
 
 .section-container {
@@ -523,13 +660,159 @@ onMounted(async () => {
     margin-bottom: 1rem;
 }
 
-.state-card {
-    border: 1px dashed #cfe0d4;
-    border-radius: 14px;
-    padding: 26px;
-    color: var(--text-grey, #666);
-    background: #fbfdfb;
-    text-align: center;
+.end-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    align-items: stretch;
+}
+
+@media (min-width: 921px) {
+    .end-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.dashboard-bottom-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.card-top-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.card-bottom-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 2rem;
+}
+
+.btn-main-action,
+.btn-main-action1 {
+    display: inline-flex;
+    align-items: center;
+    background: #2d7a4f;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-action-light-green {
+    background: #eaf4ed;
+    color: #1b4d31;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+.btn-action-light-green:hover {
+    background: #d1e7dd;
+    transform: translateY(-2px);
+}
+
+.btn-view {
+    background: transparent;
+    border: 1px solid #ddd;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-view:hover {
+    background: #f0f0f0;
+}
+
+.btn-modify {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-modify:hover {
+    background: #ffe8a1;
+    color: #664d03;
+}
+
+.btn-remove {
+    background: #ffe5e5;
+    border: 1px solid #ffcccc;
+    color: #d32f2f;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-remove:hover {
+    background: #ffcccc;
+    color: #b71c1c;
+}
+
+.tag-light-green {
+    background: #eaf4ed;
+    color: #2d7a4f;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+.tag-notif-yellow {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+.mod-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.classic-text {
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
 }
 
 .stats-grid {
@@ -560,17 +843,6 @@ onMounted(async () => {
     background: #2d7a4f;
     color: white;
     border: none;
-}
-
-.tag-score {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 800;
-    display: inline-block;
-    margin-bottom: 1rem;
 }
 
 .score-value {
@@ -615,46 +887,53 @@ onMounted(async () => {
     margin-bottom: 0.5rem;
 }
 
-.badge {
+.tag-score {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
     padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: bold;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
     display: inline-block;
+    margin-bottom: 1rem;
 }
 
-.btn-modify {
+.tag-formation {
+    background: #eaf4ed;
+    color: #2d7a4f;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.tag-event {
     background: #fff3cd;
-    border: 1px solid #ffeeba;
     color: #856404;
-    padding: 6px 12px;
+    padding: 4px 10px;
     border-radius: 6px;
-    cursor: pointer;
+    font-size: 0.75rem;
     font-weight: bold;
-    margin-left: 10px;
-    transition: all 0.2s;
+    text-transform: uppercase;
 }
 
-.btn-modify:hover {
-    background: #ffe8a1;
-    color: #664d03;
-}
-
-.btn-remove {
-    background: #ffe5e5;
-    border: 1px solid #ffcccc;
-    color: #d32f2f;
-    padding: 6px 12px;
+.status-valid {
+    background: #eaf4ed;
+    color: #2d7a4f;
+    padding: 4px 10px;
     border-radius: 6px;
-    cursor: pointer;
+    font-size: 0.75rem;
     font-weight: bold;
-    margin-left: 10px;
-    transition: all 0.2s;
 }
 
-.btn-remove:hover {
-    background: #ffcccc;
-    color: #b71c1c;
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
 }
 
 .status-logistique {
@@ -667,13 +946,47 @@ onMounted(async () => {
     text-transform: uppercase;
 }
 
+.badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: inline-block;
+}
+
 .badge--green {
     background: #eaf4ed;
     color: #2d7a4f;
 }
+
 .badge--orange {
     background: #fff3cd;
     color: #856404;
+}
+
+.badge--red {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: #999;
+    text-transform: uppercase;
+    padding: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.data-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 0.9rem;
 }
 
 .table-subtext {
@@ -683,26 +996,19 @@ onMounted(async () => {
     font-size: 0.78rem;
 }
 
-.btn-view {
-    background: transparent;
-    border: 1px solid #ddd;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
+.actions-cell {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
-.btn-view:hover {
-    background: #f0f0f0;
-}
-
-.btn-secondary {
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
-    font-weight: 600;
+.state-card {
+    border: 1px dashed #cfe0d4;
+    border-radius: 14px;
+    padding: 26px;
+    color: var(--text-grey, #666);
+    background: #fbfdfb;
+    text-align: center;
 }
 
 .planning-week {
@@ -755,65 +1061,105 @@ onMounted(async () => {
     background: #d1e7dd;
     color: #0f5132;
 }
+
 .planning-entry--event {
     background: #fff3cd;
     color: #856404;
 }
 
-.end-grid {
+.moderation-custom-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    gap: 2rem;
+}
+
+.mod-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.mod-header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.mod-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
 }
 
-.section-container-tips {
-    background: white;
-    padding: 2rem;
-    border-radius: 16px;
-    border: 1px solid #eee;
+@media (max-width: 650px) {
+    .mod-stats-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
-.tag-conseil {
-    background: #eaf4ed;
-    color: #2d7a4f;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 800;
-    display: inline-block;
-    margin-bottom: 1rem;
-}
-
-.tag-notif {
-    background: #fef3c7;
-    color: #92400e;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 800;
-    display: inline-block;
-    margin-bottom: 1rem;
-}
-
-.btn-text-green {
-    background: #eaf4ed;
-    border: none;
-    color: #2d7a4f;
-    font-weight: bold;
-    font-size: 1rem;
-    padding: 12px 20px;
-    border-radius: 10px;
-    margin-top: 1.5rem;
-    cursor: pointer;
+.mod-stat-box {
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    padding: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     transition: all 0.2s ease;
-    display: block;
-    text-align: center;
 }
 
-.btn-text-green:hover {
-    background: #d1e7dd;
-    color: #1b4d31;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(45, 122, 79, 0.15);
+.stat-icon {
+    color: #2d7a4f;
+    background: white;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-val {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #1a1a1a;
+    line-height: 1.1;
+}
+
+.stat-lbl {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+.mod-stat-box.is-danger {
+    background: #fff5f5;
+    border-color: #fecaca;
+}
+
+.mod-stat-box.is-danger .stat-val {
+    color: #b91c1c;
+}
+
+.mod-stat-box.is-danger .stat-lbl {
+    color: #991b1b;
+}
+
+.mod-stat-box.is-danger .stat-icon {
+    background: #fee2e2;
+    color: #b91c1c;
 }
 </style>

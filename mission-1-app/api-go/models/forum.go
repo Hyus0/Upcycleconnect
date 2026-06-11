@@ -42,6 +42,7 @@ type SendMessageRequest struct {
 
 type ReportDetail struct {
 	ReporterName string `json:"reporter_name"`
+	DateSignalement string `json:"date_signalement"`
 	Motif        string `json:"motif"`
 }
 

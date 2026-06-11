@@ -195,7 +195,7 @@
                                         }}
                                         msg</strong
                                     >
-                                    <small>{{ topic.lastActivity }}</small>
+                                    <small>{{ formatDate(topic.lastActivity) }}</small>
                                 </div>
                             </button>
 
@@ -249,17 +249,14 @@
                                                     {{ message.author }}
                                                 </strong>
                                                 <span>{{ message.role }}</span>
-                                                <small>{{
-                                                    message.postedAt
-                                                }}</small>
+                                                <small>{{ formatDate(message.postedAt) }}</small>
                                             </div>
                                             <button
+                                                v-if="message.author !== userName"
                                                 type="button"
                                                 class="btn-report"
                                                 title="Signaler ce message"
-                                                @click="
-                                                    openReportModal(message.id)
-                                                "
+                                                @click="openReportModal(message.id)"
                                             >
                                                 <TriangleAlert :size="16" />
                                             </button>
@@ -338,7 +335,7 @@
 <script setup>
 import { computed, ref, onMounted } from "vue";
 import { RouterLink, useRouter } from "vue-router";
-import { TriangleAlert } from "lucide-vue-next"; // Ajout de l'icône !
+import { TriangleAlert } from "lucide-vue-next"; 
 
 const router = useRouter();
 const API_URL = "http://localhost:8081";
@@ -362,7 +359,6 @@ const showComposer = ref(false);
 const draftTopicTitle = ref("");
 const draftMessage = ref("");
 
-// Variables pour la modale de signalement
 const showReportModal = ref(false);
 const reportMessageId = ref(null);
 const reportMotif = ref("");
@@ -399,6 +395,21 @@ const fetchForums = async () => {
 onMounted(() => {
     fetchForums();
 });
+
+function formatDate(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    
+    if (isNaN(date.getTime())) return dateString; 
+    
+    return new Intl.DateTimeFormat("fr-FR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    }).format(date).replace(":", "h");
+}
 
 const selectedForum = computed(
     () =>
@@ -531,7 +542,6 @@ function closeComposer() {
     draftMessage.value = "";
 }
 
-// LOGIQUE DE SIGNALEMENT
 function openReportModal(messageId) {
     if (!requireAuth()) return;
     reportMessageId.value = messageId;
@@ -593,44 +603,45 @@ async function submitPost() {
 
     try {
         if (selectedTopic.value) {
-            await fetch(`${API_URL}/forums/message`, {
+            const res = await fetch(`${API_URL}/forums/message`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_id: currentUserId,
-                    forum_id: selectedTopic.value.id,
+                    user_id: currentUserId,         
+                    forum_id: selectedTopic.value.id, 
                     contenu: draftMessage.value.trim(),
                 }),
             });
+            if (!res.ok) throw new Error(await res.text());
         } else {
             if (draftTopicTitle.value.trim().length < 4) {
                 alert("Le titre doit faire au moins 4 caractères.");
                 return;
             }
 
-            await fetch(`${API_URL}/forums/topic`, {
+            const res = await fetch(`${API_URL}/forums/topic`, { 
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_id: currentUserId,
-                    salon_id: selectedForum.value.id,
-                    titre: draftTopicTitle.value.trim(),
+                    user_id: currentUserId,           
+                    salon_id: selectedForum.value.id, 
+                    title: draftTopicTitle.value.trim(), 
                     sujet: draftMessage.value.trim(),
                 }),
             });
+            if (!res.ok) throw new Error(await res.text());
         }
 
         closeComposer();
         await fetchForums();
     } catch (e) {
-        console.error(e);
-        alert("Erreur de connexion.");
+        console.error("Erreur backend:", e);
+        alert("Erreur lors de la publication : " + e.message);
     }
 }
 </script>
 
 <style scoped>
-/* TES STYLES EXISTANTS (identiques) */
 .forum-page {
     display: grid;
     gap: 24px;
@@ -974,8 +985,6 @@ async function submitPost() {
     }
 }
 
-/* === NOUVEAUX STYLES POUR LE SIGNALEMENT === */
-
 .meta-left {
     display: flex;
     align-items: center;
@@ -1001,7 +1010,6 @@ async function submitPost() {
     background: #fceaea;
 }
 
-/* Modale */
 .modal-overlay {
     position: fixed;
     top: 0;

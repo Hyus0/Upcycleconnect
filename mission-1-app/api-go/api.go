@@ -123,6 +123,7 @@ func main() {
 	http.HandleFunc("POST /api/evenements/{id}/quit", app.QuitEvenement)
 	http.HandleFunc("GET /api/evenements/{id}/inscription-status", app.CheckInscriptionEvenement)
 	http.HandleFunc("GET /api/evenements/{id}/participants", app.GetEvenementParticipantsHandler)
+	
 	//Categorie
 	http.HandleFunc("GET /categories", app.GetAllCategories)
 	http.HandleFunc("GET /category/{id}", app.GetCategory)
@@ -178,6 +179,7 @@ func main() {
     http.HandleFunc("POST /forums/message", app.SendMessageHandler)
     http.HandleFunc("POST /forums/topic", app.CreateTopicHandler)
     http.HandleFunc("DELETE /forums/message/{id}", app.DeleteMessageHandler)
+    http.HandleFunc("DELETE /forums/signalement/{id}", app.IgnoreSignalementHandler)
     http.HandleFunc("DELETE /forums/topic/{id}", app.DeleteTopicHandler)    
     http.HandleFunc("GET /forums/messages/recent", app.GetRecentMessagesHandler)
     http.HandleFunc("POST /forums/message/{id}/signaler", app.SignalerMessageHandler)

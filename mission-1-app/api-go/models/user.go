@@ -8,6 +8,7 @@ type User struct {
 	ImageProfil        string `json:"image_profil"`
 	Banniere           string `json:"banniere"`    
 	Mail               string `json:"mail"`
+	MailValide         string `json:"mail_valide"`
 	Adresse            string `json:"adresse"`
 	Ville              string `json:"ville"`
 	CodePostal         string `json:"code_postal"`
@@ -17,6 +18,8 @@ type User struct {
 	Role               string `json:"role"`
 	Statut             string `json:"statut"`
 	IdLangue           int    `json:"id_langue"`
+	Siret              string `json:"siret,omitempty"`
+	SiretValide        bool   `json:"siret_valide"`
 }
 
 type GetUser struct {
@@ -26,6 +29,7 @@ type GetUser struct {
 	ImageProfil        string `json:"image_profil"` 
 	Banniere           string `json:"banniere"` 
 	Mail               string `json:"mail"`
+	MailValide         string `json:"mail_valide"`
 	Adresse            string `json:"adresse"`
 	Ville              string `json:"ville"`
 	CodePostal         string `json:"code_postal"`
@@ -35,6 +39,8 @@ type GetUser struct {
 	Role               string `json:"role"`
 	Statut             string `json:"statut"`
 	IdLangue           int    `json:"id_langue"`
+	Siret              string `json:"siret,omitempty"`
+	SiretValide        bool   `json:"siret_valide"`
 }
 
 type UserStats struct {

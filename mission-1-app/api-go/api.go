@@ -193,6 +193,18 @@ func main() {
 	http.HandleFunc("DELETE /users/{id}/panier/{itemId}", app.RemoveFromPanierHandler)
 	http.HandleFunc("POST /users/{id}/checkout", app.CheckoutHandler)
 
+	// Messagerie privee
+	http.HandleFunc("GET /users/{id}/subscription", app.GetSubscriptionStatusHandler)
+	http.HandleFunc("GET /users/{id}/messages", app.GetConversationsHandler)
+	http.HandleFunc("POST /users/{id}/messages/start", app.StartConversationHandler)
+	http.HandleFunc("GET /users/{id}/messages/{conversationId}", app.GetConversationMessagesHandler)
+	http.HandleFunc("POST /users/{id}/messages/{conversationId}", app.SendDMMessageHandler)
+	http.HandleFunc("GET /users/{id}/messages/{conversationId}/state", app.GetConversationStateHandler)
+	http.HandleFunc("POST /users/{id}/messages/{conversationId}/offers", app.CreateDMOfferHandler)
+	http.HandleFunc("PATCH /users/{id}/messages/offers/{offerId}", app.RespondDMOfferHandler)
+	http.HandleFunc("POST /users/{id}/messages/sales/{saleId}/reception", app.ConfirmDMSaleReceptionHandler)
+	http.HandleFunc("POST /users/{id}/messages/sales/{saleId}/review", app.ReviewDMSaleHandler)
+	
 	//notification
 	http.HandleFunc("GET /notifications", app.GetAllNotificationsHandler)	
 	http.HandleFunc("GET /notifications/{id}", app.GetNotificationHandler)

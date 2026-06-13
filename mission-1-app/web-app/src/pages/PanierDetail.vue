@@ -21,6 +21,27 @@
       Chargement de votre panier...
     </div>
 
+    <div v-else-if="checkoutResult" class="invoice-success-card">
+      <span class="invoice-kicker">Paiement valide</span>
+      <h2>Votre commande est confirmee.</h2>
+      <p>
+        Facture <strong>{{ checkoutResult.numero_facture }}</strong> generee pour la commande
+        #{{ checkoutResult.commande_id }}.
+      </p>
+      <div class="invoice-actions">
+        <button class="btn-main-action" @click="downloadInvoice">Telecharger la facture</button>
+        <button class="btn-secondary-back" :disabled="sendingInvoice" @click="sendInvoiceByMail">
+          {{ sendingInvoice ? 'Envoi...' : 'Envoyer par mail' }}
+        </button>
+        <button class="btn-secondary-back" @click="$router.push('/profil/factures')">
+          Voir mes factures
+        </button>
+      </div>
+      <p class="secure-payment-text">
+        Sans SMTP configure, l'envoi mail cree une notification locale.
+      </p>
+    </div>
+
     <div v-else-if="cartItems.length === 0" class="empty-cart-card">
       <div class="empty-icon">🛍️</div>
       <h2>Votre panier est vide</h2>
@@ -109,11 +130,13 @@ import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const loading = ref(true);
 const cartItems = ref([]);
 const isCheckingOut = ref(false);
+const checkoutResult = ref(null);
+const sendingInvoice = ref(false);
 
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const currentUserId = computed(() => {
@@ -229,9 +252,9 @@ const handleCheckout = async () => {
 
     if (res.ok) {
       const data = await res.json();
-      alert(`Commande n°${data.commande_id} créée avec succès ! Vous allez être redirigé vers le paiement.`);
+      checkoutResult.value = data;
+      alert(`Commande n°${data.commande_id} créée avec succès. La facture est prête.`);
       cartItems.value = [];
-      router.push("/"); 
     } else {
       const err = await res.text();
       alert("Erreur lors de la commande : " + err);
@@ -241,6 +264,30 @@ const handleCheckout = async () => {
     alert("Impossible de contacter le serveur.");
   } finally {
     isCheckingOut.value = false;
+  }
+};
+
+const downloadInvoice = () => {
+  if (!checkoutResult.value?.facture_id) return;
+  window.open(`${API_URL}/users/${currentUserId.value}/factures/${checkoutResult.value.facture_id}/download`, "_blank");
+};
+
+const sendInvoiceByMail = async () => {
+  if (!checkoutResult.value?.facture_id) return;
+
+  sendingInvoice.value = true;
+  try {
+    const res = await fetch(`${API_URL}/users/${currentUserId.value}/factures/${checkoutResult.value.facture_id}/send`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${sessionStorage.getItem("userToken")}` }
+    });
+    const payload = res.ok ? await res.json() : { message: await res.text() };
+    alert(payload.message || "Demande d'envoi traitee.");
+  } catch (error) {
+    console.error("Erreur envoi facture:", error);
+    alert("Impossible de demander l'envoi de la facture.");
+  } finally {
+    sendingInvoice.value = false;
   }
 };
 
@@ -315,6 +362,42 @@ onMounted(fetchPanier);
 .empty-icon { font-size: 4rem; margin-bottom: 20px; }
 .empty-cart-card h2 { font-size: 1.8rem; color: #1a1a1a; margin-bottom: 10px; }
 .empty-cart-card p { color: #6d7b72; font-size: 1.1rem; }
+
+.invoice-success-card {
+  background: #fff;
+  border: 1px solid #cfe8d8;
+  border-radius: 22px;
+  padding: 42px;
+  max-width: 780px;
+  margin: 40px auto;
+  box-shadow: 0 18px 48px rgba(19, 87, 52, 0.08);
+}
+.invoice-kicker {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #e9f7ee;
+  color: #2d7a4f;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.invoice-success-card h2 {
+  margin: 18px 0 10px;
+  font-size: 2rem;
+  color: #16221c;
+}
+.invoice-success-card p {
+  color: #5d6d64;
+  line-height: 1.6;
+}
+.invoice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0 8px;
+}
 
 .cart-layout-wrapper {
   max-width: 1200px;

@@ -2579,7 +2579,7 @@ func RemoveFromPanierHandler(w http.ResponseWriter, r *http.Request) {
 
 	userIDStr := r.PathValue("id")
 	itemIDStr := r.PathValue("itemId")
-	
+
 	fmt.Printf("Données URL -> UserID: %s | ItemID: %s\n", userIDStr, itemIDStr)
 
 	userID, err1 := strconv.Atoi(userIDStr)
@@ -2605,7 +2605,7 @@ func RemoveFromPanierHandler(w http.ResponseWriter, r *http.Request) {
 
 func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Requête de Checkout reçue !")
-	
+
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
@@ -2625,6 +2625,96 @@ func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":     "Commande créée avec succès",
 		"commande_id": commandeID,
+	})
+}
+
+func CheckoutWithInvoiceHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	checkout, err := db.Checkout(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":        "Commande creee avec succes",
+		"commande_id":    checkout.CommandeID,
+		"transaction_id": checkout.TransactionID,
+		"facture_id":     checkout.FactureID,
+		"numero_facture": checkout.NumeroFacture,
+		"facture_url":    fmt.Sprintf("/users/%d/factures/%d/download", userID, checkout.FactureID),
+	})
+}
+
+func GetFacturesHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	factures, err := db.GetFacturesByUser(userID)
+	if err != nil {
+		http.Error(w, "Erreur lors de la recuperation des factures", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(factures)
+}
+
+func DownloadFactureHandler(w http.ResponseWriter, r *http.Request) {
+	userID, errUser := strconv.Atoi(r.PathValue("id"))
+	factureID, errFacture := strconv.Atoi(r.PathValue("factureId"))
+	if errUser != nil || errFacture != nil || userID <= 0 || factureID <= 0 {
+		http.Error(w, "Parametres invalides", http.StatusBadRequest)
+		return
+	}
+
+	document, facture, err := db.BuildFactureHTML(userID, factureID)
+	if err != nil {
+		http.Error(w, "Facture introuvable", http.StatusNotFound)
+		return
+	}
+
+	fileName := fmt.Sprintf("%s.html", strings.ReplaceAll(facture.NumeroFacture, "/", "-"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fileName))
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(document))
+}
+
+func SendFactureByMailHandler(w http.ResponseWriter, r *http.Request) {
+	userID, errUser := strconv.Atoi(r.PathValue("id"))
+	factureID, errFacture := strconv.Atoi(r.PathValue("factureId"))
+	if errUser != nil || errFacture != nil || userID <= 0 || factureID <= 0 {
+		http.Error(w, "Parametres invalides", http.StatusBadRequest)
+		return
+	}
+
+	facture, err := db.GetFactureByIDForUser(userID, factureID)
+	if err != nil {
+		http.Error(w, "Facture introuvable", http.StatusNotFound)
+		return
+	}
+
+	message := fmt.Sprintf("Votre facture %s est disponible dans votre espace Factures. Envoi SMTP a brancher pour un mail reel vers %s.", facture.NumeroFacture, facture.AcheteurEmail)
+	if err := db.CreerNotification(userID, userID, "Message", "Facture disponible", message); err != nil {
+		http.Error(w, "Facture preparee mais notification impossible", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Facture preparee. Sans SMTP configure, une notification locale a ete creee.",
+		"email":   facture.AcheteurEmail,
 	})
 }
 

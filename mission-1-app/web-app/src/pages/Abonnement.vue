@@ -1,63 +1,113 @@
 <template>
-  <main class="subscription-page">
+  <main class="public-dashboard">
     <SiteNavbar :is-authenticated="isLoggedIn" :user-name="userName" variant="public" />
 
-    <section class="subscription-hero">
-      <div class="subscription-copy">
-        <p class="eyebrow">DM PLUS</p>
-        <h1>Messagerie illimitee pour tes echanges UpcycleConnect.</h1>
-        <p>
+    <header class="content-header">
+      <div class="header-left">
+        <p class="sidebar__category2">ACCUEIL > ABONNEMENT</p>
+        <h1 class="hero-title1">DM Plus : Messagerie illimitée</h1>
+        <p class="classic-text">
           Sans abonnement, tu peux contacter 5 vendeurs via les annonces. Avec DM Plus,
-          tu peux discuter avec tous les vendeurs, artisans et membres du site.
+          tu peux discuter avec tous les vendeurs, artisans et membres du site en illimité.
         </p>
+      </div>
+    </header>
+
+    <section class="subscription-layout">
+      <div class="subscription-details">
+        <article class="state-card">
+          <span class="step-num">01</span>
+          <h2 class="step-title">Gratuit</h2>
+          <p class="classic-text">
+            Tu peux ouvrir des discussions avec 5 vendeurs différents via leurs annonces. Idéal pour des achats ponctuels.
+          </p>
+        </article>
+
+        <article class="state-card">
+          <span class="step-num">02</span>
+          <h2 class="step-title">Abonné</h2>
+          <p class="classic-text">
+            Tu peux contacter autant de vendeurs que nécessaire et envoyer un DM direct à tout membre de la plateforme.
+          </p>
+        </article>
+
+        <article class="state-card">
+          <span class="step-num">03</span>
+          <h2 class="step-title">Paiement</h2>
+          <p class="classic-text">
+            L'abonnement s'ajoute directement à ton panier. Le processus de checkout sécurisé active instantanément ton accès.
+          </p>
+        </article>
       </div>
 
       <aside class="pricing-card">
         <p class="badge-plan">Abonnement mensuel</p>
-        <strong>2,99 €</strong>
-        <span>/ mois</span>
-        <ul>
-          <li>Messages illimites via annonces</li>
-          <li>DM direct vers n'importe quel utilisateur</li>
-          <li>Historique centralise dans la page messagerie</li>
-          <li>Activation apres paiement du panier</li>
+        <div class="price-container">
+          <strong>2,99 €</strong>
+          <span> / mois</span>
+        </div>
+        
+        <ul class="pricing-features">
+          <li>✓ Messages illimités via annonces</li>
+          <li>✓ DM direct vers n'importe quel utilisateur</li>
+          <li>✓ Historique centralisé et sécurisé</li>
+          <li>✓ Activation immédiate après paiement</li>
         </ul>
-        <button class="btn-main-action" type="button" :disabled="loading || isSubscriber" @click="subscribe">
+        
+        <button 
+          class="btn-main-action pricing-btn" 
+          type="button" 
+          :disabled="loading || isSubscriber" 
+          @click="subscribe"
+        >
           {{ buttonLabel }}
         </button>
-        <RouterLink class="btn-secondary" to="/messages">Voir ma messagerie</RouterLink>
+        <RouterLink class="btn-secondary pricing-link" to="/messages">
+          Voir ma messagerie
+        </RouterLink>
       </aside>
     </section>
-
-    <section class="subscription-details">
-      <article>
-        <span>01</span>
-        <h2>Gratuit</h2>
-        <p>Tu peux ouvrir des discussions avec 5 vendeurs differents via leurs annonces.</p>
-      </article>
-      <article>
-        <span>02</span>
-        <h2>Abonne</h2>
-        <p>Tu peux contacter autant de vendeurs que necessaire et envoyer un DM direct a tout membre.</p>
-      </article>
-      <article>
-        <span>03</span>
-        <h2>Paiement</h2>
-        <p>L'abonnement est ajoute au panier. Le checkout local simule le paiement Stripe en attendant les cles API.</p>
-      </article>
-    </section>
   </main>
+  
+  <SiteFooter />
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
-import { addSubscriptionToCart, currentUserId, fetchSubscriptionStatus } from "../services/messagesApi";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const router = useRouter();
 const loading = ref(false);
 const status = ref({ is_subscriber: false });
+const API_URL = "http://localhost:8081";
+
+const currentUserId = () => Number(sessionStorage.getItem("userId")) || 0;
+const getHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: sessionStorage.getItem("userToken") || "",
+});
+
+async function fetchSubscriptionStatus(userId) {
+    const res = await fetch(`${API_URL}/users/${userId}/subscription`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Erreur");
+    return await res.json();
+}
+
+async function addSubscriptionToCart(userId) {
+    const res = await fetch(`${API_URL}/users/${userId}/panier`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+            type_item: "Abonnement",
+            reference_id: 1,
+            prix_unitaire: 2.99
+        })
+    });
+    if (!res.ok) throw new Error("Erreur lors de l'ajout au panier");
+    return await res.json();
+}
 
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const isSubscriber = computed(() => !!status.value.is_subscriber);
@@ -66,14 +116,20 @@ const userName = computed(() => {
   const nom = sessionStorage.getItem("userNom") || "";
   return `${prenom} ${nom}`.trim() || "Utilisateur";
 });
+
 const buttonLabel = computed(() => {
-  if (isSubscriber.value) return "DM Plus deja actif";
+  if (isSubscriber.value) return "DM Plus déjà actif";
   return loading.value ? "Ajout en cours..." : "Ajouter au panier - 2,99 €";
 });
 
 async function loadStatus() {
-  if (!currentUserId()) return;
-  status.value = await fetchSubscriptionStatus(currentUserId());
+  const userId = currentUserId();
+  if (!userId) return;
+  try {
+      status.value = await fetchSubscriptionStatus(userId);
+  } catch(e) {
+      console.error(e);
+  }
 }
 
 async function subscribe() {
@@ -96,156 +152,227 @@ onMounted(loadStatus);
 </script>
 
 <style scoped>
-.subscription-page {
+/* =========================================
+   MISE EN PAGE ET TYPOGRAPHIE
+   ========================================= */
+.public-dashboard {
   min-height: 100vh;
   padding: 20px;
-  background:
-    radial-gradient(circle at top right, rgba(47, 143, 91, 0.16), transparent 34rem),
-    #f5f8f4;
+  background: var(--bg-light, #f7f9f7);
+  display: flex;
+  flex-direction: column;
 }
 
-.subscription-hero,
-.subscription-details {
-  max-width: 1440px;
-  margin: 0 auto;
-}
-
-.subscription-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
-  gap: 38px;
+.content-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 72px 0 36px;
+  margin-bottom: 2rem;
+  padding-top: 20px;
 }
 
-.eyebrow {
-  margin: 0 0 12px;
+.header-left {
+  flex: 1;
+  max-width: 800px;
+  padding-right: 20px;
+}
+
+.sidebar__category2 {
   color: #2f8f5b;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+}
+
+.hero-title1 {
+  font-size: 2.2rem;
   font-weight: 900;
-  letter-spacing: 0.24em;
-}
-
-.subscription-copy h1 {
-  max-width: 880px;
-  margin: 0;
-  color: #102018;
+  color: #1a1a1a;
+  margin: 5px 0 0 0;
   font-family: "Syne", sans-serif;
-  font-size: clamp(3rem, 7vw, 6.8rem);
-  line-height: 0.9;
+  line-height: 1.1;
 }
 
-.subscription-copy p {
-  max-width: 720px;
-  color: #60736a;
-  font-size: 1.12rem;
-  line-height: 1.7;
+.classic-text {
+  font-size: 0.95rem;
+  color: #6d7b72;
+  margin-top: 8px;
+  line-height: 1.5;
 }
 
+/* =========================================
+   GRID ABONNEMENT
+   ========================================= */
+.subscription-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 30px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.subscription-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.state-card {
+  border: 1px dashed #cfe0d4;
+  border-radius: 14px;
+  padding: 26px;
+  background: #fbfdfb;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.state-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(44, 126, 79, 0.08);
+  border-color: #9bcbae;
+}
+
+.step-num {
+  color: #2c7e4f;
+  font-weight: 900;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+}
+
+.step-title {
+  font-family: "Syne", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 10px 0;
+}
+
+/* =========================================
+   CARTE DE PRIX
+   ========================================= */
 .pricing-card {
   padding: 32px;
-  border-radius: 34px;
+  border-radius: 16px;
   color: #fff;
-  background: linear-gradient(150deg, #102018, #1f5035 58%, #2f8f5b);
+  background: linear-gradient(150deg, #102018, #1f5035 58%, #2c7e4f);
   box-shadow: 0 28px 80px rgba(17, 44, 29, 0.24);
+  display: flex;
+  flex-direction: column;
 }
 
 .badge-plan {
   display: inline-block;
-  margin: 0 0 22px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  color: #a9f1c6;
-  background: rgba(255, 255, 255, 0.1);
+  align-self: flex-start;
+  margin: 0 0 16px 0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: #102018;
+  background: #a9f1c6;
+  font-size: 0.85rem;
   font-weight: 900;
+  font-family: "Syne", sans-serif;
+  text-transform: uppercase;
 }
 
-.pricing-card strong {
-  display: inline-block;
+.price-container {
+  margin: 10px 0;
+}
+
+.price-container strong {
   font-family: "Syne", sans-serif;
-  font-size: 4.8rem;
+  font-size: 3.5rem;
   line-height: 1;
 }
 
-.pricing-card span {
+.price-container span {
   color: rgba(255, 255, 255, 0.7);
   font-weight: 800;
+  font-size: 1.2rem;
 }
 
-.pricing-card ul {
-  margin: 24px 0;
+.pricing-features {
+  margin: 20px 0 30px 0;
   padding: 0;
   list-style: none;
 }
 
-.pricing-card li {
+.pricing-features li {
   padding: 12px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.95rem;
+  color: #eef8f0;
 }
 
-.btn-main-action,
-.btn-secondary {
-  width: 100%;
-  display: inline-flex;
-  justify-content: center;
-  box-sizing: border-box;
-  border-radius: 18px;
-  padding: 16px 20px;
-  font-weight: 900;
-  text-decoration: none;
-}
-
+/* =========================================
+   BOUTONS
+   ========================================= */
 .btn-main-action {
-  border: 0;
-  color: #102018;
-  background: #a9f1c6;
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: none;
 }
 
 .btn-main-action:disabled {
-  opacity: 0.62;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-.btn-secondary {
-  margin-top: 12px;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-.subscription-details {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  padding-bottom: 60px;
-}
-
-.subscription-details article {
-  padding: 28px;
-  border: 1px solid #dfe9e2;
-  border-radius: 28px;
-  background: #fff;
-}
-
-.subscription-details span {
-  color: #2f8f5b;
-  font-weight: 900;
-  letter-spacing: 0.2em;
-}
-
-.subscription-details h2 {
-  margin: 14px 0 8px;
+.pricing-btn {
+  background-color: #a9f1c6;
   color: #102018;
+}
+
+.pricing-btn:hover:not(:disabled) {
+  background-color: #8ce6b0;
+}
+
+.btn-secondary {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.95rem;
   font-family: "Syne", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: 1px solid transparent;
 }
 
-.subscription-details p {
-  color: #60736a;
+.pricing-link {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
+.pricing-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* =========================================
+   MEDIA QUERIES
+   ========================================= */
 @media (max-width: 920px) {
-  .subscription-hero,
-  .subscription-details {
+  .subscription-layout {
     grid-template-columns: 1fr;
   }
 }

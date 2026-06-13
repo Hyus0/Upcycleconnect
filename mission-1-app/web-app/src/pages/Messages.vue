@@ -62,9 +62,7 @@
             </div>
         </section>
 
-        <!-- MESSAGERIE (FLEXBOX POUR BLOQUER LE SCROLL GLOBAL) -->
         <section class="messenger-shell">
-            <!-- BARRE LATÉRALE -->
             <aside class="conversation-list">
                 <div class="panel-heading">
                     <div>
@@ -125,7 +123,6 @@
                 </div>
             </aside>
 
-            <!-- ZONE DE CHAT -->
             <section class="chat-panel">
                 <div v-if="!activeConversation" class="empty-chat">
                     <p class="sidebar__category2">SELECTION</p>
@@ -145,7 +142,6 @@
                 </div>
 
                 <template v-else>
-                    <!-- EN-TÊTE DU CHAT -->
                     <header class="chat-header">
                         <div
                             style="
@@ -219,18 +215,20 @@
                         class="payment-banner"
                     >
                         <div class="payment-banner-content">
-                            <strong>Payer l'offre</strong>
-                            <p>Le vendeur a accepté votre proposition. Finalisez la commande.</p>
+                            <strong>{{ pendingPaymentSale.buyer_id === currentUser ? "Payer l'offre" : "En attente de paiement" }}</strong>
+                            <p>{{ pendingPaymentSale.buyer_id === currentUser ? "Le vendeur a accepté votre proposition. Finalisez la commande." : "Vous avez accepté l'offre. L'acheteur doit finaliser le paiement." }}</p>
                         </div>
-                        <RouterLink 
+                        <button 
+                            v-if="pendingPaymentSale.buyer_id === currentUser"
                             class="btn-main-action" 
-                            style="height: auto; padding: 12px 20px; text-decoration: none;"
-                            to="/profil"
+                            style="height: auto; padding: 12px 20px;"
+                            type="button"
+                            @click="payerOffre(pendingPaymentSale)"
                         >
-                            Payer {{ formatPrice(pendingPaymentSale.amount) }}
-                        </RouterLink>
+                            Ajouter au panier et payer {{ formatPrice(pendingPaymentSale.amount) }}
+                        </button>
                     </div>
-                    <!-- FIL DE DISCUSSION -->
+
                     <div class="message-thread" ref="messagesContainer">
                         <div
                             v-if="loadingMessages"
@@ -244,7 +242,6 @@
                             v-for="item in chatFeed"
                             :key="item.type + item.id"
                         >
-                            <!-- BULLE DE TEXTE -->
                             <article
                                 v-if="item.type === 'text'"
                                 class="message-bubble"
@@ -256,7 +253,6 @@
                                 <span>{{ formatDate(item.created_at) }}</span>
                             </article>
 
-                            <!-- BULLE D'OFFRE (DESIGN 100% FIDELE À L'IMAGE) -->
                             <article
                                 v-else-if="item.type === 'offer'"
                                 class="offer-bubble"
@@ -312,7 +308,6 @@
                                 }}</span>
                             </article>
 
-                            <!-- BULLE DE VENTE -->
                             <article
                                 v-else-if="item.type === 'sale'"
                                 class="offer-bubble"
@@ -380,9 +375,7 @@
                         </template>
                     </div>
 
-                    <!-- COMPOSITEUR & FENÊTRE DE NÉGOCIATION -->
                     <div class="composer-wrapper">
-                        <!-- Fenêtre Négociation (DESIGN 100% FIDELE À L'IMAGE) -->
                         <div v-if="showNegotiation" class="negotiation-flyout">
                             <button
                                 class="btn-close-flyout"
@@ -475,9 +468,6 @@ const getHeaders = () => ({
     Authorization: sessionStorage.getItem("userToken") || "",
 });
 
-// ==========================================
-// APPELS API
-// ==========================================
 async function fetchSubscriptionStatus(userId) {
     const res = await fetch(`${API_URL}/users/${userId}/subscription`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Erreur");
@@ -542,9 +532,6 @@ async function reviewSale(saleId, reviewDraft, userId) {
     return await res.json();
 }
 
-// ==========================================
-// VARIABLES D'ÉTAT
-// ==========================================
 const conversations = ref([]);
 const messages = ref([]);
 const activeConversationId = ref(Number(route.query.conversation) || 0);
@@ -579,16 +566,11 @@ const subscriptionLabel = computed(() =>
         : `${subscription.value.used || 0}/${subscription.value.limit || 5} gratuits`,
 );
 
-// ==========================================
-// FUSION DU FLUX (MESSAGES + OFFRES + VENTES)
-// ==========================================
 const chatFeed = computed(() => {
     const feed = [];
     
-    // 1. Ajout des messages textuels
     messages.value.forEach((m) => {
         const content = m.content || "";
-        // On masque les messages systèmes générés par le backend, car on va utiliser les bulles stylisées
         if (
             content.startsWith("Offre proposee") ||
             content.startsWith("Offre acceptee") ||
@@ -605,11 +587,7 @@ const chatFeed = computed(() => {
         });
     });
 
-    // 2. Ajout des offres
     threadState.value.offers.forEach((o) => {
-        // CORRECTION N°1 : On n'affiche l'offre que si elle n'a pas été transformée en "Vente"
-        // Si elle a été acceptée, c'est la bulle "Sale" qui prendra le relais.
-        // On affiche l'offre si elle est En attente ou Refusée.
         if (o.status !== "Acceptee") {
             feed.push({
                 ...o,
@@ -619,23 +597,17 @@ const chatFeed = computed(() => {
         }
     });
 
-    // 3. Ajout des Ventes (Sales)
     threadState.value.sales.forEach((s) => {
         feed.push({
             ...s,
             type: "sale",
-            // On utilise received_at/reviewed_at si disponibles pour un meilleur ordre chrono
             timestamp: new Date((s.reviewed_at || s.received_at || s.updated_at || s.created_at || new Date()).replace(/Z$/, "")).getTime() + 20,
         });
     });
 
-    // On trie le tout par date
     return feed.sort((a, b) => a.timestamp - b.timestamp);
 });
 
-// ==========================================
-// UTILITAIRES
-// ==========================================
 function initials(name) {
     return (name || "UC").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
@@ -677,16 +649,11 @@ function scrollToBottom() {
 
 const pendingPaymentSale = computed(() => {
     if (!threadState.value || !threadState.value.sales) return null;
-    
-    // On cherche une vente (sale) qui est au statut "Offre acceptee" et dont l'acheteur est l'utilisateur actuel
     return threadState.value.sales.find(
-        (sale) => sale.status === 'Offre acceptee' && sale.buyer_id === currentUser.value
+        (sale) => sale.status === 'Offre acceptee'
     );
 });
 
-// ==========================================
-// ACTIONS
-// ==========================================
 async function loadSubscription() {
     if (!currentUser.value) return;
     try {
@@ -697,7 +664,6 @@ async function loadSubscription() {
 async function loadConversations() {
     if (!currentUser.value) return router.push("/connexion");
     
-    // On met loading true seulement si la liste est vide, pour éviter le "clignotement"
     if(conversations.value.length === 0) loadingConversations.value = true;
     try {
         conversations.value = await fetchConversations(currentUser.value);
@@ -716,21 +682,15 @@ async function selectConversation(id) {
     activeConversationId.value = id;
     showNegotiation.value = false;
     
-    // Mise à jour discrète de l'URL
     router.replace({ path: "/messages", query: { conversation: id } }).catch(() => {});
     await loadMessages();
 }
 
-// Actualisation silencieuse (utilisée après un bouton accepter/refuser/envoyer)
 async function fetchOnlyMessages(id) {
      try {
         messages.value = await fetchMessages(id, currentUser.value);
         threadState.value = await fetchConversationState(id, currentUser.value);
-        
-        // CORRECTION N°2 : Mettre à jour la liste des conversations (gauche)
-        // pour retirer la pastille de notification instantanément.
         conversations.value = await fetchConversations(currentUser.value);
-        
         scrollToBottom();
     } catch (e) { console.error(e); }
 }
@@ -739,14 +699,9 @@ async function loadMessages() {
     if (!activeConversationId.value) return;
     loadingMessages.value = true;
     try {
-        // En lisant les messages, le backend marque la conversation comme lue.
         messages.value = await fetchMessages(activeConversationId.value, currentUser.value);
         threadState.value = await fetchConversationState(activeConversationId.value, currentUser.value);
-        
-        // CORRECTION N°2 : On actualise immédiatement la barre de gauche 
-        // pour faire disparaître la pastille de notification.
         conversations.value = await fetchConversations(currentUser.value);
-        
         scrollToBottom();
     } catch (e) {
     } finally {
@@ -754,7 +709,30 @@ async function loadMessages() {
     }
 }
 
-// Action : Nouvelle offre
+async function payerOffre(sale) {
+    const annonceId = activeConversation.value.annonce_id;
+    if (!annonceId) return;
+
+    try {
+        const res = await fetch(`${API_URL}/users/${currentUser.value}/panier`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({
+                type_item: "Annonce",
+                reference_id: annonceId,
+                prix_unitaire: sale.amount
+            })
+        });
+
+        if (!res.ok) throw new Error("Impossible d'ajouter au panier.");
+
+        router.push("/profil");
+        
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
 async function submitOffer() {
     if (!activeConversationId.value || !offerAmount.value) return;
     creatingOffer.value = true;
@@ -770,7 +748,6 @@ async function submitOffer() {
     }
 }
 
-// Action : Accepter / Refuser
 async function handleOfferResponse(offerId, action) {
     try {
         await respondOffer(offerId, action, currentUser.value);
@@ -780,7 +757,6 @@ async function handleOfferResponse(offerId, action) {
     }
 }
 
-// Action : J'ai reçu la commande
 async function handleConfirmReception(saleId) {
     try {
         await confirmSaleReception(saleId, currentUser.value);
@@ -790,7 +766,6 @@ async function handleConfirmReception(saleId) {
     }
 }
 
-// Action : Noter le vendeur
 async function handleReviewSale(saleId) {
     try {
         await reviewSale(saleId, reviewDraft.value, currentUser.value);
@@ -833,7 +808,6 @@ async function handleSend() {
         messages.value.push(message);
         draft.value = "";
         scrollToBottom();
-        // Disparition de la notif et mise à jour texte
         conversations.value = await fetchConversations(currentUser.value);
     } catch (e) {
     } finally {
@@ -869,20 +843,15 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* =========================================
-   MISE EN PAGE 100VH (Bloque le Scroll Global)
-   ========================================= */
 .public-dashboard {
-    min-height: 100vh; /* 👈 Remplace "height" par "min-height" */
+    min-height: 100vh; 
     display: flex;
     flex-direction: column;
     padding: 0 20px 20px 20px;
     box-sizing: border-box;
     background: var(--bg-light, #f7f9f7);
-    /* 👈 Retire la ligne "overflow: hidden;" qui bloquait le scroll global */
 }
 
-/* EN-TÊTE FIXE */
 .content-header {
     flex-shrink: 0;
     display: flex;
@@ -914,7 +883,6 @@ onMounted(async () => {
     line-height: 1.5;
 }
 
-/* CARTE ABONNEMENT */
 .hero-subscription {
     min-width: 220px;
     padding: 18px 24px;
@@ -937,15 +905,11 @@ onMounted(async () => {
     font-weight: 900;
 }
 
-/* =========================================
-   MESSAGERIE (FLEXBOX INTERNE)
-   ========================================= */
 .messenger-shell {
-    height: 75vh;          /* Prend 85% de la hauteur de ton écran */
+    height: 75vh;         
       min-height: 650px;
     display: grid;
     grid-template-columns: 360px 1fr;
-
     border: 1px solid rgba(29, 56, 42, 0.12);
     border-radius: 24px;
     background: rgba(255, 255, 255, 0.76);
@@ -1070,15 +1034,15 @@ onMounted(async () => {
     font-weight: 900;
 }
 
-/* ZONE DU CHAT (DROITE) */
 .chat-panel {
-  display: flex;
-  flex-direction: column;
-  background: #fbfdfb;
-  height: 100%;
-  overflow: hidden;
-  border-top-right-radius: 24px;
-  border-bottom-right-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    background: #fbfdfb;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    border-top-right-radius: 24px;
+    border-bottom-right-radius: 24px;
 }
 
 .chat-header {
@@ -1115,12 +1079,11 @@ onMounted(async () => {
     vertical-align: middle;
 }
 
-/* FIL DE MESSAGES AVEC SCROLL */
 .message-thread {
-    flex: 1; /* 👈 REMETS "flex: 1;" TOUT COURT */
-    /* 👈 SUPPRIME LA LIGNE min-height: 0; */
+    flex: 1 1 0; 
+    min-height: 0;
     padding: 28px;
-    overflow-y: auto;
+    overflow-y: auto; 
     background:
         linear-gradient(rgba(16, 32, 24, 0.025) 1px, transparent 1px),
         linear-gradient(90deg, rgba(16, 32, 24, 0.025) 1px, transparent 1px);
@@ -1158,20 +1121,15 @@ onMounted(async () => {
     font-size: 0.75rem;
 }
 
-/* =========================================
-   BULLES SYSTÈMES (DESIGN IMAGE 2)
-   ========================================= */
    .offer-bubble {
      min-width: 280px;
-     padding: 24px; /* 👈 Plus d'air à l'intérieur de la bulle */
+     padding: 24px; 
      background: #f4f9f6;
      border: 1px solid #e1ede5;
      border-radius: 24px;
      color: #122018;
      align-self: flex-start;
      margin-bottom: 16px;
-     
-     /* 👈 LA MAGIE EST ICI : Flexbox gère l'espacement uniformément */
      display: flex;
      flex-direction: column;
      gap: 16px; 
@@ -1185,14 +1143,14 @@ onMounted(async () => {
    .offer-title {
      font-size: 1.25rem;
      font-weight: 800;
-     margin: 0; /* On retire les marges manuelles car "gap" s'en occupe */
+     margin: 0;
      display: flex;
      align-items: center;
      gap: 8px;
    }
    
    .offer-badge {
-     align-self: flex-start; /* 👈 Empêche le badge de s'étirer sur toute la largeur */
+     align-self: flex-start;
      display: inline-block;
      padding: 8px 16px;
      border-radius: 12px;
@@ -1257,7 +1215,6 @@ onMounted(async () => {
     font: inherit;
 }
 
-/* Boutons d'actions généraux */
 .btn-main-action {
     border: 0;
     border-radius: 12px;
@@ -1277,9 +1234,6 @@ onMounted(async () => {
     background: #23653e;
 }
 
-/* =========================================
-   COMPOSITEUR & FLYOUT (DESIGN IMAGE 1)
-   ========================================= */
 .composer-wrapper {
     position: relative;
     flex-shrink: 0;
@@ -1340,13 +1294,12 @@ onMounted(async () => {
 .btn-composer-send {
     background: #2f8f5b;
     color: #fff;
-} /* Vert doux comme l'image */
+}
 .btn-composer-send:disabled {
     opacity: 0.55;
     cursor: not-allowed;
 }
 
-/* FLYOUT NÉGOCIATION */
 .negotiation-flyout {
     position: absolute;
     bottom: calc(100% + 15px);
@@ -1418,7 +1371,7 @@ onMounted(async () => {
 .flyout-btn {
     height: 44px;
     padding: 0 20px;
-    background: #2f8f5b; /* Vert du bouton Proposer */
+    background: #2f8f5b;
     color: #ffffff;
     border: none;
     border-radius: 12px;
@@ -1426,7 +1379,6 @@ onMounted(async () => {
     cursor: pointer;
 }
 
-/* ETATS VIDES & POPUPS */
 .state-card,
 .empty-chat {
     padding: 32px;
@@ -1503,10 +1455,10 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #fff4e6; /* Fond légèrement orangé pour attirer l'attention */
+    background: #fff4e6;
     border-bottom: 1px solid #ffe8cc;
     padding: 16px 26px;
-    flex-shrink: 0;
+    flex-shrink: 0; 
 }
 
 .payment-banner-content strong {

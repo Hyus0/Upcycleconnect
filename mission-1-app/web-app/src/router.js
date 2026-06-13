@@ -12,9 +12,10 @@ import Formations from "./pages/Formations.vue";
 import Evenements from "./pages/Evenements.vue";
 import Projets from "./pages/Projets.vue";
 import Conseils from "./pages/Conseils.vue";
-import Panier from "./pages/Conseils.vue";
+import Panier from "./pages/PanierDetail.vue";
 import ClaimObjet from "./pages/ClaimObjet.vue";
 import Messages from "./pages/Messages.vue";
+import Abonnement from "./pages/Abonnement.vue";
 
 const routes = [
   { path: "/", component: Home },
@@ -28,6 +29,8 @@ const routes = [
   { path: "/projets", component: Projets },
   { path: "/conseils", component: Conseils },
   { path: "/panier", component: Panier },
+  { path: "/abonnement", component: Abonnement },
+
   {
     path: '/annonce/:id',
     name: 'annonce-detail',
@@ -203,12 +206,6 @@ const routes = [
         path: "createProjet",
         name: "create-projet",
         component: () => import("./pages/profilpagesPrestataire/CreateProjet.vue"),
-        meta: { requiresRole: "Prestataire" }
-      },
-      {
-        path: "abonnement",
-        name: "mon-abonnement",
-        component: () => import("./pages/Abonnement.vue"),
         meta: { requiresRole: "Prestataire" }
       },
       {

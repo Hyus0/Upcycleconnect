@@ -208,7 +208,7 @@ const routes = [
       {
         path: "abonnement",
         name: "mon-abonnement",
-        component: () => import("./pages/profilpagesPrestataire/Abonnement.vue"),
+        component: () => import("./pages/Abonnement.vue"),
         meta: { requiresRole: "Prestataire" }
       },
       {

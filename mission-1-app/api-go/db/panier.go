@@ -3,7 +3,6 @@ package db
 import (
 	"fmt"
 	"upcycleconnect/api-go/models"
-	"database/sql"
 )
 
 type CheckoutResult struct {
@@ -37,26 +36,6 @@ func AddToPanier(userID int, typeItem string, refID int, prix float64) error {
 	_, err := Conn.Exec(`INSERT INTO PANIER_ITEM (id_utilisateur, type_item, reference_id, prix_unitaire)
 	    VALUES (?, ?, ?, ?)`, userID, typeItem, refID, prix)
 	return err
-}
-
-func CreateFactureForTransaction(tx *sql.Tx, transactionID int64) (int, string, error) {
-	numeroFacture := fmt.Sprintf("FAC-%d", transactionID)
-
-	res, err := tx.Exec(`
-		INSERT INTO FACTURE (id_transaction, numero_facture) 
-		VALUES (?, ?)
-	`, transactionID, numeroFacture)
-	
-	if err != nil {
-		return 0, "", err
-	}
-
-	factureID, err := res.LastInsertId()
-	if err != nil {
-		return 0, "", err
-	}
-
-	return int(factureID), numeroFacture, nil
 }
 
 func RemoveFromPanier(itemID int, userID int) error {

@@ -12,13 +12,15 @@ import Formations from "./pages/Formations.vue";
 import Evenements from "./pages/Evenements.vue";
 import Projets from "./pages/Projets.vue";
 import Conseils from "./pages/Conseils.vue";
-import Panier from "./pages/PanierDetail.vue";
+import Panier from "./pages/Conseils.vue";
 import ClaimObjet from "./pages/ClaimObjet.vue";
+import Messages from "./pages/Messages.vue";
 
 const routes = [
   { path: "/", component: Home },
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
+  { path: "/messages", component: Messages },
   { path: "/catalogue", component: Annonces },
   { path: "/forums", component: Forums },
   { path: "/formations", component: Formations },

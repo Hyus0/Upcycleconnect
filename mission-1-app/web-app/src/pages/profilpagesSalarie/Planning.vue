@@ -526,13 +526,13 @@ onMounted(() => {
 .planning-entry--my-formation {
     background: #d4edda;
     color: #0f5132;
-    border-left: 4px solid #198754; /* Petite barre verte sur le côté */
+    border-left: 4px solid #198754; 
 }
 
 .planning-entry--my-event {
     background: #fff3cd;
     color: #856404;
-    border-left: 4px solid #ffc107; /* Petite barre jaune sur le côté */
+    border-left: 4px solid #ffc107;
 }
 
 /* Le point pour la légende */

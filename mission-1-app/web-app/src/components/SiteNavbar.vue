@@ -10,7 +10,7 @@
           <button class="site-navbar__account-button" type="button" aria-haspopup="true">
             <span class="site-navbar__avatar">{{ userInitials }}</span>
             <span class="site-navbar__account-text">
-              <strong>{{ userName }}</strong>
+              <strong>{{ userName }} <span v-if="isPremium" class="premium-check-mini">✓</span></strong>
               <small>{{ activeUserRole }} · Score {{ userScore }} pts</small>
             </span>
           </button>
@@ -23,6 +23,10 @@
             <RouterLink to="/profil/notifications" class="nav-menu__item">
               <span>Notifications</span>
               <small>Alertes casiers, messages et rappels</small>
+            </RouterLink>
+            <RouterLink to="/messages" class="nav-menu__item">
+              <span>Messagerie</span>
+              <small>Discussions avec vendeurs et membres</small>
             </RouterLink>
             <RouterLink to="/profil/factures" class="nav-menu__item">
               <span>Factures</span>
@@ -84,6 +88,9 @@
       </nav>
 
       <div class="site-navbar__actions" v-if="isAuthenticated">
+        <RouterLink class="site-navbar__button site-navbar__button--ghost" to="/messages">
+        Messages
+        </RouterLink>
         <RouterLink class="site-navbar__button site-navbar__button--primary" to="/panier">
         Panier
         </RouterLink>
@@ -130,7 +137,7 @@ import logoSrc from "./logo_texte.png";
 const route = useRoute();
 const router = useRouter();
 
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const langues = ref([]);
 const currentLangCode = ref(localStorage.getItem("langCode") || "fr");
@@ -210,6 +217,8 @@ const props = defineProps({
 const activeUserRole = computed(() => {
   return sessionStorage.getItem("userRole") || props.userRole;
 });
+
+const isPremium = computed(() => sessionStorage.getItem("isPremium") === "true");
 
 const dashboardChildrenParticulier = [
   {
@@ -314,6 +323,16 @@ const communityChildren = [
     description: "Discussions, entraide et projets"
   },
   {
+    label: "Messagerie",
+    to: "/messages",
+    description: "DM vendeurs, artisans et membres"
+  },
+  {
+    label: "DM Plus",
+    to: "/abonnement",
+    description: "Messagerie illimitee"
+  },
+  {
     label: "Projets Upcycling",
     to: "/projets",
     description: "Rejoignez des initiatives de création"
@@ -408,6 +427,7 @@ function handleLogout() {
   sessionStorage.removeItem("userToken");
   sessionStorage.removeItem("userId");
   sessionStorage.removeItem("userRole"); 
+  sessionStorage.removeItem("isPremium");
   router.push("/connexion");
 }
 </script>
@@ -444,5 +464,18 @@ function handleLogout() {
 .nav-menu__item--lang:hover {
   background: #f0f7f3;
   border-radius: 6px;
+}
+
+.premium-check-mini {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  margin-left: 4px;
+  border-radius: 999px;
+  color: #102018;
+  background: #8ef0a8;
+  font-size: 0.72rem;
+  font-weight: 900;
 }
 </style>

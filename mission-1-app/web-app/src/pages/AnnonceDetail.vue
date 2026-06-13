@@ -152,10 +152,9 @@
                                     <button
                                         v-if="annonce.statut === 'Disponible'"
                                         class="btn-action-primary"
-                                        @click="acheterAnnonce"
-                                        :disabled="isBuying"
+                                        @click="contacterVendeur"
                                     >
-                                        {{ isBuying ? "Achat en cours..." : "Acheter cet objet" }}
+                                        Contacter le vendeur
                                     </button>
                                     
                                     <button
@@ -468,10 +467,10 @@ const supprimerAnnonce = async () => {
     }
 };
 
-const acheterAnnonce = async () => {
+const contacterVendeur = () => {
     if (!isLoggedIn.value) {
-        alert("Veuillez vous connecter pour acheter cet objet.");
-        return router.push("/connexion");
+        alert("Veuillez vous connecter pour contacter le vendeur.");
+        return router.push({ path: "/connexion", query: { redirect: route.fullPath } });
     }
 
     if (currentUserId.value === 0) {
@@ -479,35 +478,14 @@ const acheterAnnonce = async () => {
         return;
     }
 
-    isBuying.value = true;
-
-    try {
-        const token = sessionStorage.getItem("userToken");
-
-        const res = await fetch(
-            `${API_URL}/annonces/${annonce.value.id}/acheter`,
-            {
-                method: "POST",
-                headers: {
-                    Authorization: token,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ user_id: currentUserId.value }),
-            },
-        );
-
-        if (res.ok) {
-            alert("Félicitations ! Vous avez réservé cet objet.");
-            fetchAnnoncePrincipale();
-        } else {
-            const errorMsg = await res.text();
-            alert("Erreur lors de l'achat : " + errorMsg);
-        }
-    } catch (error) {
-        console.error("Erreur réseau :", error);
-        alert("Impossible de joindre le serveur.");
-    } finally {
-        isBuying.value = false;
+    if (annonce.value && annonce.value.id_vendeur) {
+        router.push({
+            path: '/messages',
+            query: {
+                user: annonce.value.id_vendeur, 
+                annonce: annonce.value.id       
+            }
+        });
     }
 };
 

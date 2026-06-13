@@ -33,8 +33,26 @@ func GetPanierByUserId(userID int) ([]models.PanierItem, error) {
 }
 
 func AddToPanier(userID int, typeItem string, refID int, prix float64) error {
-	_, err := Conn.Exec(`INSERT INTO PANIER_ITEM (id_utilisateur, type_item, reference_id, prix_unitaire)
-	    VALUES (?, ?, ?, ?)`, userID, typeItem, refID, prix)
+	var count int
+	err := Conn.QueryRow(`
+		SELECT COUNT(*)
+		FROM PANIER_ITEM
+		WHERE id_utilisateur = ? AND type_item = ? AND reference_id = ?
+	`, userID, typeItem, refID).Scan(&count)
+
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return fmt.Errorf("cet article est déjà dans votre panier")
+	}
+
+	_, err = Conn.Exec(`
+		INSERT INTO PANIER_ITEM (id_utilisateur, type_item, reference_id, prix_unitaire)
+	    VALUES (?, ?, ?, ?)
+	`, userID, typeItem, refID, prix)
+
 	return err
 }
 

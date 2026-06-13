@@ -15,9 +15,17 @@
                     annonce ou en direct.
                 </p>
             </div>
-            <RouterLink class="hero-subscription" to="/abonnement">
+            <RouterLink
+                class="hero-subscription"
+                :class="{ 'is-premium': subscription.is_subscriber }"
+                to="/abonnement"
+            >
                 <span>DM Plus</span>
-                <strong>2,99 € / mois</strong>
+
+                <strong>
+                    {{ subscription.is_subscriber ? "Actif" : "2,99 € / mois" }}
+                </strong>
+
                 <small>{{ subscriptionLabel }}</small>
             </RouterLink>
         </header>
@@ -182,8 +190,9 @@
                                         "
                                         class="premium-check"
                                         title="Membre DM Plus"
-                                        >✓</span
                                     >
+                                        <Check :size="12" :stroke-width="3" />
+                                    </span>
                                 </h2>
                                 <p
                                     class="classic-text"
@@ -210,25 +219,98 @@
                         </div>
                     </header>
 
-                    <div 
-                        v-if="pendingPaymentSale" 
-                        class="payment-banner"
+                    <!-- BANDEAUX INTELLIGENTS SELON LE STATUT -->
+                    <template
+                        v-if="activeConversation.annonce_statut === 'Paye'"
                     >
-                        <div class="payment-banner-content">
-                            <strong>{{ pendingPaymentSale.buyer_id === currentUser ? "Payer l'offre" : "En attente de paiement" }}</strong>
-                            <p>{{ pendingPaymentSale.buyer_id === currentUser ? "Le vendeur a accepté votre proposition. Finalisez la commande." : "Vous avez accepté l'offre. L'acheteur doit finaliser le paiement." }}</p>
-                        </div>
-                        <button 
-                            v-if="pendingPaymentSale.buyer_id === currentUser"
-                            class="btn-main-action" 
-                            style="height: auto; padding: 12px 20px;"
-                            type="button"
-                            @click="payerOffre(pendingPaymentSale)"
+                        <!-- Si c'est L'ACHETEUR -->
+                        <div
+                            v-if="
+                                Number(
+                                    activeConversation.annonce_acheteur_id,
+                                ) === currentUser
+                            "
+                            class="payment-banner payment-banner--success"
                         >
-                            Ajouter au panier et payer {{ formatPrice(pendingPaymentSale.amount) }}
-                        </button>
-                    </div>
+                            <div class="payment-banner-content">
+                                <strong
+                                    ><Check :size="12" :stroke-width="3" /> Déjà
+                                    acheté</strong
+                                >
+                                <p>
+                                    Vous avez validé et payé cette commande avec
+                                    succès.
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Si c'est LE VENDEUR -->
+                        <div
+                            v-else-if="
+                                Number(activeConversation.annonce_seller_id) ===
+                                currentUser
+                            "
+                            class="payment-banner payment-banner--success"
+                        >
+                            <div class="payment-banner-content">
+                                <strong
+                                    ><Check :size="12" :stroke-width="3" />
+                                    Article vendu</strong
+                                >
+                                <p>
+                                    Cet article a été payé par un acheteur.
+                                    Préparez-vous à le déposer.
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Si c'est QUELQU'UN D'AUTRE -->
+                        <div
+                            v-else
+                            class="payment-banner payment-banner--error"
+                        >
+                            <div class="payment-banner-content">
+                                <strong>Objet indisponible</strong>
+                                <p>
+                                    La transaction pour cette annonce a été
+                                    payée par un autre utilisateur.
+                                </p>
+                            </div>
+                        </div>
+                    </template>
 
+                    <!-- BANDEAU OFFRE EN ATTENTE (Uniquement si NON PAYÉ) -->
+                    <template v-else-if="pendingPaymentSale">
+                        <div class="payment-banner">
+                            <div class="payment-banner-content">
+                                <strong>{{
+                                    pendingPaymentSale.buyer_id === currentUser
+                                        ? "Payer l'offre"
+                                        : "En attente de paiement"
+                                }}</strong>
+                                <p>
+                                    {{
+                                        pendingPaymentSale.buyer_id ===
+                                        currentUser
+                                            ? "Le vendeur a accepté votre proposition. Finalisez la commande."
+                                            : "Vous avez accepté l'offre. L'acheteur doit finaliser le paiement."
+                                    }}
+                                </p>
+                            </div>
+                            <button
+                                v-if="
+                                    pendingPaymentSale.buyer_id === currentUser
+                                "
+                                class="btn-main-action"
+                                style="height: auto; padding: 12px 20px"
+                                type="button"
+                                @click="payerOffre(pendingPaymentSale)"
+                            >
+                                Payer
+                                {{ formatPrice(pendingPaymentSale.amount) }}
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- FIL DES MESSAGES -->
                     <div class="message-thread" ref="messagesContainer">
                         <div
                             v-if="loadingMessages"
@@ -263,7 +345,14 @@
                                     {{ formatPrice(item.amount) }}
                                 </h4>
 
+                                <!-- Badge Statut (Masqué si c'est le vendeur et en attente) -->
                                 <span
+                                    v-if="
+                                        !(
+                                            item.status === 'En attente' &&
+                                            item.seller_id === currentUser
+                                        )
+                                    "
                                     class="offer-badge"
                                     :class="getOfferBadgeClass(item.status)"
                                 >
@@ -305,71 +394,6 @@
 
                                 <span class="offer-date">{{
                                     formatDate(item.created_at)
-                                }}</span>
-                            </article>
-
-                            <article
-                                v-else-if="item.type === 'sale'"
-                                class="offer-bubble"
-                                :class="{ mine: item.buyer_id === currentUser }"
-                            >
-                                <h4 class="offer-title">
-                                    ✅ Vente conclue :
-                                    {{ formatPrice(item.amount) }}
-                                </h4>
-                                <span class="offer-badge acceptee">{{
-                                    item.status
-                                }}</span>
-
-                                <button
-                                    v-if="
-                                        item.buyer_id === currentUser &&
-                                        item.status === 'Offre acceptee'
-                                    "
-                                    type="button"
-                                    class="btn-main-action"
-                                    style="
-                                        margin-top: 10px;
-                                        width: 100%;
-                                        border-radius: 12px;
-                                    "
-                                    @click="handleConfirmReception(item.id)"
-                                >
-                                    J'ai reçu la commande
-                                </button>
-
-                                <form
-                                    v-if="
-                                        item.buyer_id === currentUser &&
-                                        item.status === 'Recue'
-                                    "
-                                    class="review-vertical"
-                                    @submit.prevent="handleReviewSale(item.id)"
-                                >
-                                    <select v-model.number="reviewDraft.note">
-                                        <option
-                                            v-for="n in 5"
-                                            :key="n"
-                                            :value="n"
-                                        >
-                                            {{ n }} / 5 Étoiles
-                                        </option>
-                                    </select>
-                                    <input
-                                        v-model="reviewDraft.commentaire"
-                                        placeholder="Votre avis sur la transaction"
-                                    />
-                                    <button
-                                        class="btn-main-action"
-                                        style="border-radius: 12px"
-                                        type="submit"
-                                    >
-                                        Noter le vendeur
-                                    </button>
-                                </form>
-
-                                <span class="offer-date">{{
-                                    formatDate(item.updated_at)
                                 }}</span>
                             </article>
                         </template>
@@ -424,7 +448,11 @@
                                 v-if="
                                     activeConversation.annonce_id &&
                                     activeConversation.annonce_seller_id !==
-                                        currentUser
+                                        currentUser &&
+                                    activeConversation.annonce_statut !==
+                                        'Paye' &&
+                                    !isAlreadySoldBySomeoneElse &&
+                                    !pendingPaymentSale
                                 "
                                 type="button"
                                 class="btn-composer btn-composer-neg"
@@ -457,6 +485,7 @@
 import { computed, onMounted, ref, watch, nextTick } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+import { Check } from "lucide-vue-next";
 
 const route = useRoute();
 const router = useRouter();
@@ -469,65 +498,78 @@ const getHeaders = () => ({
 });
 
 async function fetchSubscriptionStatus(userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/subscription`, { headers: getHeaders() });
+    const res = await fetch(`${API_URL}/users/${userId}/subscription`, {
+        headers: getHeaders(),
+    });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function fetchConversations(userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages`, { headers: getHeaders() });
+    const res = await fetch(`${API_URL}/users/${userId}/messages`, {
+        headers: getHeaders(),
+    });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function startConversation(payload) {
     const userId = currentUserId();
     const res = await fetch(`${API_URL}/users/${userId}/messages/start`, {
-        method: "POST", headers: getHeaders(), body: JSON.stringify(payload),
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
     });
     if (!res.ok) throw await res.json();
     return await res.json();
 }
 async function fetchMessages(conversationId, userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages/${conversationId}`, { headers: getHeaders() });
+    const res = await fetch(
+        `${API_URL}/users/${userId}/messages/${conversationId}`,
+        { headers: getHeaders() },
+    );
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function sendMessage(conversationId, texteMessage, userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages/${conversationId}`, {
-        method: "POST", headers: getHeaders(), body: JSON.stringify({ content: texteMessage }),
-    });
+    const res = await fetch(
+        `${API_URL}/users/${userId}/messages/${conversationId}`,
+        {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({ content: texteMessage }),
+        },
+    );
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function fetchConversationState(conversationId, userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages/${conversationId}/state`, { headers: getHeaders() });
+    const res = await fetch(
+        `${API_URL}/users/${userId}/messages/${conversationId}/state`,
+        { headers: getHeaders() },
+    );
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function createOffer(conversationId, amount, userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages/${conversationId}/offers`, {
-        method: "POST", headers: getHeaders(), body: JSON.stringify({ amount: Number(amount) }),
-    });
+    const res = await fetch(
+        `${API_URL}/users/${userId}/messages/${conversationId}/offers`,
+        {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({ amount: Number(amount) }),
+        },
+    );
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function respondOffer(offerId, action, userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages/offers/${offerId}`, {
-        method: "PATCH", headers: getHeaders(), body: JSON.stringify({ action }),
-    });
-    if (!res.ok) throw new Error("Erreur");
-    return await res.json();
-}
-async function confirmSaleReception(saleId, userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages/sales/${saleId}/reception`, {
-        method: "POST", headers: getHeaders(),
-    });
-    if (!res.ok) throw new Error("Erreur");
-    return await res.json();
-}
-async function reviewSale(saleId, reviewDraft, userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages/sales/${saleId}/review`, {
-        method: "POST", headers: getHeaders(), body: JSON.stringify(reviewDraft),
-    });
+    const res = await fetch(
+        `${API_URL}/users/${userId}/messages/offers/${offerId}`,
+        {
+            method: "PATCH",
+            headers: getHeaders(),
+            body: JSON.stringify({ action }),
+        },
+    );
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
@@ -543,7 +585,6 @@ const offerAmount = ref("");
 const creatingOffer = ref(false);
 const showNegotiation = ref(false);
 const threadState = ref({ offers: [], sales: [] });
-const reviewDraft = ref({ note: 5, commentaire: "" });
 const subscription = ref({ is_subscriber: false, used: 0, limit: 5 });
 const limitPopup = ref(null);
 const messagesContainer = ref(null);
@@ -557,18 +598,27 @@ const userName = computed(() => {
 });
 
 const activeConversation = computed(() =>
-    conversations.value.find((c) => Number(c.id) === Number(activeConversationId.value)),
+    conversations.value.find(
+        (c) => Number(c.id) === Number(activeConversationId.value),
+    ),
 );
 
-const subscriptionLabel = computed(() =>
-    subscription.value.is_subscriber
-        ? "Messagerie illimitée"
-        : `${subscription.value.used || 0}/${subscription.value.limit || 5} gratuits`,
-);
+const subscriptionLabel = computed(() => {
+    return subscription.value.is_subscriber
+        ? "Messages illimités"
+        : `${subscription.value.used || 0}/${subscription.value.limit || 5} messages gratuits`;
+});
+
+function getSafeTimestamp(dateStr) {
+    if (!dateStr) return Date.now();
+    const cleanDate = dateStr.replace(/Z$/, "");
+    const parsed = new Date(cleanDate).getTime();
+    return Number.isNaN(parsed) ? Date.now() : parsed;
+}
 
 const chatFeed = computed(() => {
     const feed = [];
-    
+
     messages.value.forEach((m) => {
         const content = m.content || "";
         if (
@@ -583,25 +633,15 @@ const chatFeed = computed(() => {
         feed.push({
             ...m,
             type: "text",
-            timestamp: new Date(m.created_at.replace(/Z$/, "")).getTime(),
+            timestamp: getSafeTimestamp(m.created_at),
         });
     });
 
     threadState.value.offers.forEach((o) => {
-        if (o.status !== "Acceptee") {
-            feed.push({
-                ...o,
-                type: "offer",
-                timestamp: new Date(o.created_at.replace(/Z$/, "")).getTime() + 10,
-            });
-        }
-    });
-
-    threadState.value.sales.forEach((s) => {
         feed.push({
-            ...s,
-            type: "sale",
-            timestamp: new Date((s.reviewed_at || s.received_at || s.updated_at || s.created_at || new Date()).replace(/Z$/, "")).getTime() + 20,
+            ...o,
+            type: "offer",
+            timestamp: getSafeTimestamp(o.created_at) + 10,
         });
     });
 
@@ -609,7 +649,12 @@ const chatFeed = computed(() => {
 });
 
 function initials(name) {
-    return (name || "UC").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+    return (name || "UC")
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join("");
 }
 
 function formatDate(value) {
@@ -620,18 +665,24 @@ function formatDate(value) {
 
     const day = date.getDate();
     const month = date.toLocaleString("fr-FR", { month: "long" });
-    const time = date.toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+    const time = date
+        .toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+        .replace(":", "h");
     return `${day} ${month}, ${time}`;
 }
 
 function formatPrice(value) {
-    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(Number(value) || 0);
+    return new Intl.NumberFormat("fr-FR", {
+        style: "currency",
+        currency: "EUR",
+    }).format(Number(value) || 0);
 }
 
 function getOfferBadgeClass(status) {
     const s = (status || "").toLowerCase();
     if (s.includes("attente")) return "en-attente";
-    if (s.includes("accept") || s.includes("recue") || s.includes("evalue")) return "acceptee";
+    if (s.includes("accept") || s.includes("recue") || s.includes("evalue"))
+        return "acceptee";
     if (s.includes("refus") || s.includes("annul")) return "refusee";
     return "";
 }
@@ -639,10 +690,8 @@ function getOfferBadgeClass(status) {
 function scrollToBottom() {
     nextTick(() => {
         if (messagesContainer.value) {
-            messagesContainer.value.scrollTo({
-                top: messagesContainer.value.scrollHeight,
-                behavior: 'smooth'
-            });
+            messagesContainer.value.scrollTop =
+                messagesContainer.value.scrollHeight;
         }
     });
 }
@@ -650,7 +699,7 @@ function scrollToBottom() {
 const pendingPaymentSale = computed(() => {
     if (!threadState.value || !threadState.value.sales) return null;
     return threadState.value.sales.find(
-        (sale) => sale.status === 'Offre acceptee'
+        (sale) => sale.status === "Offre acceptee",
     );
 });
 
@@ -663,8 +712,8 @@ async function loadSubscription() {
 
 async function loadConversations() {
     if (!currentUser.value) return router.push("/connexion");
-    
-    if(conversations.value.length === 0) loadingConversations.value = true;
+
+    if (conversations.value.length === 0) loadingConversations.value = true;
     try {
         conversations.value = await fetchConversations(currentUser.value);
     } catch (e) {
@@ -675,32 +724,43 @@ async function loadConversations() {
 
 async function selectConversation(id) {
     if (activeConversationId.value === id) {
-       await fetchOnlyMessages(id);
-       return;
+        await fetchOnlyMessages(id);
+        return;
     }
-    
+
     activeConversationId.value = id;
     showNegotiation.value = false;
-    
-    router.replace({ path: "/messages", query: { conversation: id } }).catch(() => {});
+
+    const url = new URL(window.location);
+    url.searchParams.set("conversation", id);
+    window.history.replaceState({}, "", url);
+
     await loadMessages();
 }
 
 async function fetchOnlyMessages(id) {
-     try {
+    try {
         messages.value = await fetchMessages(id, currentUser.value);
         threadState.value = await fetchConversationState(id, currentUser.value);
         conversations.value = await fetchConversations(currentUser.value);
         scrollToBottom();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error("Erreur de rafraîchissement:", e);
+    }
 }
 
 async function loadMessages() {
     if (!activeConversationId.value) return;
     loadingMessages.value = true;
     try {
-        messages.value = await fetchMessages(activeConversationId.value, currentUser.value);
-        threadState.value = await fetchConversationState(activeConversationId.value, currentUser.value);
+        messages.value = await fetchMessages(
+            activeConversationId.value,
+            currentUser.value,
+        );
+        threadState.value = await fetchConversationState(
+            activeConversationId.value,
+            currentUser.value,
+        );
         conversations.value = await fetchConversations(currentUser.value);
         scrollToBottom();
     } catch (e) {
@@ -711,33 +771,29 @@ async function loadMessages() {
 
 async function payerOffre(sale) {
     const annonceId = activeConversation.value.annonce_id;
+    const title = activeConversation.value.annonce_title;
+
     if (!annonceId) return;
 
-    try {
-        const res = await fetch(`${API_URL}/users/${currentUser.value}/panier`, {
-            method: "POST",
-            headers: getHeaders(),
-            body: JSON.stringify({
-                type_item: "Annonce",
-                reference_id: annonceId,
-                prix_unitaire: sale.amount
-            })
-        });
-
-        if (!res.ok) throw new Error("Impossible d'ajouter au panier.");
-
-        router.push("/profil");
-        
-    } catch (error) {
-        alert(error.message);
-    }
+    router.push({
+        path: "/paiement",
+        query: {
+            annonce_id: annonceId,
+            amount: sale.amount,
+            title: title,
+        },
+    });
 }
 
 async function submitOffer() {
     if (!activeConversationId.value || !offerAmount.value) return;
     creatingOffer.value = true;
     try {
-        await createOffer(activeConversationId.value, offerAmount.value, currentUser.value);
+        await createOffer(
+            activeConversationId.value,
+            offerAmount.value,
+            currentUser.value,
+        );
         offerAmount.value = "";
         showNegotiation.value = false;
         await fetchOnlyMessages(activeConversationId.value);
@@ -753,26 +809,8 @@ async function handleOfferResponse(offerId, action) {
         await respondOffer(offerId, action, currentUser.value);
         await fetchOnlyMessages(activeConversationId.value);
     } catch (error) {
-        alert(error.message);
-    }
-}
-
-async function handleConfirmReception(saleId) {
-    try {
-        await confirmSaleReception(saleId, currentUser.value);
-        await fetchOnlyMessages(activeConversationId.value);
-    } catch (error) {
-        alert(error.message);
-    }
-}
-
-async function handleReviewSale(saleId) {
-    try {
-        await reviewSale(saleId, reviewDraft.value, currentUser.value);
-        reviewDraft.value = { note: 5, commentaire: "" };
-        await fetchOnlyMessages(activeConversationId.value);
-    } catch (error) {
-        alert(error.message);
+        console.error("Erreur action offre:", error);
+        alert("Erreur: " + error.message);
     }
 }
 
@@ -800,16 +838,15 @@ async function handleSend() {
     if (!draft.value.trim() || !activeConversationId.value) return;
     sending.value = true;
     try {
-        const message = await sendMessage(
+        await sendMessage(
             activeConversationId.value,
             draft.value.trim(),
             currentUser.value,
         );
-        messages.value.push(message);
         draft.value = "";
-        scrollToBottom();
-        conversations.value = await fetchConversations(currentUser.value);
+        await fetchOnlyMessages(activeConversationId.value);
     } catch (e) {
+        console.error("Erreur envoi:", e);
     } finally {
         sending.value = false;
     }
@@ -844,7 +881,7 @@ onMounted(async () => {
 
 <style scoped>
 .public-dashboard {
-    min-height: 100vh; 
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     padding: 0 20px 20px 20px;
@@ -906,8 +943,8 @@ onMounted(async () => {
 }
 
 .messenger-shell {
-    height: 75vh;         
-      min-height: 650px;
+    height: 75vh;
+    min-height: 650px;
     display: grid;
     grid-template-columns: 360px 1fr;
     border: 1px solid rgba(29, 56, 42, 0.12);
@@ -1080,10 +1117,10 @@ onMounted(async () => {
 }
 
 .message-thread {
-    flex: 1 1 0; 
+    flex: 1 1 0;
     min-height: 0;
     padding: 28px;
-    overflow-y: auto; 
+    overflow-y: auto;
     background:
         linear-gradient(rgba(16, 32, 24, 0.025) 1px, transparent 1px),
         linear-gradient(90deg, rgba(16, 32, 24, 0.025) 1px, transparent 1px);
@@ -1121,98 +1158,96 @@ onMounted(async () => {
     font-size: 0.75rem;
 }
 
-   .offer-bubble {
-     min-width: 280px;
-     padding: 24px; 
-     background: #f4f9f6;
-     border: 1px solid #e1ede5;
-     border-radius: 24px;
-     color: #122018;
-     align-self: flex-start;
-     margin-bottom: 16px;
-     display: flex;
-     flex-direction: column;
-     gap: 16px; 
-   }
-   
-   .offer-bubble.mine {
-     align-self: flex-end;
-     background: #ffffff;
-   }
-   
-   .offer-title {
-     font-size: 1.25rem;
-     font-weight: 800;
-     margin: 0;
-     display: flex;
-     align-items: center;
-     gap: 8px;
-   }
-   
-   .offer-badge {
-     align-self: flex-start;
-     display: inline-block;
-     padding: 8px 16px;
-     border-radius: 12px;
-     font-size: 0.9rem;
-     font-weight: 800;
-   }
-   
-   .offer-badge.en-attente { background: #fdf3e1; color: #c2883a; }
-   .offer-badge.acceptee { background: #e3f2e8; color: #2a7d4d; }
-   .offer-badge.refusee { background: #fceaea; color: #c94b4b; }
-   
-   .offer-actions-row {
-     display: flex;
-     gap: 12px;
-   }
-   
-   .btn-offer-accept {
-     background: #308d58;
-     color: #ffffff;
-     border: none;
-     border-radius: 12px;
-     padding: 12px 20px;
-     font-size: 0.95rem;
-     font-weight: 800;
-     cursor: pointer;
-     transition: 0.2s;
-   }
-   .btn-offer-accept:hover { background: #23653e; }
-   
-   .btn-offer-refuse {
-     background: #fdfdfd;
-     color: #102018;
-     border: 1px solid #d7e5dc;
-     border-radius: 12px;
-     padding: 12px 20px;
-     font-size: 0.95rem;
-     font-weight: 800;
-     cursor: pointer;
-     transition: 0.2s;
-   }
-   .btn-offer-refuse:hover { background: #f0f6f2; }
-   
-   .offer-date {
-     display: block;
-     font-size: 0.85rem;
-     color: #819588;
-     margin: 0;
-   }
-
-.review-vertical {
+.offer-bubble {
+    min-width: 280px;
+    padding: 24px;
+    background: #f4f9f6;
+    border: 1px solid #e1ede5;
+    border-radius: 24px;
+    color: #122018;
+    align-self: flex-start;
+    margin-bottom: 16px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 14px;
+    gap: 16px;
 }
-.review-vertical select,
-.review-vertical input {
-    width: 100%;
-    border: 1px solid #d4e3d8;
+
+.offer-bubble.mine {
+    align-self: flex-end;
+    background: #ffffff;
+}
+
+.offer-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.offer-badge {
+    align-self: flex-start;
+    display: inline-block;
+    padding: 8px 16px;
     border-radius: 12px;
-    padding: 12px;
-    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.offer-badge.en-attente {
+    background: #fdf3e1;
+    color: #c2883a;
+}
+.offer-badge.acceptee {
+    background: #e3f2e8;
+    color: #2a7d4d;
+}
+.offer-badge.refusee {
+    background: #fceaea;
+    color: #c94b4b;
+}
+
+.offer-actions-row {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-offer-accept {
+    background: #308d58;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-offer-accept:hover {
+    background: #23653e;
+}
+
+.btn-offer-refuse {
+    background: #fdfdfd;
+    color: #102018;
+    border: 1px solid #d7e5dc;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-offer-refuse:hover {
+    background: #f0f6f2;
+}
+
+.offer-date {
+    display: block;
+    font-size: 0.85rem;
+    color: #819588;
+    margin: 0;
 }
 
 .btn-main-action {
@@ -1458,7 +1493,7 @@ onMounted(async () => {
     background: #fff4e6;
     border-bottom: 1px solid #ffe8cc;
     padding: 16px 26px;
-    flex-shrink: 0; 
+    flex-shrink: 0;
 }
 
 .payment-banner-content strong {
@@ -1473,5 +1508,33 @@ onMounted(async () => {
     margin: 0;
     color: #994d00;
     font-size: 0.9rem;
+}
+
+.payment-banner--error {
+    background: #fceaea;
+    border-bottom: 1px solid #f7d7d7;
+    margin-bottom: 15px;
+    border-radius: 12px;
+}
+
+.payment-banner--error .payment-banner-content strong {
+    color: #c94b4b;
+}
+
+.payment-banner--error .payment-banner-content p {
+    color: #a33c3c;
+}
+
+.payment-banner--success {
+    background: #e9f7ee;
+    border-bottom: 1px solid #cfe8d8;
+}
+
+.payment-banner--success .payment-banner-content strong {
+    color: #2d7a4f;
+}
+
+.payment-banner--success .payment-banner-content p {
+    color: #1b4d31;
 }
 </style>

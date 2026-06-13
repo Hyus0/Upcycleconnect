@@ -123,56 +123,113 @@ func DeposerObjet(codeBarreDepot string, siteID int) (string, error) {
 	return tokenRetrait, tx.Commit()
 }
 
-func AcheterAnnonce(annonceID int, acheteurID int) error {
+func AcheterAnnonce(annonceID int, acheteurID int, montantPaye float64) (int, string, error) {
 	var prenomAcheteur string
 	err := Conn.QueryRow("SELECT prenom FROM UTILISATEUR WHERE id = ?", acheteurID).Scan(&prenomAcheteur)
 	if err != nil {
-		return fmt.Errorf("l'acheteur avec l'ID %d n'existe pas", acheteurID)
+		return 0, "", fmt.Errorf("l'acheteur n'existe pas")
 	}
 
 	var vendeurID int
 	var titreAnnonce string
 	err = Conn.QueryRow("SELECT id_vendeur, titre FROM ANNONCE WHERE id = ? AND statut = 'Disponible'", annonceID).Scan(&vendeurID, &titreAnnonce)
 	if err != nil {
-		return fmt.Errorf("cette annonce n'est plus disponible ou n'existe pas")
+		return 0, "", fmt.Errorf("cette annonce n'est plus disponible")
 	}
 
 	tx, err := Conn.Begin()
 	if err != nil {
-		return err
+		return 0, "", err
 	}
+	defer tx.Rollback()
 
 	query := `
 		UPDATE ANNONCE 
 		SET id_acheteur = ?, statut = 'Paye', date_achat = NOW() 
 		WHERE id = ? AND statut = 'Disponible'`
-	
 	res, err := tx.Exec(query, acheteurID, annonceID)
 	if err != nil {
-		tx.Rollback()
-		return err
+		return 0, "", err
 	}
 	
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		tx.Rollback()
-		return fmt.Errorf("cette annonce n'est plus disponible ou n'existe pas")
+		return 0, "", fmt.Errorf("l'annonce n'est plus disponible")
+	}
+
+	res, err = tx.Exec(`
+		INSERT INTO COMMANDE (id_utilisateur, montant_total, statut, date_commande) 
+		VALUES (?, ?, 'Payee', NOW())`, 
+		acheteurID, montantPaye)
+	if err != nil {
+		return 0, "", err
+	}
+	commandeID, _ := res.LastInsertId()
+
+	_, err = tx.Exec(`
+		INSERT INTO LIGNE_COMMANDE (id_commande, id_vendeur, type_item, reference_id, prix_unitaire, commission_upc) 
+		VALUES (?, ?, 'Annonce', ?, ?, 0)`, 
+		commandeID, vendeurID, annonceID, montantPaye)
+	if err != nil {
+		return 0, "", err
+	}
+
+	res, err = tx.Exec(`
+		INSERT INTO TRANSACTION (id_commande, id_acheteur, montant_total, statut_paiement, date_transaction) 
+		VALUES (?, ?, ?, 'Valide', NOW())`, 
+		commandeID, acheteurID, montantPaye)
+	if err != nil {
+		return 0, "", err
+	}
+	transactionID, _ := res.LastInsertId()
+
+	factureID, numeroFacture, err := CreateFactureForTransaction(tx, transactionID)
+	if err != nil {
+		return 0, "", err
+	}
+
+	_, err = tx.Exec(`
+		UPDATE DM_SALE 
+		SET status = 'Payee' 
+		WHERE id_annonce = ? AND id_buyer = ?`, 
+		annonceID, acheteurID)
+	if err != nil {
+		return 0, "", err
+	}
+
+	_, err = tx.Exec(`
+		UPDATE DM_SALE 
+		SET status = 'Annulee' 
+		WHERE id_annonce = ? AND id_buyer != ?`, 
+		annonceID, acheteurID)
+	if err != nil {
+		return 0, "", err
+	}
+
+	_, err = tx.Exec(`
+		UPDATE DM_OFFER 
+		SET status = 'Annulee' 
+		WHERE id_annonce = ? AND status = 'En attente'`, 
+		annonceID)
+	if err != nil {
+		return 0, "", err
 	}
 
 	titreNotif := fmt.Sprintf("Votre '%s' a été vendu", titreAnnonce)
 	messageNotif := fmt.Sprintf("%s a acheté votre objet. Réservez un casier dès maintenant pour aller le déposer !", prenomAcheteur)
-
 	_, err = tx.Exec(`
 		INSERT INTO NOTIFICATION (id_utilisateur, id_emetteur, type, titre, message) 
 		VALUES (?, ?, 'Rappel', ?, ?)`, 
 		vendeurID, acheteurID, titreNotif, messageNotif)
-	
 	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("erreur lors de la création de la notification : %v", err)
+		return 0, "", err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return 0, "", err
+	}
+
+	return factureID, numeroFacture, nil
 }
 
 func RecupererObjet(codeBarreRetrait string, siteID int) error {

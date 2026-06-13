@@ -1,39 +1,50 @@
 <template>
-  <section class="factures-page">
-    <header class="factures-hero">
-      <p>ESPACE PRO</p>
-      <h1>Factures</h1>
-      <button type="button" @click="fetchFactures">Actualiser</button>
+  <main class="page-main-content">
+    <header class="content-header">
+      <div class="header-left">
+        <p class="sidebar__category2">ESPACE PRO > FACTURATION</p>
+        <h1 class="hero-title1">Mes Factures</h1>
+        <p class="classic-text">
+          Retrouvez ici l'historique complet de vos transactions et téléchargez vos factures.
+        </p>
+      </div>
+      <button class="btn-secondary" type="button" @click="fetchFactures">Actualiser la liste</button>
     </header>
 
-    <div v-if="loading" class="factures-card">Chargement des factures...</div>
-    <div v-else-if="error" class="factures-card error">{{ error }}</div>
-    <div v-else-if="factures.length === 0" class="factures-card">
-      <h2>Aucune facture pour le moment</h2>
-      <p>Vos factures apparaitront ici apres un achat ou un abonnement.</p>
+    <div v-if="loading" class="state-card">Chargement de vos factures...</div>
+    <div v-else-if="error" class="state-card error">{{ error }}</div>
+    
+    <div v-else-if="factures.length === 0" class="empty-state">
+      <div class="empty-icon">📄</div>
+      <h2>Aucune facture disponible</h2>
+      <p>Vos factures seront générées automatiquement après chaque commande validée.</p>
     </div>
 
     <div v-else class="factures-list">
       <article v-for="facture in factures" :key="facture.id" class="facture-row">
-        <div>
+        <div class="facture-info">
           <span class="invoice-number">{{ facture.numero_facture }}</span>
-          <h2>Commande #{{ facture.commande_id }}</h2>
-          <p>{{ facture.date_transaction }} - {{ facture.statut_paiement }}</p>
+          <h3 class="facture-title">Commande #{{ facture.commande_id }}</h3>
+          <p class="facture-meta">{{ facture.date_transaction }} • {{ facture.statut_paiement }}</p>
         </div>
-        <strong>{{ formatPrice(facture.montant_total) }}</strong>
+        
+        <div class="facture-amount">
+          <strong>{{ formatPrice(facture.montant_total) }}</strong>
+        </div>
+
         <div class="row-actions">
-          <button type="button" @click="downloadFacture(facture.id)">Telecharger</button>
-          <button type="button" class="ghost" @click="sendFacture(facture.id)">Envoyer par mail</button>
+          <button class="btn-view" type="button" @click="downloadFacture(facture.id)">Télécharger</button>
+          <button class="btn-secondary" type="button" @click="sendFacture(facture.id)">Envoyer par mail</button>
         </div>
       </article>
     </div>
-  </section>
+  </main>
 </template>
 
 <script setup>
 import { onMounted, ref } from "vue";
 
-const API_URL = "/go";
+const API_URL = "http://localhost:8081";
 const loading = ref(true);
 const error = ref("");
 const factures = ref([]);
@@ -50,12 +61,12 @@ const fetchFactures = async () => {
   error.value = "";
   try {
     const res = await fetch(`${API_URL}/users/${userId()}/factures`, {
-      headers: { Authorization: `Bearer ${sessionStorage.getItem("userToken")}` }
+      headers: { Authorization: sessionStorage.getItem("userToken") || "" }
     });
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) throw new Error("Impossible de charger les factures.");
     factures.value = await res.json() || [];
   } catch (err) {
-    error.value = err.message || "Impossible de charger les factures.";
+    error.value = err.message;
   } finally {
     loading.value = false;
   }
@@ -66,103 +77,115 @@ const downloadFacture = (factureId) => {
 };
 
 const sendFacture = async (factureId) => {
-  const res = await fetch(`${API_URL}/users/${userId()}/factures/${factureId}/send`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${sessionStorage.getItem("userToken")}` }
-  });
-  const payload = res.ok ? await res.json() : { message: await res.text() };
-  alert(payload.message || "Demande traitee.");
+  try {
+    const res = await fetch(`${API_URL}/users/${userId()}/factures/${factureId}/send`, {
+      method: "POST",
+      headers: { Authorization: sessionStorage.getItem("userToken") || "" }
+    });
+    const payload = res.ok ? await res.json() : { message: "Erreur lors de l'envoi." };
+    alert(payload.message);
+  } catch (error) {
+    alert("Impossible de contacter le serveur.");
+  }
 };
 
 onMounted(fetchFactures);
 </script>
 
 <style scoped>
-.factures-page {
-  padding: 32px;
+.page-main-content {
+  padding: 40px;
+  max-width: 1100px;
+  margin: 0 auto;
   font-family: "Syne", sans-serif;
 }
-.factures-hero {
+
+.content-header {
   display: flex;
-  align-items: end;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
+  align-items: flex-end;
+  margin-bottom: 3rem;
 }
-.factures-hero p {
-  color: #2f8f58;
-  letter-spacing: 4px;
+
+.sidebar__category2 {
+  color: #2f8f5b;
   font-size: 0.75rem;
   font-weight: 900;
-  margin: 0 0 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
-.factures-hero h1 {
+
+.hero-title1 {
+  font-size: 2.5rem;
   margin: 0;
-  color: #16221c;
-  font-size: clamp(2rem, 6vw, 4.5rem);
+  color: #1a1a1a;
 }
-button {
-  border: 0;
-  border-radius: 14px;
-  padding: 13px 18px;
-  background: #2f8f58;
-  color: #fff;
-  font-weight: 800;
-  cursor: pointer;
+
+.classic-text {
+  color: #6d7b72;
+  margin-top: 10px;
 }
-button.ghost {
-  background: #e9f3ee;
-  color: #1f6b43;
-}
-.factures-card,
-.facture-row {
-  background: #fff;
-  border: 1px solid #dce9e1;
-  border-radius: 22px;
-  padding: 26px;
-  box-shadow: 0 16px 42px rgba(24, 56, 39, 0.06);
-}
-.factures-card.error {
-  border-color: #f3b7ac;
-  color: #b3261e;
-}
+
+/* Liste */
 .factures-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
+
 .facture-row {
+  background: #fff;
+  border: 1px solid #e5ede7;
+  border-radius: 16px;
+  padding: 24px;
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
 }
+
 .invoice-number {
-  color: #2f8f58;
-  font-size: 0.82rem;
+  color: #2f8f5b;
+  font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 1px;
+  text-transform: uppercase;
 }
-.facture-row h2 {
-  margin: 6px 0;
-  color: #17201b;
+
+.facture-title { margin: 4px 0; font-size: 1.1rem; }
+.facture-meta { color: #8fa396; font-size: 0.85rem; margin: 0; }
+.facture-amount strong { font-size: 1.2rem; color: #2d7a4f; }
+
+/* Boutons */
+.row-actions { display: flex; gap: 10px; }
+
+button {
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: 0.2s;
 }
-.facture-row p {
-  margin: 0;
-  color: #718176;
+
+.btn-view { background: #2f8f5b; color: #fff; }
+.btn-secondary { background: #f0f4f1; color: #2d7a4f; }
+.btn-view:hover { background: #23653e; }
+.btn-secondary:hover { background: #e1ede5; }
+
+.state-card, .empty-state {
+  padding: 40px;
+  text-align: center;
+  border: 1px dashed #cfe0d4;
+  border-radius: 16px;
+  color: #63746a;
 }
-.row-actions {
-  display: flex;
-  gap: 10px;
-}
+
 @media (max-width: 760px) {
-  .factures-hero,
-  .facture-row {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .row-actions {
-    flex-wrap: wrap;
-  }
+  .facture-row { grid-template-columns: 1fr; text-align: center; }
+  .row-actions { justify-content: center; }
 }
 </style>

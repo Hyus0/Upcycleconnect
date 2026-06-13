@@ -110,7 +110,7 @@
               :disabled="isCheckingOut" 
               @click="handleCheckout"
             >
-              {{ isCheckingOut ? 'Traitement...' : 'Payer ' + formatPrice(cartTotal) }}
+              {{ isCheckingOut ? 'Traitement...' : 'Payer la commande' }}
             </button>
             
             <p class="secure-payment-text">🔒 Paiement 100% sécurisé via Stripe</p>
@@ -130,13 +130,18 @@ import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 
 const router = useRouter();
-const API_URL = "/go";
+const API_URL = "http://localhost:8081";
 
 const loading = ref(true);
 const cartItems = ref([]);
 const isCheckingOut = ref(false);
 const checkoutResult = ref(null);
 const sendingInvoice = ref(false);
+
+const getHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: sessionStorage.getItem("userToken") || "",
+});
 
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const currentUserId = computed(() => {
@@ -146,23 +151,25 @@ const currentUserId = computed(() => {
 const userName = computed(() => sessionStorage.getItem("userPrenom") || "Utilisateur");
 
 const cartTotal = computed(() => {
-  return cartItems.value.reduce((total, item) => total + item.prix_unitaire, 0);
+  return cartItems.value.reduce((total, item) => total + Number(item.prix_unitaire || 0), 0);
 });
 
 const formatPrice = (price) => {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(price);
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(Number(price) || 0);
 };
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("fr-FR");
+  const date = new Date(dateStr.replace(/Z$/, ""));
+  if(Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("fr-FR", { day: '2-digit', month: 'short', year: 'numeric'}).format(date);
 };
 
 const getItemName = (item) => {
   if (item.titre) return item.titre; 
   if (item.type_item === 'Formation') return `Billet pour la session de formation`;
   if (item.type_item === 'Annonce') return `Mise en avant d'annonce Premium`;
-  if (item.type_item === 'Abonnement') return `Abonnement Prestataire Pro (1 mois)`;
+  if (item.type_item === 'Abonnement') return `Abonnement DM Plus (1 mois)`;
   return `Article #${item.reference_id}`;
 };
 
@@ -180,7 +187,6 @@ const getIconClass = (type) => {
   return 'icon-green';
 };
 
-// --- NOUVEAU : REDIRECTION DYNAMIQUE ---
 const getLabelSuffix = (type) => {
   if (type === 'Formation') return 'la formation';
   if (type === 'Annonce') return "l'annonce";
@@ -205,7 +211,7 @@ const fetchPanier = async () => {
   loading.value = true;
   try {
     const res = await fetch(`${API_URL}/users/${currentUserId.value}/panier`, {
-      headers: { "Authorization": `Bearer ${sessionStorage.getItem("userToken")}` }
+      headers: getHeaders()
     });
     
     if (res.ok) {
@@ -226,7 +232,7 @@ const removeItem = async (itemId) => {
   try {
     const res = await fetch(`${API_URL}/users/${currentUserId.value}/panier/${itemId}`, {
       method: "DELETE",
-      headers: { "Authorization": `Bearer ${sessionStorage.getItem("userToken")}` }
+      headers: getHeaders()
     });
 
     if (res.ok) {
@@ -239,32 +245,19 @@ const removeItem = async (itemId) => {
   }
 };
 
-const handleCheckout = async () => {
+const handleCheckout = () => {
   if (cartItems.value.length === 0) return;
   
-  isCheckingOut.value = true;
-  
-  try {
-    const res = await fetch(`${API_URL}/users/${currentUserId.value}/checkout`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${sessionStorage.getItem("userToken")}` }
-    });
+  sessionStorage.setItem("pending_payment_amount", cartTotal.value);
+  sessionStorage.setItem("payment_source", "panier");
 
-    if (res.ok) {
-      const data = await res.json();
-      checkoutResult.value = data;
-      alert(`Commande n°${data.commande_id} créée avec succès. La facture est prête.`);
-      cartItems.value = [];
-    } else {
-      const err = await res.text();
-      alert("Erreur lors de la commande : " + err);
-    }
-  } catch (error) {
-    console.error("Erreur CHECKOUT:", error);
-    alert("Impossible de contacter le serveur.");
-  } finally {
-    isCheckingOut.value = false;
-  }
+  router.push({ 
+    path: '/paiement', 
+    query: { 
+      source: 'panier', 
+      amount: cartTotal.value 
+    } 
+  });
 };
 
 const downloadInvoice = () => {
@@ -279,7 +272,7 @@ const sendInvoiceByMail = async () => {
   try {
     const res = await fetch(`${API_URL}/users/${currentUserId.value}/factures/${checkoutResult.value.facture_id}/send`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${sessionStorage.getItem("userToken")}` }
+      headers: getHeaders()
     });
     const payload = res.ok ? await res.json() : { message: await res.text() };
     alert(payload.message || "Demande d'envoi traitee.");
@@ -449,7 +442,6 @@ onMounted(fetchPanier);
 .item-title { font-size: 1.2rem; font-weight: 800; color: #1a1a1a; margin: 4px 0 8px 0; }
 .item-ref { font-size: 0.85rem; color: #8fa396; margin: 0; }
 
-/* NOUVEAU : STYLE DU LIEN */
 .item-link {
   color: #2d7a4f;
   text-decoration: none;

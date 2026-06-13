@@ -16,6 +16,7 @@ import Panier from "./pages/PanierDetail.vue";
 import ClaimObjet from "./pages/ClaimObjet.vue";
 import Messages from "./pages/Messages.vue";
 import Abonnement from "./pages/Abonnement.vue";
+import Paiement from "./pages/Paiement.vue";
 
 const routes = [
   { path: "/", component: Home },
@@ -29,6 +30,7 @@ const routes = [
   { path: "/projets", component: Projets },
   { path: "/conseils", component: Conseils },
   { path: "/panier", component: Panier },
+  { path: "/paiement", component: Paiement },
   { path: "/abonnement", component: Abonnement },
 
   {

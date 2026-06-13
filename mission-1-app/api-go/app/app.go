@@ -764,7 +764,8 @@ func AcheterAnnonceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		UserID int `json:"user_id"`
+		UserID  int     `json:"user_id"`
+		Montant float64 `json:"montant"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -776,14 +777,22 @@ func AcheterAnnonceHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ID utilisateur manquant", http.StatusBadRequest)
 		return
 	}
-	err = db.AcheterAnnonce(annonceID, req.UserID)
+
+	factureID, numeroFacture, err := db.AcheterAnnonce(annonceID, req.UserID, req.Montant)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	response := map[string]interface{}{
+		"message":        "Annonce achetée avec succès",
+		"facture_id":     factureID,
+		"numero_facture": numeroFacture,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Annonce achetée avec succès"})
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetUserAchatsHandler(w http.ResponseWriter, r *http.Request) {

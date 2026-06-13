@@ -17,6 +17,8 @@ type DMConversation struct {
 	AnnonceTitle     string  `json:"annonce_title"`
 	AnnoncePrice     float64 `json:"annonce_price"`
 	AnnonceSellerID  *int    `json:"annonce_seller_id,omitempty"`
+	AnnonceStatut    string  `json:"annonce_statut"`
+	AnnonceBuyerID   *int    `json:"annonce_acheteur_id,omitempty"`
 	LastMessage      string  `json:"last_message"`
 	LastMessageAt    string  `json:"last_message_at"`
 	UnreadCount      int     `json:"unread_count"`
@@ -204,6 +206,8 @@ func ListConversations(userID int) ([]DMConversation, error) {
 			COALESCE(a.titre, 'Discussion directe') AS annonce_title,
 			COALESCE(a.prix, 0) AS annonce_price,
 			a.id_vendeur,
+			COALESCE(a.statut, 'Disponible') AS annonce_statut,
+			a.id_acheteur,
 			COALESCE(last_msg.contenu, '') AS last_message,
 			COALESCE(DATE_FORMAT(last_msg.created_at, '%Y-%m-%dT%H:%i:%sZ'), '') AS last_message_at,
 			COALESCE(unread.total, 0) AS unread_count,
@@ -233,7 +237,9 @@ func ListConversations(userID int) ([]DMConversation, error) {
 		var c DMConversation
 		var prenom, nom string
 		var sellerID sql.NullInt64
-		if err := rows.Scan(&c.ID, &c.OtherUserID, &prenom, &nom, &c.OtherUserRole, &c.OtherUserAvatar, &c.OtherUserPremium, &c.AnnonceID, &c.AnnonceTitle, &c.AnnoncePrice, &sellerID, &c.LastMessage, &c.LastMessageAt, &c.UnreadCount, &c.UpdatedAt); err != nil {
+		var buyerID sql.NullInt64
+
+		if err := rows.Scan(&c.ID, &c.OtherUserID, &prenom, &nom, &c.OtherUserRole, &c.OtherUserAvatar, &c.OtherUserPremium, &c.AnnonceID, &c.AnnonceTitle, &c.AnnoncePrice, &sellerID, &c.AnnonceStatut, &buyerID, &c.LastMessage, &c.LastMessageAt, &c.UnreadCount, &c.UpdatedAt); err != nil {
 			return nil, err
 		}
 		c.OtherUserName = strings.TrimSpace(prenom + " " + nom)
@@ -245,7 +251,11 @@ func ListConversations(userID int) ([]DMConversation, error) {
 			val := int(sellerID.Int64)
 			c.AnnonceSellerID = &val
 		}
-				
+		if buyerID.Valid {
+			val := int(buyerID.Int64)
+			c.AnnonceBuyerID = &val
+		}
+
 		conversations = append(conversations, c)
 	}
 	return conversations, nil

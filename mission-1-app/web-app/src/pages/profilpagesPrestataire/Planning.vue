@@ -76,7 +76,6 @@
             </div>
         </div>
 
-        <!-- MODAL DÉTAIL D'UNE ENTRÉE (Pop-up) -->
         <div
             v-if="selectedEntry"
             class="planning-modal"

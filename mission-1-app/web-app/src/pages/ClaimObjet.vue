@@ -164,7 +164,7 @@ const handleClaim = async () => {
 .hero-title1 {
     font-size: 2rem;
     font-weight: 800;
-    margin: 1.5rem 0 0.5rem; /* Repris de ton ancien code */
+    margin: 1.5rem 0 0.5rem; 
     color: #1a1a1a;
 }
 

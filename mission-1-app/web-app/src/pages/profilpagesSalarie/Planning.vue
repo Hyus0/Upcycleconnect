@@ -535,7 +535,6 @@ onMounted(() => {
     border-left: 4px solid #ffc107;
 }
 
-/* Le point pour la légende */
 .planning-dot--my-creation {
     background: linear-gradient(135deg, #198754, #ffc107);
     border: 2px solid #333;

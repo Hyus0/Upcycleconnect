@@ -679,7 +679,6 @@ onMounted(fetchDetail);
     font-size: 0.85rem;
 }
 
-/* BOUTONS */
 .form-actions-card {
     margin-top: 0.2rem;
     padding: 0;

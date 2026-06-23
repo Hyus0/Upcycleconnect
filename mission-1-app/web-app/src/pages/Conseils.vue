@@ -108,7 +108,6 @@ const userName = computed(() => {
 
 const filteredTips = computed(() => {
     return tips.value.filter(tip => {
-        // Filtrage strict : on ne montre QUE les conseils dédiés au rôle de l'utilisateur
         const matchesRole = tip.role_cible === userRole.value;
         const term = searchQuery.value.toLowerCase();
         const matchesSearch = !term || tip.titre?.toLowerCase().includes(term) || tip.description?.toLowerCase().includes(term);

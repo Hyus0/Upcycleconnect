@@ -366,7 +366,6 @@ onMounted(fetchDetail);
     font-weight: 800;
 }
 
-/* BLOC DESCRIPTION */
 .description-section {
     display: flex;
     flex-direction: column;
@@ -391,7 +390,6 @@ onMounted(fetchDetail);
     color: #333;
 }
 
-/* ETAPES DE FABRICATION */
 .steps-section {
     display: flex;
     flex-direction: column;
@@ -466,7 +464,6 @@ onMounted(fetchDetail);
     object-fit: cover;
 }
 
-/* PANNEAU DROIT ELEMENTS */
 .side-card {
     padding: 1.5rem 2rem;
     gap: 1rem;

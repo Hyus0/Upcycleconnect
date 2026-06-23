@@ -94,7 +94,7 @@ import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 
-const API_URL = "http://localhost:8081"; // 👈 AJOUT DE L'API URL
+const API_URL = "http://localhost:8081";
 const projets = ref([]);
 const loading = ref(true);
 const searchQuery = ref(""); 
@@ -118,9 +118,7 @@ const filteredProjets = computed(() => {
     });
 });
 
-// 👇 NOUVELLE FONCTION: Sécurise l'affichage de l'image 👇
 const resolveImageUrl = (url) => {
-    // Si pas d'image, on affiche ton image de base
     if (!url) return new URL('../components/upcycling-concept.jpg', import.meta.url).href;
     
     if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) {
@@ -141,7 +139,6 @@ const resolveImageUrl = (url) => {
     
     return `${API_URL}/${url}`;
 };
-// 👆 ------------------------------------------------ 👆
 
 const formatDate = (dateStr) => {
     if (!dateStr) return "Récemment";

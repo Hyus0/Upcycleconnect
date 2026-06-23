@@ -166,9 +166,9 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();
-const route = useRoute(); // Permet de récupérer l'ID dans l'URL
+const route = useRoute(); 
 const loading = ref(false);
-const isFetching = ref(true); // Indique si on est en train de charger les données
+const isFetching = ref(true);
 const errors = ref([]);
 const successMsg = ref("");
 
@@ -188,7 +188,6 @@ const form = ref({
     actif: true,
 });
 
-// Récupérer les informations existantes du tip
 const fetchTipData = async () => {
     const token = sessionStorage.getItem("userToken");
     
@@ -200,12 +199,11 @@ const fetchTipData = async () => {
 
         if (res.ok) {
             const data = await res.json();
-            // Pré-remplissage du formulaire avec les données existantes
             form.value.titre = data.titre || "";
             form.value.description = data.description || "";
             form.value.video_url = data.video_url || "";
             form.value.role_cible = data.role_cible || "";
-            form.value.actif = !!data.actif; // Sécurise la conversion en booléen
+            form.value.actif = !!data.actif; 
         } else {
             errors.value.push("Impossible de charger les informations de ce tip.");
         }
@@ -221,7 +219,6 @@ onMounted(() => {
     fetchTipData();
 });
 
-// Génère une URL d'embed YouTube si possible
 const videoEmbedUrl = computed(() => {
     const url = form.value.video_url;
     if (!url) return null;
@@ -258,7 +255,7 @@ const handleSubmit = async () => {
     const token = sessionStorage.getItem("userToken");
 
     const payload = {
-        id: Number(tipId), // On ajoute l'ID dans le payload pour la mise à jour
+        id: Number(tipId),
         id_createur: currentUserId.value,
         titre: form.value.titre,
         description: form.value.description,
@@ -268,7 +265,6 @@ const handleSubmit = async () => {
     };
 
     try {
-        // Remplacement de la méthode POST par PUT
         const response = await fetch(`${API_URL}/tips/${tipId}`, {
             method: "PUT",
             headers: {
@@ -281,7 +277,7 @@ const handleSubmit = async () => {
         if (response.ok) {
             successMsg.value = "Tip modifié avec succès !";
             setTimeout(() => {
-                router.push("/profil/tips"); // Rediriger vers la liste des tips
+                router.push("/profil/tips"); 
             }, 1500);
         } else {
             const errMsg = await response.text();
@@ -476,7 +472,6 @@ textarea {
     accent-color: #2d7a4f;
 }
 
-/* VIDÉO */
 .info-label {
     font-size: 0.85rem;
     color: #2d7a4f;
@@ -513,7 +508,6 @@ textarea {
     font-style: italic;
 }
 
-/* RÉCAP */
 .recap-card {
     gap: 1rem;
 }
@@ -546,7 +540,6 @@ textarea {
     font-weight: 700;
 }
 
-/* BADGES RÔLES */
 .type-badge {
     padding: 4px 10px;
     border-radius: 12px;
@@ -559,7 +552,6 @@ textarea {
 .role-salarie      { background: #fff3e0; color: #e65100; }
 .role-admin        { background: #fce4ec; color: #c2185b; }
 
-/* ACTIONS */
 .form-actions-card {
     margin-top: 0.5rem;
     display: flex;

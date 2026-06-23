@@ -197,6 +197,20 @@ func main() {
 	http.HandleFunc("GET /users/{id}/factures/{factureId}/download", app.DownloadFactureHandler)
 	http.HandleFunc("POST /users/{id}/factures/{factureId}/send", app.SendFactureByMailHandler)
 
+	//Abonnement
+	http.HandleFunc("GET /users/{id}/abonnement", app.GetAbonnementHandler)
+	http.HandleFunc("POST /users/{id}/abonnement/souscrire", app.SouscrireAbonnementHandler)
+	http.HandleFunc("POST /users/{id}/abonnement/resilier", app.ResilierAbonnementHandler)
+
+	//Matériaux recherchés (prestataires)
+	http.HandleFunc("GET /materiaux/stats", app.GetMateriauxStatsHandler)
+	http.HandleFunc("GET /users/{id}/eco-stats", app.GetEcoStatsHandler)
+
+	//Alertes
+	http.HandleFunc("GET /users/{id}/alertes-prioritaires", app.GetAlertesPrioritairesHandler)
+	http.HandleFunc("GET /users/{id}/materiaux-recherches", app.GetMateriauxRecherchesHandler)
+	http.HandleFunc("PUT /users/{id}/materiaux-recherches", app.UpdateMateriauxRecherchesHandler)	
+
 	// Messagerie privee
 	http.HandleFunc("GET /users/{id}/subscription", app.GetSubscriptionStatusHandler)
 	http.HandleFunc("GET /users/{id}/messages", app.GetConversationsHandler)

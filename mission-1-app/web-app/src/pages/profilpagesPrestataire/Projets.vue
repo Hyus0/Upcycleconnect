@@ -275,7 +275,6 @@ onMounted(async () => {
   font-weight: bold;
 }
 
-/* On garde juste un petit gap pour que tes anciens boutons ne soient pas collés */
 .actions-cell {
   display: flex;
   gap: 8px;

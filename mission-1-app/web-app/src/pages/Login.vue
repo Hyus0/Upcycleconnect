@@ -392,14 +392,13 @@ async function handleLogin() {
     margin-top: 4px;
 }
 
-/* BLOC COMMENTAIRE ET ANIMATION */
 .login-testimonial {
     margin-top: auto;
     padding: 20px 24px;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-height: 120px; /* Evite que le bloc saute selon la taille du texte */
+    min-height: 120px;
 }
 
 .fade-enter-active,

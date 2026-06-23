@@ -204,8 +204,6 @@ func DeleteEvenement(id int) error {
 	return nil
 }
 
-// À AJOUTER à la fin de db/evenement.go
-
 func JoinEvenement(userID int, evenementID int) error {
 	if Conn == nil {
 		return fmt.Errorf("connexion DB non initialisee")

@@ -33,7 +33,7 @@
               <small>Historique d'achats et reçus</small>
             </RouterLink>
             
-            <RouterLink v-if="activeUserRole === 'Prestataire'" to="/profil/abonnement" class="nav-menu__item">
+            <RouterLink v-if="activeUserRole === 'Prestataire'" to="/abonnement" class="nav-menu__item">
               <span>Abonnement</span>
               <small>Gestion du forfait pro et alertes</small>
             </RouterLink>

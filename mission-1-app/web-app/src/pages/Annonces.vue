@@ -46,29 +46,76 @@
     </div>
 
     <section class="section-container">
-      <div class="section-header">
+      <div class="section-header" style="flex-wrap: wrap; gap: 1rem;">
         <div>
           <h2>Catalogue des annonces</h2>
           <p class="classic-text">{{ loading ? "Chargement..." : `${filteredAnnonces.length} résultat${filteredAnnonces.length > 1 ? "s" : ""}` }}</p>
         </div>
+        
         <div class="header-actions">
           <input
             v-model="filters.search"
             type="search"
-            placeholder="Rechercher..."
+            placeholder="Rechercher (titre, ville)..."
             class="search-input"
           />
-          <select v-model="filters.type" class="btn-secondary">
-            <option value="">Tous types</option>
+          <button class="btn-secondary" @click="showFilters = !showFilters" :class="{ 'active-filter-btn': showFilters }">
+            <i class="ti ti-filter"></i> Filtres avancés
+          </button>
+        </div>
+      </div>
+
+      <div v-if="showFilters" class="filters-panel">
+        <div class="filter-group">
+          <label>Type de transaction</label>
+          <select v-model="filters.type" class="filter-input">
+            <option value="">Tous les types</option>
             <option value="Don">Don</option>
             <option value="Vente">Vente</option>
           </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Catégorie</label>
+          <select v-model="filters.categorie" class="filter-input">
+            <option value="">Toutes les catégories</option>
+            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+              {{ cat.nom }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>État de l'objet</label>
+          <select v-model="filters.etat" class="filter-input">
+            <option value="">Tous les états</option>
+            <option value="Neuf">Neuf</option>
+            <option value="Bon etat">Bon état</option>
+            <option value="Usage">À restaurer / Usagé</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Poids maximum (kg)</label>
+          <input 
+            v-model.number="filters.poidsMax" 
+            type="number" 
+            min="0" 
+            placeholder="Ex: 50" 
+            class="filter-input"
+          />
+        </div>
+
+        <div class="filter-group reset-group">
+          <button class="btn-text-danger" @click="resetFilters">
+            Réinitialiser
+          </button>
         </div>
       </div>
 
       <div v-if="loading" class="state-card">Chargement des annonces...</div>
       <div v-else-if="filteredAnnonces.length === 0" class="state-card">
-        Aucune annonce ne correspond à ces filtres.
+        Aucune annonce ne correspond à ces filtres. Essayez de les modifier.
       </div>
 
       <div v-else class="annonces-grid">
@@ -96,6 +143,7 @@
             
             <div class="annonce-card__meta">
               <span>📍 {{ displayValue(annonce.ville) }} ({{ displayValue(annonce.code_postal) }})</span>
+              <span>⚖️ {{ annonce.poids_estime_kg ? annonce.poids_estime_kg + ' kg' : 'Poids non précisé' }}</span>
               <span>📅 {{ formatDate(annonce.date_creation) }}</span>
             </div>
           </div>
@@ -107,7 +155,13 @@
                 <button class="btn-main-action btn-small" type="button" @click="modifierAnnonce(annonce.id)">Modifier</button>
               </template>
               <template v-else>
-                <RouterLink class="btn-main-action btn-small" to="/profil/annonces">Contacter</RouterLink>
+                <button
+                    v-if="annonce.statut === 'Disponible'"
+                    class="btn-main-action btn-small"
+                    @click="contacterVendeur(annonce)" 
+                >
+                    Contacter
+                </button>
               </template>
           </div>
         </article>
@@ -115,7 +169,6 @@
     </section>
   </main>
   <SiteFooter />
-
 </template>
 
 <script setup>
@@ -125,11 +178,12 @@ import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 import imageParDefaut from "../components/upcycling-concept.jpg";
 
-
 const router = useRouter();
 const loading = ref(true);
 const source = ref("api");
 const annonces = ref([]);
+const categories = ref([]); 
+const showFilters = ref(false); 
 const API_URL = "http://localhost:8081";
 
 const isParticulier = computed(() => {
@@ -152,8 +206,19 @@ const userName = computed(() => {
 
 const filters = reactive({
   search: "",
-  type: ""
+  type: "",
+  categorie: "",
+  etat: "",
+  poidsMax: null
 });
+
+const resetFilters = () => {
+  filters.search = "";
+  filters.type = "";
+  filters.categorie = "";
+  filters.etat = "";
+  filters.poidsMax = null;
+};
 
 const filteredAnnonces = computed(() => {
   const search = filters.search.trim().toLowerCase();
@@ -162,10 +227,12 @@ const filteredAnnonces = computed(() => {
     const matchesSearch =
       !search ||
       [annonce.titre, annonce.description, annonce.ville].join(" ").toLowerCase().includes(search);
-
     const matchesType = !filters.type || (annonce.type || "").toLowerCase() === filters.type.toLowerCase();
+    const matchesCat = !filters.categorie || String(annonce.id_categorie) === String(filters.categorie);
+    const matchesEtat = !filters.etat || (annonce.etat_objet || "") === filters.etat;
+    const matchesPoids = !filters.poidsMax || (annonce.poids_estime_kg !== null && parseFloat(annonce.poids_estime_kg) <= filters.poidsMax);
 
-    return matchesSearch && matchesType;
+    return matchesSearch && matchesType && matchesCat && matchesEtat && matchesPoids;
   });
 });
 
@@ -207,18 +274,44 @@ function formatPrice(value, type) {
   }).format(Number(value));
 }
 
+const contacterVendeur = (annonce) => {
+    if (!isLoggedIn.value) {
+        alert("Veuillez vous connecter pour contacter le vendeur.");
+        return router.push({ path: "/connexion", query: { redirect: route.fullPath } });
+    }
+
+    if (currentUserId.value === 0) {
+        alert("Erreur d'identification. Veuillez vous reconnecter.");
+        return;
+    }
+
+    if (annonce && annonce.id_vendeur) {
+        router.push({
+            path: '/messages',
+            query: {
+                user: annonce.id_vendeur, 
+                annonce: annonce.id       
+            }
+        });
+    }
+};
+
 onMounted(async () => {
   loading.value = true;
+  
   try {
-    const res = await fetch(`${API_URL}/annonces`);
-    if (res.ok) {
-      annonces.value = await res.json() || [];
+    const resAnnonces = await fetch(`${API_URL}/annonces`);
+    if (resAnnonces.ok) {
+      annonces.value = await resAnnonces.json() || [];
       source.value = "api";
-    } else {
-      throw new Error("Erreur HTTP");
+    }
+
+    const resCategories = await fetch(`${API_URL}/categories`);
+    if (resCategories.ok) {
+      categories.value = await resCategories.json() || [];
     }
   } catch (error) {
-    console.error("Erreur lors de la récupération des annonces :", error);
+    console.error("Erreur de récupération des données :", error);
     annonces.value = [];
     source.value = "empty";
   } finally {
@@ -250,13 +343,102 @@ onMounted(async () => {
   padding: 26px;
   color: var(--text-grey);
   background: #fbfdfb;
+  text-align: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  width: 250px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #2d7a4f;
+}
+
+.btn-secondary.active-filter-btn {
+  background-color: #eaf4ed;
+  color: #2d7a4f;
+  border-color: #2d7a4f;
+}
+
+.filters-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  background: #fafdfb;
+  border: 1px solid #e5ede7;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.filter-group label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #63746a;
+  text-transform: uppercase;
+}
+
+.filter-input {
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #333;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #2d7a4f;
+}
+
+.reset-group {
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+.btn-text-danger {
+  background: transparent;
+  border: none;
+  color: #d32f2f;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+.btn-text-danger:hover {
+  background: #fceaea;
 }
 
 .annonces-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 20px;
-  margin-top: 24px;
 }
 
 .annonce-card {
@@ -357,18 +539,14 @@ onMounted(async () => {
   color: #8fa396;
 }
 
-/* =========================================
-   FOOTER DE LA CARTE : BOUTONS STRICTEMENT ÉGAUX
-   ========================================= */
 .annonce-card__footer {
   padding: 14px 16px;
   border-top: 1px solid #f0f4f1;
-  display: grid; /* Force 2 colonnes identiques */
+  display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
-/* On force TOUS les boutons dans le footer à avoir la même structure */
 .annonce-card__footer > button,
 .annonce-card__footer > a {
   box-sizing: border-box !important;
@@ -391,8 +569,6 @@ onMounted(async () => {
   text-decoration: none !important;
   transition: all 0.2s !important;
   line-height: 1 !important;
-  
-  /* Anti-saut de ligne */
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -400,7 +576,6 @@ onMounted(async () => {
   border: 1px solid transparent !important;
 }
 
-/* Bouton VOIR */
 .btn-view {
   background-color: #f0f4f1 !important;
   color: #2c7e4f !important;
@@ -412,7 +587,6 @@ onMounted(async () => {
   border-color: #e1ede5 !important;
 }
 
-/* Bouton CONTACTER (btn-main-action) */
 .annonce-card__footer .btn-main-action {
   background-color: #2c7e4f !important;
   color: #ffffff !important;
@@ -424,9 +598,6 @@ onMounted(async () => {
   border-color: #23653e !important;
 }
 
-/* =========================================
-   MEDIA QUERIES
-   ========================================= */
 @media (max-width: 1500px) {
   .annonces-grid { grid-template-columns: repeat(4, 1fr); }
 }

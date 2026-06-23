@@ -18,7 +18,7 @@
             <RouterLink
                 class="hero-subscription"
                 :class="{ 'is-premium': subscription.is_subscriber }"
-                to="/abonnement"
+                to="/abonnement-dm"
             >
                 <span>DM Plus</span>
 
@@ -219,11 +219,9 @@
                         </div>
                     </header>
 
-                    <!-- BANDEAUX INTELLIGENTS SELON LE STATUT -->
                     <template
                         v-if="activeConversation.annonce_statut === 'Paye'"
                     >
-                        <!-- Si c'est L'ACHETEUR -->
                         <div
                             v-if="
                                 Number(
@@ -243,7 +241,6 @@
                                 </p>
                             </div>
                         </div>
-                        <!-- Si c'est LE VENDEUR -->
                         <div
                             v-else-if="
                                 Number(activeConversation.annonce_seller_id) ===
@@ -262,7 +259,6 @@
                                 </p>
                             </div>
                         </div>
-                        <!-- Si c'est QUELQU'UN D'AUTRE -->
                         <div
                             v-else
                             class="payment-banner payment-banner--error"
@@ -277,7 +273,6 @@
                         </div>
                     </template>
 
-                    <!-- BANDEAU OFFRE EN ATTENTE (Uniquement si NON PAYÉ) -->
                     <template v-else-if="pendingPaymentSale">
                         <div class="payment-banner">
                             <div class="payment-banner-content">
@@ -310,7 +305,6 @@
                         </div>
                     </template>
 
-                    <!-- FIL DES MESSAGES -->
                     <div class="message-thread" ref="messagesContainer">
                         <div
                             v-if="loadingMessages"
@@ -345,7 +339,6 @@
                                     {{ formatPrice(item.amount) }}
                                 </h4>
 
-                                <!-- Badge Statut (Masqué si c'est le vendeur et en attente) -->
                                 <span
                                     v-if="
                                         !(

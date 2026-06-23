@@ -288,7 +288,6 @@ input:focus {
     height: fit-content;
 }
 
-/* --- RESPONSIVE --- */
 @media (max-width: 1024px) {
     .info-layout {
         grid-template-columns: 1fr;

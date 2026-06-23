@@ -127,7 +127,6 @@ onMounted(fetchFactures);
   margin-top: 10px;
 }
 
-/* Liste */
 .factures-list {
   display: flex;
   flex-direction: column;
@@ -158,7 +157,6 @@ onMounted(fetchFactures);
 .facture-meta { color: #8fa396; font-size: 0.85rem; margin: 0; }
 .facture-amount strong { font-size: 1.2rem; color: #2d7a4f; }
 
-/* Boutons */
 .row-actions { display: flex; gap: 10px; }
 
 button {

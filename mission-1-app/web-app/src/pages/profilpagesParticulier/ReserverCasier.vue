@@ -172,7 +172,6 @@ const confirmReservation = async () => {
                 router.push("/profil/depots");
             }, 2000);   
         } else {
-            // CORRECTION ICI : Si Go renvoie du texte brut (http.Error), on le lit correctement avec text()
             const txtError = await res.text();
             errors.value.push(txtError || "Erreur lors de la réservation");
 
@@ -290,7 +289,6 @@ onMounted(fetchData);
     border-radius: 50%;
 }
 
-/* --- STYLE UNIQUE HARMONISÉ DEPUIS LA PAGE LOGIN --- */
 .error-box {
     color: #e74c3c;
     background: #fdeaea;

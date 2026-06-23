@@ -51,12 +51,28 @@
                     </div>
 
                     <div class="profile-identity">
-                        <h1 class="user-name">
+                        <h1 class="user-name" style="display: flex; align-items: center; gap: 10px;">
                             {{ user.prenom }} {{ user.nom }}
+                            
+                            <img 
+                                v-if="isPremiumUser" 
+                                :src="badgeAbonnee" 
+                                alt="Premium" 
+                                class="badge-icon"
+                                title="Membre Abonné"
+                            />
+                            
+                            <CircleCheck 
+                                v-if="user.siret_valide == 1" 
+                                :size="28" 
+                                color="#3b82f6" 
+                                class="badge-icon"
+                                title="Profil Professionnel Vérifié"
+                            />
                         </h1>
-                        <span class="badge badge--green"
-                            >Membre UpcycleConnect - Particulier</span
-                        >
+                        <span class="badge badge--green">
+                            Membre UpcycleConnect - {{ user.siret_valide == 1 ? 'Professionnel' : 'Particulier' }}
+                        </span>
                     </div>
 
                     <div class="profile-meta-details">
@@ -314,6 +330,9 @@ import imageParDefaut from "../components/upcycling-concept.jpg";
 
 import basicBanner from "../components/basicBanner.jpg";
 import basicAvatar from "../components/basicAvatar.png";
+import badgeAbonnee from "../components/isAbonnee.png";
+
+import { CircleCheck } from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
@@ -329,6 +348,7 @@ const activeTab = ref("annonces");
 const isFollowing = ref(false);
 const followersCount = ref(0);
 const followingCount = ref(0);
+const isPremiumUser = ref(false);
 
 const newAvis = ref({ note: 5, commentaire: "" });
 const isSubmittingAvis = ref(false);
@@ -345,6 +365,7 @@ const userName = computed(() => {
     const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
+
 
 const averageNote = computed(() => {
     if (avisList.value.length === 0) return 0;
@@ -369,7 +390,6 @@ const hasAlreadyCommented = computed(() => {
     );
 });
 
-// Formatage
 const formatDate = (value) => {
     if (!value) return "N/A";
     const d = new Date(value);
@@ -455,31 +475,25 @@ const submitAvis = async () => {
 };
 
 const refreshData = async () => {
-    const userId = route.params.id;
+    const userId = route.params.id; 
     try {
-        const [resStats, resAnn, resAvis, resFollow] = await Promise.all([
-            fetch(`${API_URL}/users/${userId}/stats`).then((r) =>
-                r.ok ? r.json() : {},
-            ),
-            fetch(`${API_URL}/users/${userId}/annonces`).then((r) =>
-                r.ok ? r.json() : [],
-            ),
-            fetch(`${API_URL}/users/${userId}/avis`).then((r) =>
-                r.ok ? r.json() : [],
-            ),
-            fetch(
-                `${API_URL}/users/${userId}/follow/${currentUserId.value}`,
-            ).then((r) => (r.ok ? r.json() : {})),
+        const [resStats, resAnn, resAvis, resFollow, resSub] = await Promise.all([
+            fetch(`${API_URL}/users/${userId}/stats`).then(r => r.ok ? r.json() : {}),
+            fetch(`${API_URL}/users/${userId}/annonces`).then(r => r.ok ? r.json() : []),
+            fetch(`${API_URL}/users/${userId}/avis`).then(r => r.ok ? r.json() : []),
+            fetch(`${API_URL}/users/${userId}/follow/${currentUserId.value}`).then(r => r.ok ? r.json() : {}),
+            fetch(`${API_URL}/users/${userId}/abonnement`).then(r => r.ok ? r.json() : { is_premium: false })
         ]);
 
         stats.value = resStats;
-        annonces.value = (resAnn || []).filter(
-            (a) => a.statut === "Disponible" && a.est_valide === "Valide",
-        );
+        annonces.value = (resAnn || []).filter(a => a.statut === "Disponible" && a.est_valide === "Valide");
         avisList.value = resAvis || [];
         followersCount.value = resFollow.followers || 0;
         followingCount.value = resFollow.following || 0;
         isFollowing.value = resFollow.is_following || false;
+        
+        isPremiumUser.value = resSub.is_premium || resSub.IsPremium || false;
+
     } catch (e) {
         console.error("Erreur refresh:", e);
     }
@@ -604,6 +618,13 @@ watch(() => route.params.id, loadProfile);
     margin: 0;
     line-height: 1.1;
 }
+
+.badge-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
 .badge {
     padding: 4px 10px;
     border-radius: 6px;
@@ -974,6 +995,7 @@ watch(() => route.params.id, loadProfile);
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
 @media (max-width: 768px) {
     .profile-top-row {
         flex-direction: column;

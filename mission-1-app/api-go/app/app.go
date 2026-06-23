@@ -764,8 +764,8 @@ func AcheterAnnonceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		UserID  int     `json:"user_id"`
-		Montant float64 `json:"montant"`
+		UserID  int     `json:"id_acheteur"` 
+		Montant float64 `json:"montant_paye"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -808,7 +808,7 @@ func GetUserAchatsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erreur lors de la récupération des achats", http.StatusInternalServerError)
 		return
 	}
-
+	
 	if achats == nil {
 		achats = []models.Annonce{}
 	}
@@ -2150,6 +2150,179 @@ func GetModerationTopicsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(topics)
 }
 
+//Abonnement premium
+
+func GetAbonnementHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	sub, err := db.GetUserSubscription(userID)
+	if err != nil {
+		http.Error(w, "Erreur serveur", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sub)
+}
+
+func SouscrireAbonnementHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		PlanID int `json:"plan_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Requete invalide", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.SubscribeUser(userID, req.PlanID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Abonnement activé avec succès"})
+}
+
+func ResilierAbonnementHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	if err := db.CancelSubscription(userID); err != nil {
+		http.Error(w, "Erreur lors de la resiliation", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Abonnement résilié avec succès"})
+}
+
+//Premium Prestataire
+func GetEcoStatsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	dummyStats := map[string]interface{}{
+		"co2_total": 1250,
+		"co2_trend": 15,
+		"eau_economisee": 4500,
+		"materiaux_valorises": 34,
+		"score_impact_moyen": 85,
+		"co2_par_mois": []map[string]interface{}{
+			{"mois": "Jan", "valeur": 100},
+			{"mois": "Fév", "valeur": 250},
+			{"mois": "Mar", "valeur": 200},
+			{"mois": "Avr", "valeur": 400},
+			{"mois": "Mai", "valeur": 300},
+		},
+	}
+	json.NewEncoder(w).Encode(dummyStats)
+}
+
+func GetMateriauxStatsHandler(w http.ResponseWriter, r *http.Request) {
+	stats, err := db.GetMateriauxStats()
+	if err != nil {
+		http.Error(w, "Erreur serveur : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
+}
+
+func GetAlertesPrioritairesHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	materiauxString, err := db.GetMateriauRecherche(userID)
+	if err != nil || strings.TrimSpace(materiauxString) == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]interface{}{})
+		return
+	}
+
+	rawMotsCles := strings.Split(materiauxString, ",")
+	var motsCles []string
+	for _, mot := range rawMotsCles {
+		cleanMot := strings.TrimSpace(mot)
+		if cleanMot != "" {
+			motsCles = append(motsCles, cleanMot)
+		}
+	}
+
+	annonces, err := db.RechercheAnnonceMateriau(motsCles)
+	if err != nil {
+		http.Error(w, "Erreur lors de la recherche des alertes", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if annonces == nil {
+		json.NewEncoder(w).Encode([]interface{}{})
+		return
+	}
+	json.NewEncoder(w).Encode(annonces)
+}
+
+func GetMateriauxRecherchesHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	materiaux, err := db.GetMateriauRecherche(userID)
+	if err != nil {
+		http.Error(w, "Erreur BDD", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"materiaux_recherches": materiaux,
+	})
+}
+
+func UpdateMateriauxRecherchesHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		MateriauxRecherches string `json:"materiaux_recherches"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Body invalide", http.StatusBadRequest)
+		return
+	}
+
+	err = db.UpdateMateriauRecherche(userID, req.MateriauxRecherches)
+	if err != nil {
+		http.Error(w, "Erreur mise à jour", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // Messagerie privee
 
 func GetSubscriptionStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -2388,6 +2561,63 @@ func ReviewDMSaleHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(sale)
+}
+
+//Materiaux Recherche
+
+func GetMateriauRechercheHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+ 
+	materiaux, err := db.GetMateriauRecherche(id)
+	if err != nil {
+		http.Error(w, "Erreur serveur : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+ 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(models.MateriauxRecherches{
+		UserID:              id,
+		MateriauxRecherches: materiaux,
+	})
+}
+ 
+func UpdateMateriauRechercheHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+ 
+	var req struct {
+		MateriauxRecherches string `json:"materiaux_recherches"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Erreur de format de requête", http.StatusBadRequest)
+		return
+	}
+ 
+	cleaned := strings.TrimSpace(req.MateriauxRecherches)
+	if len(cleaned) > 255 {
+		http.Error(w, "Le texte est trop long (255 caractères max)", http.StatusBadRequest)
+		return
+	}
+ 
+	if err := db.UpdateMateriauRecherche(id, cleaned); err != nil {
+		http.Error(w, "Erreur serveur : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+ 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(models.MateriauxRecherches{
+		UserID:              id,
+		MateriauxRecherches: cleaned,
+	})
 }
 
 //Favori

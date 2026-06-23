@@ -279,7 +279,6 @@ const form = ref({
     etapes: [],
 });
 
-// 👇 SYSTÈME D'UPLOAD RÉEL 👇
 const fileInput = ref(null);
 const uploadContext = ref({ type: "", index: null });
 
@@ -553,7 +552,6 @@ textarea {
     resize: vertical;
 }
 
-/* Nouvelles classes pour l'image */
 .image-upload-wrapper {
     display: flex;
     align-items: center;

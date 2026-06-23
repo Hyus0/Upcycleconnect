@@ -588,7 +588,6 @@ onMounted(() => {
     text-align: center;
 }
 
-/* Modals */
 .modal-overlay {
     position: fixed;
     top: 0;

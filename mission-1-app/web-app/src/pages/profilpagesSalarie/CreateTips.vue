@@ -182,7 +182,6 @@ const form = ref({
     actif: true,
 });
 
-// Génère une URL d'embed YouTube si possible
 const videoEmbedUrl = computed(() => {
     const url = form.value.video_url;
     if (!url) return null;

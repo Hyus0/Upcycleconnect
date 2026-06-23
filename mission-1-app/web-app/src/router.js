@@ -15,6 +15,7 @@ import Conseils from "./pages/Conseils.vue";
 import Panier from "./pages/PanierDetail.vue";
 import ClaimObjet from "./pages/ClaimObjet.vue";
 import Messages from "./pages/Messages.vue";
+import AbonnementDM from "./pages/AbonnementDM.vue";
 import Abonnement from "./pages/Abonnement.vue";
 import Paiement from "./pages/Paiement.vue";
 
@@ -31,6 +32,7 @@ const routes = [
   { path: "/conseils", component: Conseils },
   { path: "/panier", component: Panier },
   { path: "/paiement", component: Paiement },
+  { path: "/abonnement-dm", component: AbonnementDM },
   { path: "/abonnement", component: Abonnement },
 
   {
@@ -307,7 +309,6 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // 2. Vérification stricte des autorisations de rôle
   const requiredRole = to.matched.find(record => record.meta.requiresRole)?.meta.requiresRole;
   
   if (requiredRole && userRole !== requiredRole) {

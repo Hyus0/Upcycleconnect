@@ -149,7 +149,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-// Importe l'image par défaut (assure-toi que le chemin est correct)
+
 import imageParDefaut from "../../components/upcycling-concept.jpg"; 
 
 const router = useRouter();
@@ -159,7 +159,6 @@ const categories = ref([]);
 const errors = ref([]);
 const successMsg = ref("");
 
-// Variables pour l'image
 const defaultImage = imageParDefaut;
 const imageFile = ref(null);
 const imagePreview = ref(null);
@@ -178,7 +177,7 @@ const form = ref({
   code_postal: "",
   adresse: "",
   statut: "Disponible",
-  image: "" // Nouveau champ au cas où, mais c'est surtout Go qui va gérer ça
+  image: "" 
 });
 
 onMounted(async () => {
@@ -190,7 +189,6 @@ onMounted(async () => {
   }
 });
 
-// Gérer l'upload de l'image (prévisualisation)
 const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -208,7 +206,7 @@ const validateFrontend = () => {
 };
 
 const handleSubmit = async () => {
-    if (!validateFrontend()) return; // On ajoute la validation
+    if (!validateFrontend()) return; 
 
     loading.value = true;
     errors.value = [];
@@ -217,7 +215,6 @@ const handleSubmit = async () => {
     const token = sessionStorage.getItem("userToken");
 
     try {
-        // 1. On crée d'abord l'annonce (JSON)
         const response = await fetch("http://localhost:8081/annonces", {
             method: "POST",
             headers: {
@@ -229,19 +226,16 @@ const handleSubmit = async () => {
 
         if (response.ok) {
             const data = await response.json();
-            // Attention : Go renvoie souvent l'ID en majuscule (ID) ou minuscule (id), à vérifier selon ton code Go.
             const annonceId = data.id || data.ID; 
 
-            // 2. Si on a sélectionné une image et qu'on a bien reçu l'ID de l'annonce, on l'envoie (FormData)
             if (imageFile.value && annonceId) {
                 const formData = new FormData();
-                formData.append("image", imageFile.value); // "image" correspond au nom attendu par r.FormFile("image") en Go
+                formData.append("image", imageFile.value);
 
                 const imgResponse = await fetch(`http://localhost:8081/annonces/${annonceId}/image`, {
                     method: "POST",
                     headers: {
                         "Authorization": token
-                        // Ne pas mettre de Content-Type, fetch va générer un "multipart/form-data" automatiquement
                     },
                     body: formData
                 });

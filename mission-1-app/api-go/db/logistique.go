@@ -123,11 +123,13 @@ func DeposerObjet(codeBarreDepot string, siteID int) (string, error) {
 	return tokenRetrait, tx.Commit()
 }
 
-func AcheterAnnonce(annonceID int, acheteurID int, montantPaye float64) (int, string, error) {
+const COMMISSION_RATE = 0.05
+
+func AcheterAnnonce(annonceID int, acheteurID int, prixBase float64) (int, string, error) {
 	var prenomAcheteur string
 	err := Conn.QueryRow("SELECT prenom FROM UTILISATEUR WHERE id = ?", acheteurID).Scan(&prenomAcheteur)
 	if err != nil {
-		return 0, "", fmt.Errorf("l'acheteur n'existe pas")
+		return 0, "", fmt.Errorf("l'acheteur n'existe pas ou ID manquant (reçu: %d)", acheteurID)
 	}
 
 	var vendeurID int
@@ -154,13 +156,16 @@ func AcheterAnnonce(annonceID int, acheteurID int, montantPaye float64) (int, st
 	
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return 0, "", fmt.Errorf("l'annonce n'est plus disponible")
+		return 0, "", fmt.Errorf("l'annonce n'est plus disponible (conflit de concurrence)")
 	}
+
+	commission := prixBase * COMMISSION_RATE
+	montantTotalTTC := prixBase + commission
 
 	res, err = tx.Exec(`
 		INSERT INTO COMMANDE (id_utilisateur, montant_total, statut, date_commande) 
 		VALUES (?, ?, 'Payee', NOW())`, 
-		acheteurID, montantPaye)
+		acheteurID, montantTotalTTC)
 	if err != nil {
 		return 0, "", err
 	}
@@ -168,8 +173,8 @@ func AcheterAnnonce(annonceID int, acheteurID int, montantPaye float64) (int, st
 
 	_, err = tx.Exec(`
 		INSERT INTO LIGNE_COMMANDE (id_commande, id_vendeur, type_item, reference_id, prix_unitaire, commission_upc) 
-		VALUES (?, ?, 'Annonce', ?, ?, 0)`, 
-		commandeID, vendeurID, annonceID, montantPaye)
+		VALUES (?, ?, 'Annonce', ?, ?, ?)`, 
+		commandeID, vendeurID, annonceID, prixBase, commission)
 	if err != nil {
 		return 0, "", err
 	}
@@ -177,7 +182,7 @@ func AcheterAnnonce(annonceID int, acheteurID int, montantPaye float64) (int, st
 	res, err = tx.Exec(`
 		INSERT INTO TRANSACTION (id_commande, id_acheteur, montant_total, statut_paiement, date_transaction) 
 		VALUES (?, ?, ?, 'Valide', NOW())`, 
-		commandeID, acheteurID, montantPaye)
+		commandeID, acheteurID, montantTotalTTC)
 	if err != nil {
 		return 0, "", err
 	}
@@ -188,29 +193,17 @@ func AcheterAnnonce(annonceID int, acheteurID int, montantPaye float64) (int, st
 		return 0, "", err
 	}
 
-	_, err = tx.Exec(`
-		UPDATE DM_SALE 
-		SET status = 'Payee' 
-		WHERE id_annonce = ? AND id_buyer = ?`, 
-		annonceID, acheteurID)
+	_, err = tx.Exec("UPDATE DM_SALE SET status = 'Payee' WHERE id_annonce = ? AND id_buyer = ?", annonceID, acheteurID)
 	if err != nil {
 		return 0, "", err
 	}
 
-	_, err = tx.Exec(`
-		UPDATE DM_SALE 
-		SET status = 'Annulee' 
-		WHERE id_annonce = ? AND id_buyer != ?`, 
-		annonceID, acheteurID)
+	_, err = tx.Exec("UPDATE DM_SALE SET status = 'Annulee' WHERE id_annonce = ? AND id_buyer != ?", annonceID, acheteurID)
 	if err != nil {
 		return 0, "", err
 	}
 
-	_, err = tx.Exec(`
-		UPDATE DM_OFFER 
-		SET status = 'Annulee' 
-		WHERE id_annonce = ? AND status = 'En attente'`, 
-		annonceID)
+	_, err = tx.Exec("UPDATE DM_OFFER SET status = 'Annulee' WHERE id_annonce = ? AND status = 'En attente'", annonceID)
 	if err != nil {
 		return 0, "", err
 	}

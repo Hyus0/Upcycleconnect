@@ -64,8 +64,8 @@
                         <tr>
                             <th>AUTEUR & DATE</th>
                             <th>MESSAGE SIGNALÉ</th>
-                            <th>MOTIFS</th>
-                            <th>ACTIONS</th>
+                            <th>MOTIFS & SIGNALEURS</th>
+                            <th>ACTIONS MESSAGE</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -77,18 +77,27 @@
                             <td class="td-content">
                                 <span class="quote-text">"{{ msg.contenu }}"</span>
                             </td>
-                            <td>
+                            <td style="min-width: 250px;">
                                 <span class="status-logistique" style="background: #ffe5e5; color: #d32f2f;">Signalé {{ msg.nb_signalements }}x</span>
-                                <div style="margin-top: 5px;">
-                                    <small class="table-subtext" v-for="(detail, i) in msg.details" :key="i">
-                                        <b>{{ detail.reporter_name }}</b> le {{ formatDate(detail.date_signalement) }} : {{ detail.motif }}
-                                    </small>
+                                <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                                    <div v-for="(detail, i) in msg.details" :key="i" style="background: #fcfcfc; border: 1px solid #eee; padding: 8px; border-radius: 8px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                                            <small><b>{{ detail.reporter_name }}</b> <span style="color:#888;">le {{ formatDate(detail.date_signalement) }}</span></small>
+                                            <button class="btn-ban" style="padding: 2px 6px; font-size: 0.65rem;" title="Sanctionner ce signaleur pour spam/abus" @click="toggleBan(detail.reporter_id, detail.reporter_name, true)">
+                                                Bannir le signaleur
+                                            </button>
+                                        </div>
+                                        <small class="table-subtext" style="margin-top: 0;">Motif : {{ detail.motif }}</small>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="actions-cell">
-                                <button class="btn-remove" style="width: 100%;" @click="deleteMessage(msg.message_id)">Supprimer</button>
-                                <button class="btn-ban" style="width: 100%;" @click="toggleBan(msg.author_id, msg.author_name, true)">Bannir</button>
-                                <button class="btn-ignore" style="width: 100%;" @click="ignoreMessage(msg.message_id)">Ignorer</button>                            </td>
+                            <td class="actions-cell" style="vertical-align: top;">
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <button class="btn-remove" style="width: 100%;" @click="deleteMessage(msg.message_id)">Supprimer msg</button>
+                                    <button class="btn-ban" style="width: 100%;" @click="toggleBan(msg.author_id, msg.author_name, true)">Bannir l'auteur</button>
+                                    <button class="btn-ignore" style="width: 100%;" @click="ignoreMessage(msg.message_id)">Ignorer l'alerte</button>
+                                </div>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -151,7 +160,10 @@
                             </td>
                             <td>{{ formatDate(msg.postedAt) }}</td>
                             <td class="actions-cell">
-                                <button class="btn-view" @click="deleteMessage(msg.id)" style="color: #d32f2f; border-color: #ffcccc;">Retirer</button>
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <button class="btn-remove" @click="deleteMessage(msg.id)" style="width: 100%;">Retirer le msg</button>
+                                    <button class="btn-ban" @click="toggleBan(msg.user_id, msg.author, true)" style="width: 100%;">Bannir l'auteur</button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -293,6 +305,11 @@ const deleteTopic = async (topicId, topicTitre) => {
 };
 
 const toggleBan = async (userId, userName, isBanning) => {
+    if (!userId) {
+        alert("ID de l'utilisateur introuvable. Vérifiez que l'API renvoie bien cet ID.");
+        return;
+    }
+
     const actionText = isBanning ? `bannir "${userName}" du forum` : `rétablir l'accès de "${userName}"`;
     if (!confirm(`Voulez-vous vraiment ${actionText} ?`)) return;
 
@@ -304,6 +321,8 @@ const toggleBan = async (userId, userName, isBanning) => {
         });
         if (res.ok) {
             await fetchData(); 
+        } else {
+            alert("Erreur lors de la mise à jour du ban.");
         }
     } catch (e) { console.error(e); }
 };

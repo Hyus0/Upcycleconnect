@@ -3,7 +3,24 @@ package db
 import (
 	"upcycleconnect/api-go/models"
 	"sort"
+	"fmt"
 )
+
+func checkUserBan(userID int) error {
+	var banForum bool
+	var statut string
+	
+	err := Conn.QueryRow("SELECT ban_forum, statut FROM UTILISATEUR WHERE id = ?", userID).Scan(&banForum, &statut)
+	if err != nil {
+		return err 
+	}
+	
+	if banForum || statut == "Banni" {
+		return fmt.Errorf("accès refusé : vous êtes restreint de l'espace communautaire")
+	}
+	
+	return nil
+}
 
 func GetAllForums() ([]models.ForumCategory, error) {
 	salonRows, err := Conn.Query("SELECT id, nom, description FROM FORUM_SALON")
@@ -86,6 +103,10 @@ func GetAllForums() ([]models.ForumCategory, error) {
 
 
 func CreateForumTopic(userID int, salonID int, titre string, sujet string) error {
+	if err := checkUserBan(userID); err != nil {
+		return err
+	}
+
 	res, err := Conn.Exec("INSERT INTO FORUM (id_utilisateur, id_salon, titre, sujet) VALUES (?, ?, ?, ?)", userID, salonID, titre, sujet)
 	if err != nil { 
 		return err 
@@ -101,6 +122,10 @@ func CreateForumTopic(userID int, salonID int, titre string, sujet string) error
 }
 
 func SendMessageForum(userID int, forumID int, contenu string) error {
+	if err := checkUserBan(userID); err != nil {
+		return err
+	}
+
 	_, err := Conn.Exec("INSERT INTO FORUM_MESSAGE (id_utilisateur, id_forum, contenu) VALUES (?, ?, ?)", userID, forumID, contenu)
 	return err
 }
@@ -231,7 +256,7 @@ func ToggleBanForum(userID int, isBanned bool) error {
 		message = "Bonne nouvelle ! Votre accès au forum a été rétabli. Merci de respecter la charte."
 	}
 
-	_, err = Conn.Exec("INSERT INTO NOTIFICATION (id_utilisateur, type,  titre, message) VALUES (?, ?, ?)", userID, type_notification, titre, message)
+	_, err = Conn.Exec("INSERT INTO NOTIFICATION (id_utilisateur, type,  titre, message) VALUES (?, ?, ?, ?)", userID, type_notification, titre, message)
 	return err
 }
 

@@ -698,29 +698,6 @@ onMounted(async () => {
     margin-top: 2rem;
 }
 
-.btn-main-action,
-.btn-main-action1 {
-    display: inline-flex;
-    align-items: center;
-    background: #2d7a4f;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 10px;
-    text-decoration: none;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-}
-
-.btn-secondary {
-    padding: 8px 16px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
-    font-weight: 600;
-}
-
 .btn-action-light-green {
     background: #eaf4ed;
     color: #1b4d31;
@@ -738,50 +715,6 @@ onMounted(async () => {
     transform: translateY(-2px);
 }
 
-.btn-view {
-    background: transparent;
-    border: 1px solid #ddd;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-view:hover {
-    background: #f0f0f0;
-}
-
-.btn-modify {
-    background: #fff3cd;
-    border: 1px solid #ffeeba;
-    color: #856404;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.2s;
-}
-
-.btn-modify:hover {
-    background: #ffe8a1;
-    color: #664d03;
-}
-
-.btn-remove {
-    background: #ffe5e5;
-    border: 1px solid #ffcccc;
-    color: #d32f2f;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.2s;
-}
-
-.btn-remove:hover {
-    background: #ffcccc;
-    color: #b71c1c;
-}
 
 .tag-light-green {
     background: #eaf4ed;

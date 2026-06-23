@@ -10,6 +10,7 @@
                 </p>
             </div>
             <button
+                v-if="!isCheckingBan && !isBanned"
                 class="btn-main-action"
                 type="button"
                 @click="openCreateTopic"
@@ -38,6 +39,16 @@
                     to="/inscription"
                     >Creer un compte</RouterLink
                 >
+            </div>
+        </div>
+
+        <div v-if="isAuthenticated && isBanned" class="forum-guest-banner" style="background: #fceaea; border-color: #f5c6c6;">
+            <div>
+                <span class="forum-chip" style="background: #e74c3c; color: white;">Accès Restreint</span>
+                <h2 style="color: #c0392b;">Vous avez été restreint de l'espace communautaire.</h2>
+                <p style="color: #e74c3c;">
+                    Suite à une modération, vous pouvez toujours lire les discussions, mais vous n'avez plus l'autorisation de publier des messages ou de créer de nouveaux sujets.
+                </p>
             </div>
         </div>
 
@@ -112,6 +123,7 @@
                             <h2>{{ selectedForum.description }}</h2>
                         </div>
                         <button
+                            v-if="!isCheckingBan && !isBanned"
                             class="btn-secondary"
                             type="button"
                             @click="openCreateTopic"
@@ -120,7 +132,7 @@
                         </button>
                     </div>
 
-                    <div v-if="showComposer" class="forum-composer">
+                    <div v-if="showComposer && !isBanned" class="forum-composer">
                         <div class="forum-composer__head">
                             <strong>{{
                                 selectedTopic
@@ -252,7 +264,7 @@
                                                 <small>{{ formatDate(message.postedAt) }}</small>
                                             </div>
                                             <button
-                                                v-if="message.author !== userName"
+                                                v-if="message.author !== userName && !isBanned"
                                                 type="button"
                                                 class="btn-report"
                                                 title="Signaler ce message"
@@ -267,6 +279,7 @@
 
                                 <div class="forum-thread__footer">
                                     <button
+                                        v-if="!isCheckingBan && !isBanned"
                                         class="btn-view"
                                         type="button"
                                         @click="replyToTopic(topic.id)"
@@ -283,6 +296,7 @@
                             Aucune discussion ne correspond a votre recherche.
                         </p>
                         <button
+                            v-if="!isCheckingBan && !isBanned"
                             class="btn-secondary"
                             type="button"
                             @click="openCreateTopic"
@@ -363,6 +377,35 @@ const showReportModal = ref(false);
 const reportMessageId = ref(null);
 const reportMotif = ref("");
 
+// État de ban de l'utilisateur
+const isBanned = ref(false);
+const isCheckingBan = ref(true); // Ajout pour empêcher le clignotement des boutons
+
+const checkBanStatus = async () => {
+    if (!isAuthenticated.value) {
+        isCheckingBan.value = false;
+        return;
+    }
+    
+    try {
+        const currentUserId = parseInt(sessionStorage.getItem("userId"), 10);
+        
+        // ASTUCE: On utilise directement l'API des utilisateurs bannis
+        const res = await fetch(`${API_URL}/api/moderation/users/banned`);
+        if (res.ok) {
+            const bannedUsers = await res.json() || [];
+            
+            // On vérifie si l'ID de l'utilisateur actuel est dans la liste des bannis
+            isBanned.value = bannedUsers.some(user => user.id === currentUserId);
+        }
+    } catch (error) {
+        console.error("Erreur lors de la vérification du statut:", error);
+    } finally {
+        // La vérification est terminée, on peut afficher ou cacher les boutons
+        isCheckingBan.value = false;
+    }
+};
+
 const fetchForums = async () => {
     try {
         const res = await fetch(`${API_URL}/forums`);
@@ -394,6 +437,7 @@ const fetchForums = async () => {
 
 onMounted(() => {
     fetchForums();
+    checkBanStatus(); // Appel lors du chargement de la page
 });
 
 function formatDate(dateString) {
@@ -503,8 +547,15 @@ function initialsFor(name) {
         .join("");
 }
 
+// Fonction de sécurité JS qui empêche l'action même si l'interface est forcée
 function requireAuth() {
-    if (isAuthenticated.value) return true;
+    if (isAuthenticated.value) {
+        if (isBanned.value) {
+            alert("Accès refusé : Vous êtes banni du forum et ne pouvez plus participer.");
+            return false;
+        }
+        return true;
+    }
     router.push({ path: "/connexion", query: { redirect: "/forums" } });
     return false;
 }
@@ -623,7 +674,7 @@ async function submitPost() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_id: currentUserId,           
+                    user_id: currentUserId,            
                     salon_id: selectedForum.value.id, 
                     title: draftTopicTitle.value.trim(), 
                     sujet: draftMessage.value.trim(),

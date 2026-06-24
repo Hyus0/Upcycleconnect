@@ -340,7 +340,7 @@ import { useRouter } from "vue-router";
 import { useTraduction } from "../../composables/useTraduction";
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 const { t } = useTraduction();
 
 const prenom = ref(sessionStorage.getItem("userPrenom") || "Invité");

@@ -330,7 +330,7 @@ const formatDate = (d) => {
 
 const fetchSitesCache = async () => {
     try {
-        const res = await fetch("http://localhost:8081/sites");
+        const res = await fetch("/go/sites");
         if (res.ok) {
             const data = await res.json();
             data.forEach((s) => {
@@ -356,7 +356,7 @@ const fetchAchats = async () => {
     const token = sessionStorage.getItem("userToken");
     loading.value = true;
     try {
-        const res = await fetch(`http://localhost:8081/users/${id}/achats`, {
+        const res = await fetch(`/go/users/${id}/achats`, {
             headers: { Authorization: token },
         });
         if (res.ok) achats.value = await res.json();
@@ -371,7 +371,7 @@ const fetchAndOpenSite = async (siteId) => {
     if (!siteId) return;
     const token = sessionStorage.getItem("userToken");
     try {
-        const res = await fetch(`http://localhost:8081/site/${siteId}`, {
+        const res = await fetch(`/go/site/${siteId}`, {
             headers: { Authorization: token },
         });
         if (res.ok) {

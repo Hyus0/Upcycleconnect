@@ -189,7 +189,7 @@ const formatDateLong = (d) => {
 
 const fetchCreateur = async (id) => {
     try {
-        const res = await fetch(`http://localhost:8081/users/${id}`);
+        const res = await fetch(`/go/users/${id}`);
         if (res.ok) user_creator.value = await res.json();
     } catch (error) {
         console.error("Erreur créateur: ", error);
@@ -201,7 +201,7 @@ const fetchCreateur = async (id) => {
 const fetchDetail = async () => {
     const id = route.params.id;
     try {
-        const res = await fetch(`http://localhost:8081/projet/${id}`);
+        const res = await fetch(`/go/projet/${id}`);
         if (res.ok) {
             projet.value = await res.json();
             if (projet.value.id_createur) {
@@ -219,7 +219,7 @@ const fetchDetail = async () => {
 const checkLikeStatus = async () => {
     try {
         const res = await fetch(
-            `http://localhost:8081/projets/${route.params.id}/like-status/${currentUserId}`,
+            `/go/projets/${route.params.id}/like-status/${currentUserId}`,
         );
         const data = await res.json();
         isLiked.value = data.liked;
@@ -235,7 +235,7 @@ const toggleLike = async () => {
     }
     try {
         const res = await fetch(
-            `http://localhost:8081/projets/${route.params.id}/like/${currentUserId}`,
+            `/go/projets/${route.params.id}/like/${currentUserId}`,
             { method: "POST" },
         );
         if (res.ok) {

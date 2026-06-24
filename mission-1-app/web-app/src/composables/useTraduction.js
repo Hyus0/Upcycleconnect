@@ -2,7 +2,7 @@ import { ref } from 'vue';
 
 const t = ref({});
 const currentLangCode = ref(localStorage.getItem("langCode") || "fr");
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const loadTranslations = async () => {
     try {

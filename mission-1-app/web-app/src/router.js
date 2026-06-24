@@ -293,7 +293,7 @@ router.beforeEach(async (to, from, next) => {
 
     try {
       const response = await fetch(
-        `http://localhost:8081/check-session?id=${id}`,
+        `/go/check-session?id=${id}`,
         {
           headers: { Authorization: token },
         }

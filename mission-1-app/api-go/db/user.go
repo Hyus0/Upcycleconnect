@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"upcycleconnect/api-go/models"
 	"upcycleconnect/api-go/passwordHashing"
 )
@@ -211,6 +212,22 @@ func UpdateUserToken(userId int, token string) error {
 	query := "UPDATE UTILISATEUR SET token = ? WHERE id = ?"
 	_, err := Conn.Exec(query, token, userId)
 	return err
+}
+
+// GetUserByToken resout l'identite (id + role) a partir du seul token de session.
+// Utilise par le middleware d'authentification.
+func GetUserByToken(token string) (int, string, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return 0, "", sql.ErrNoRows
+	}
+	var id int
+	var role string
+	query := "SELECT id, COALESCE(role, '') FROM UTILISATEUR WHERE token = ? AND token <> '' LIMIT 1"
+	if err := Conn.QueryRow(query, token).Scan(&id, &role); err != nil {
+		return 0, "", err
+	}
+	return id, role, nil
 }
 
 func VerifyUserByToken(userId int, token string) bool {

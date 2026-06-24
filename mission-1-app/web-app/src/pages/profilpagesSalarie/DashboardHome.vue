@@ -418,7 +418,7 @@ import { useRouter } from "vue-router";
 import { TriangleAlert, MessageCircle, Ban } from "lucide-vue-next";
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const prenom = ref(sessionStorage.getItem("userPrenom") || "Invité");
 const formations = ref([]);

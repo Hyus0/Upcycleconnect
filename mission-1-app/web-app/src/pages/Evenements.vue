@@ -207,7 +207,7 @@ const goToEvenement = (id) => {
 const fetchEvenements = async () => {
     loading.value = true;
     try {
-        const res = await fetch("http://localhost:8081/evenements", {
+        const res = await fetch("/go/evenements", {
             method: "GET",
         });
         if (res.ok) {

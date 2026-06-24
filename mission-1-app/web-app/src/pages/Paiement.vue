@@ -176,7 +176,7 @@ import SiteFooter from "../components/SiteFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const paymentMode = computed(() => {
     if (route.query.plan_id) return "subscription";

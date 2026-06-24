@@ -219,7 +219,7 @@ import SiteFooter from "../components/SiteFooter.vue";
 import { useTraduction } from "../composables/useTraduction"; 
 const { t } = useTraduction();
 
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const isLoggedIn = computed(() => {
   return !!sessionStorage.getItem("userToken");

@@ -244,7 +244,7 @@ import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();
 const route = useRoute();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const initialLoading = ref(true);
 const loading = ref(false);

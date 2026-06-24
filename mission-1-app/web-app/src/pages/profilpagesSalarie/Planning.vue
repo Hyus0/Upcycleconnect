@@ -137,7 +137,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const calendarEntries = ref([]);
 const currentMonth = ref(

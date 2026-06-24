@@ -260,7 +260,7 @@ const isUnderage = computed(() => {
 
 const fetchStats = async () => {
     try {
-        const res = await fetch("http://localhost:8081/stats/platform");
+        const res = await fetch("/go/stats/platform");
         if (res.ok) {
             stats.value = await res.json();
         }
@@ -305,7 +305,7 @@ async function handleSubmit() {
     };
     
     try {
-        const response = await fetch("http://localhost:8081/users", {
+        const response = await fetch("/go/users", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData),
@@ -342,7 +342,7 @@ const pickRandomComment = () => {
 
 const fetchCommentaires = async () => {
     try {
-        const res = await fetch("http://localhost:8081/commentaires");
+        const res = await fetch("/go/commentaires");
         if (res.ok) {
             commentaires.value = await res.json();
             if (commentaires.value && commentaires.value.length > 0) {

@@ -153,7 +153,7 @@ import {
     Bell,
 } from "lucide-vue-next";
 
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 const notifications = ref([]);
 const loading = ref(true);
 const errors = ref([]);
@@ -259,7 +259,7 @@ const marquerCommeLu = async (notif) => {
 
     try {
         const res = await fetch(
-            `http://localhost:8081/notifications/${notif.id}/read`,
+            `/go/notifications/${notif.id}/read`,
             {
                 method: "POST",
                 headers: {

@@ -203,7 +203,7 @@ const successMsg = ref("");
 
 const fetchCategories = async () => {
     try {
-        const res = await fetch("http://localhost:8081/categories");
+        const res = await fetch("/go/categories");
         if (res.ok) categories.value = await res.json();
     } catch (e) {
         console.error("Erreur catégories", e);
@@ -214,7 +214,7 @@ const fetchAnnonce = async () => {
     const token = sessionStorage.getItem("userToken");
     try {
         const res = await fetch(
-            `http://localhost:8081/annonces/${route.params.id}`,
+            `/go/annonces/${route.params.id}`,
             {
                 headers: { Authorization: token },
             },
@@ -243,7 +243,7 @@ const handleUpdate = async () => {
     const token = sessionStorage.getItem("userToken");
     
     try {
-        const res = await fetch(`http://localhost:8081/annonces/${annonce.value.id}`, {
+        const res = await fetch(`/go/annonces/${annonce.value.id}`, {
             method: "PUT",
             headers: {
                 Authorization: token,
@@ -262,7 +262,7 @@ const handleUpdate = async () => {
             const formData = new FormData();
             formData.append("image", imageFile.value);
 
-            const imgRes = await fetch(`http://localhost:8081/annonces/${annonce.value.id}/image`, {
+            const imgRes = await fetch(`/go/annonces/${annonce.value.id}/image`, {
                 method: "POST",
                 headers: {
                     Authorization: token,

@@ -77,7 +77,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 const loading = ref(true);
 const tips = ref([]);
 

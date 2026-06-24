@@ -16,8 +16,17 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func enableCORS(next http.Handler) http.Handler {
+	allowed := map[string]bool{
+		"http://localhost:5173": true,
+		"http://localhost:5174": true,
+		"http://localhost:5175": true,
+		"http://localhost:5176": true,
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5174")
+		origin := r.Header.Get("Origin")
+		if allowed[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -190,6 +199,9 @@ func main() {
 	http.HandleFunc("PUT /api/moderation/user/{id}/ban-forum", app.BanUserForumHandler)
 	http.HandleFunc("GET /api/moderation/users/banned", app.GetBannedUsersHandler)
 	http.HandleFunc("GET /api/moderation/topics", app.GetModerationTopicsHandler)
+
+	// Stripe — création du PaymentIntent (requiert un token valide)
+	http.HandleFunc("POST /paiement/intent", app.RequireAuth(app.CreatePaymentIntentHandler))
 
 	// Ressources per-utilisateur : l'appelant ne peut acceder qu'a SES donnees
 	// (token requis, ownership verifie ; les Admin passent).

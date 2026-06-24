@@ -125,7 +125,7 @@ func DeposerObjet(codeBarreDepot string, siteID int) (string, error) {
 
 const COMMISSION_RATE = 0.05
 
-func AcheterAnnonce(annonceID int, acheteurID int, prixBase float64) (int, string, error) {
+func AcheterAnnonce(annonceID int, acheteurID int, prixBase float64, stripePaymentID string) (int, string, error) {
 	var prenomAcheteur string
 	err := Conn.QueryRow("SELECT prenom FROM UTILISATEUR WHERE id = ?", acheteurID).Scan(&prenomAcheteur)
 	if err != nil {
@@ -180,9 +180,9 @@ func AcheterAnnonce(annonceID int, acheteurID int, prixBase float64) (int, strin
 	}
 
 	res, err = tx.Exec(`
-		INSERT INTO TRANSACTION (id_commande, id_acheteur, montant_total, statut_paiement, date_transaction) 
-		VALUES (?, ?, ?, 'Valide', NOW())`, 
-		commandeID, acheteurID, montantTotalTTC)
+		INSERT INTO TRANSACTION (id_commande, id_acheteur, montant_total, statut_paiement, date_transaction, stripe_payment_id)
+		VALUES (?, ?, ?, 'Valide', NOW(), ?)`,
+		commandeID, acheteurID, montantTotalTTC, stripePaymentID)
 	if err != nil {
 		return 0, "", err
 	}

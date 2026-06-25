@@ -352,7 +352,7 @@ import { RouterLink, useRouter } from "vue-router";
 import { TriangleAlert } from "lucide-vue-next"; 
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const userId = sessionStorage.getItem("userId") || "guest";
 const userPrenom = sessionStorage.getItem("userPrenom") || "";

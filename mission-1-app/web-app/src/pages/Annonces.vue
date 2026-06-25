@@ -184,7 +184,7 @@ const source = ref("api");
 const annonces = ref([]);
 const categories = ref([]); 
 const showFilters = ref(false); 
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const isParticulier = computed(() => {
   const role = sessionStorage.getItem("userRole");

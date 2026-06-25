@@ -72,7 +72,7 @@ import SiteNavbar from '../components/SiteNavbar.vue';
 import SiteFooter from "../components/SiteFooter.vue";
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {

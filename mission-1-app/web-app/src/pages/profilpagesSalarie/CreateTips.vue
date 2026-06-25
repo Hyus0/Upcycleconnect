@@ -166,7 +166,7 @@ const loading = ref(false);
 const errors = ref([]);
 const successMsg = ref("");
 
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const currentUserId = computed(() => {
     const storedId =

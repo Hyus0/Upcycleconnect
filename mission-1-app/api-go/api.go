@@ -16,8 +16,17 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func enableCORS(next http.Handler) http.Handler {
+	allowed := map[string]bool{
+		"http://localhost:5173": true,
+		"http://localhost:5174": true,
+		"http://localhost:5175": true,
+		"http://localhost:5176": true,
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5174")
+		origin := r.Header.Get("Origin")
+		if allowed[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -36,43 +45,46 @@ func main() {
 	http.HandleFunc("GET /", healthCheck)
 	http.HandleFunc("GET /health", healthCheck)
 
-	// Admin API consumed by the Vue backoffice.
-	http.HandleFunc("GET /api/admin/metrics", app.AdminMetrics)
 	http.HandleFunc("GET /{$}", healthCheck)
-	http.HandleFunc("GET /api/admin/users", app.AdminListUsers)
-	http.HandleFunc("GET /api/admin/users/{id}", app.AdminGetUser)
-	http.HandleFunc("POST /api/admin/users", app.AdminCreateUser)
-	http.HandleFunc("PUT /api/admin/users/{id}", app.AdminUpdateUser)
-	http.HandleFunc("PATCH /api/admin/users/{id}/status", app.AdminToggleUserStatus)
-	http.HandleFunc("DELETE /api/admin/users/{id}", app.AdminDeleteUser)
-	http.HandleFunc("GET /api/admin/prestations", app.AdminListPrestations)
-	http.HandleFunc("GET /api/admin/prestations/{id}", app.AdminGetPrestation)
-	http.HandleFunc("POST /api/admin/prestations", app.AdminCreatePrestation)
-	http.HandleFunc("PUT /api/admin/prestations/{id}", app.AdminUpdatePrestation)
-	http.HandleFunc("DELETE /api/admin/prestations/{id}", app.AdminDeletePrestation)
-	http.HandleFunc("GET /api/admin/categories", app.AdminListCategories)
-	http.HandleFunc("GET /api/admin/categories/{id}", app.AdminGetCategory)
-	http.HandleFunc("POST /api/admin/categories", app.AdminCreateCategory)
-	http.HandleFunc("PUT /api/admin/categories/{id}", app.AdminUpdateCategory)
-	http.HandleFunc("DELETE /api/admin/categories/{id}", app.AdminDeleteCategory)
-	http.HandleFunc("GET /api/admin/events", app.AdminListEvents)
-	http.HandleFunc("GET /api/admin/events/{id}", app.AdminGetEvent)
-	http.HandleFunc("POST /api/admin/events", app.AdminCreateEvent)
-	http.HandleFunc("PUT /api/admin/events/{id}", app.AdminUpdateEvent)
-	http.HandleFunc("DELETE /api/admin/events/{id}", app.AdminDeleteEvent)
-	http.HandleFunc("GET /api/admin/moderation/queue", app.AdminModerationQueue)
-	http.HandleFunc("PATCH /api/admin/moderation/prestations/{id}/publish", app.AdminPublishPrestation)
-	http.HandleFunc("PATCH /api/admin/moderation/prestations/{id}/archive", app.AdminArchivePrestation)
-	http.HandleFunc("PATCH /api/admin/moderation/events/{id}/publish", app.AdminPublishEvent)
-	http.HandleFunc("PATCH /api/admin/moderation/events/{id}/archive", app.AdminArchiveEvent)
-	http.HandleFunc("GET /api/admin/finance/overview", app.AdminFinanceOverview)
-	http.HandleFunc("GET /api/admin/notifications", app.AdminListNotifications)
-	http.HandleFunc("POST /api/admin/notifications", app.AdminCreateNotification)
-	http.HandleFunc("PATCH /api/admin/notifications/{id}/status", app.AdminUpdateNotificationStatus)
-	http.HandleFunc("DELETE /api/admin/notifications/{id}", app.AdminDeleteNotification)
+
+	// Admin API consumed by the Vue backoffice.
+	// Toutes les routes /api/admin/* exigent un token valide ET le role Admin.
+	adminOnly := app.RequireRole("Admin")
+	http.HandleFunc("GET /api/admin/metrics", adminOnly(app.AdminMetrics))
+	http.HandleFunc("GET /api/admin/users", adminOnly(app.AdminListUsers))
+	http.HandleFunc("GET /api/admin/users/{id}", adminOnly(app.AdminGetUser))
+	http.HandleFunc("POST /api/admin/users", adminOnly(app.AdminCreateUser))
+	http.HandleFunc("PUT /api/admin/users/{id}", adminOnly(app.AdminUpdateUser))
+	http.HandleFunc("PATCH /api/admin/users/{id}/status", adminOnly(app.AdminToggleUserStatus))
+	http.HandleFunc("DELETE /api/admin/users/{id}", adminOnly(app.AdminDeleteUser))
+	http.HandleFunc("GET /api/admin/prestations", adminOnly(app.AdminListPrestations))
+	http.HandleFunc("GET /api/admin/prestations/{id}", adminOnly(app.AdminGetPrestation))
+	http.HandleFunc("POST /api/admin/prestations", adminOnly(app.AdminCreatePrestation))
+	http.HandleFunc("PUT /api/admin/prestations/{id}", adminOnly(app.AdminUpdatePrestation))
+	http.HandleFunc("DELETE /api/admin/prestations/{id}", adminOnly(app.AdminDeletePrestation))
+	http.HandleFunc("GET /api/admin/categories", adminOnly(app.AdminListCategories))
+	http.HandleFunc("GET /api/admin/categories/{id}", adminOnly(app.AdminGetCategory))
+	http.HandleFunc("POST /api/admin/categories", adminOnly(app.AdminCreateCategory))
+	http.HandleFunc("PUT /api/admin/categories/{id}", adminOnly(app.AdminUpdateCategory))
+	http.HandleFunc("DELETE /api/admin/categories/{id}", adminOnly(app.AdminDeleteCategory))
+	http.HandleFunc("GET /api/admin/events", adminOnly(app.AdminListEvents))
+	http.HandleFunc("GET /api/admin/events/{id}", adminOnly(app.AdminGetEvent))
+	http.HandleFunc("POST /api/admin/events", adminOnly(app.AdminCreateEvent))
+	http.HandleFunc("PUT /api/admin/events/{id}", adminOnly(app.AdminUpdateEvent))
+	http.HandleFunc("DELETE /api/admin/events/{id}", adminOnly(app.AdminDeleteEvent))
+	http.HandleFunc("GET /api/admin/moderation/queue", adminOnly(app.AdminModerationQueue))
+	http.HandleFunc("PATCH /api/admin/moderation/prestations/{id}/publish", adminOnly(app.AdminPublishPrestation))
+	http.HandleFunc("PATCH /api/admin/moderation/prestations/{id}/archive", adminOnly(app.AdminArchivePrestation))
+	http.HandleFunc("PATCH /api/admin/moderation/events/{id}/publish", adminOnly(app.AdminPublishEvent))
+	http.HandleFunc("PATCH /api/admin/moderation/events/{id}/archive", adminOnly(app.AdminArchiveEvent))
+	http.HandleFunc("GET /api/admin/finance/overview", adminOnly(app.AdminFinanceOverview))
+	http.HandleFunc("GET /api/admin/notifications", adminOnly(app.AdminListNotifications))
+	http.HandleFunc("POST /api/admin/notifications", adminOnly(app.AdminCreateNotification))
+	http.HandleFunc("PATCH /api/admin/notifications/{id}/status", adminOnly(app.AdminUpdateNotificationStatus))
+	http.HandleFunc("DELETE /api/admin/notifications/{id}", adminOnly(app.AdminDeleteNotification))
 
 	// Legacy routes.
-	http.HandleFunc("GET /api/admin/user/{id}", app.GetUser)
+	http.HandleFunc("GET /api/admin/user/{id}", adminOnly(app.GetUser))
 
 	//Stat
 
@@ -188,19 +200,26 @@ func main() {
 	http.HandleFunc("GET /api/moderation/users/banned", app.GetBannedUsersHandler)
 	http.HandleFunc("GET /api/moderation/topics", app.GetModerationTopicsHandler)
 
+	// Stripe — création du PaymentIntent (requiert un token valide)
+	http.HandleFunc("POST /paiement/intent", app.RequireAuth(app.CreatePaymentIntentHandler))
+
+	// Ressources per-utilisateur : l'appelant ne peut acceder qu'a SES donnees
+	// (token requis, ownership verifie ; les Admin passent).
+	self := app.RequireSelf("id")
+
 	//panier
-	http.HandleFunc("GET /users/{id}/panier", app.GetPanierHandler)
-	http.HandleFunc("POST /users/{id}/panier", app.AddToPanierHandler)
-	http.HandleFunc("DELETE /users/{id}/panier/{itemId}", app.RemoveFromPanierHandler)
-	http.HandleFunc("POST /users/{id}/checkout", app.CheckoutWithInvoiceHandler)
-	http.HandleFunc("GET /users/{id}/factures", app.GetFacturesHandler)
-	http.HandleFunc("GET /users/{id}/factures/{factureId}/download", app.DownloadFactureHandler)
-	http.HandleFunc("POST /users/{id}/factures/{factureId}/send", app.SendFactureByMailHandler)
+	http.HandleFunc("GET /users/{id}/panier", self(app.GetPanierHandler))
+	http.HandleFunc("POST /users/{id}/panier", self(app.AddToPanierHandler))
+	http.HandleFunc("DELETE /users/{id}/panier/{itemId}", self(app.RemoveFromPanierHandler))
+	http.HandleFunc("POST /users/{id}/checkout", self(app.CheckoutWithInvoiceHandler))
+	http.HandleFunc("GET /users/{id}/factures", self(app.GetFacturesHandler))
+	http.HandleFunc("GET /users/{id}/factures/{factureId}/download", self(app.DownloadFactureHandler))
+	http.HandleFunc("POST /users/{id}/factures/{factureId}/send", self(app.SendFactureByMailHandler))
 
 	//Abonnement
-	http.HandleFunc("GET /users/{id}/abonnement", app.GetAbonnementHandler)
-	http.HandleFunc("POST /users/{id}/abonnement/souscrire", app.SouscrireAbonnementHandler)
-	http.HandleFunc("POST /users/{id}/abonnement/resilier", app.ResilierAbonnementHandler)
+	http.HandleFunc("GET /users/{id}/abonnement", self(app.GetAbonnementHandler))
+	http.HandleFunc("POST /users/{id}/abonnement/souscrire", self(app.SouscrireAbonnementHandler))
+	http.HandleFunc("POST /users/{id}/abonnement/resilier", self(app.ResilierAbonnementHandler))
 
 	//Matériaux recherchés (prestataires)
 	http.HandleFunc("GET /materiaux/stats", app.GetMateriauxStatsHandler)
@@ -208,20 +227,20 @@ func main() {
 
 	//Alertes
 	http.HandleFunc("GET /users/{id}/alertes-prioritaires", app.GetAlertesPrioritairesHandler)
-	http.HandleFunc("GET /users/{id}/materiaux-recherches", app.GetMateriauxRecherchesHandler)
-	http.HandleFunc("PUT /users/{id}/materiaux-recherches", app.UpdateMateriauxRecherchesHandler)	
+	http.HandleFunc("GET /users/{id}/materiaux-recherches", self(app.GetMateriauxRecherchesHandler))
+	http.HandleFunc("PUT /users/{id}/materiaux-recherches", self(app.UpdateMateriauxRecherchesHandler))
 
 	// Messagerie privee
 	http.HandleFunc("GET /users/{id}/subscription", app.GetSubscriptionStatusHandler)
-	http.HandleFunc("GET /users/{id}/messages", app.GetConversationsHandler)
-	http.HandleFunc("POST /users/{id}/messages/start", app.StartConversationHandler)
-	http.HandleFunc("GET /users/{id}/messages/{conversationId}", app.GetConversationMessagesHandler)
-	http.HandleFunc("POST /users/{id}/messages/{conversationId}", app.SendDMMessageHandler)
-	http.HandleFunc("GET /users/{id}/messages/{conversationId}/state", app.GetConversationStateHandler)
-	http.HandleFunc("POST /users/{id}/messages/{conversationId}/offers", app.CreateDMOfferHandler)
-	http.HandleFunc("PATCH /users/{id}/messages/offers/{offerId}", app.RespondDMOfferHandler)
-	http.HandleFunc("POST /users/{id}/messages/sales/{saleId}/reception", app.ConfirmDMSaleReceptionHandler)
-	http.HandleFunc("POST /users/{id}/messages/sales/{saleId}/review", app.ReviewDMSaleHandler)
+	http.HandleFunc("GET /users/{id}/messages", self(app.GetConversationsHandler))
+	http.HandleFunc("POST /users/{id}/messages/start", self(app.StartConversationHandler))
+	http.HandleFunc("GET /users/{id}/messages/{conversationId}", self(app.GetConversationMessagesHandler))
+	http.HandleFunc("POST /users/{id}/messages/{conversationId}", self(app.SendDMMessageHandler))
+	http.HandleFunc("GET /users/{id}/messages/{conversationId}/state", self(app.GetConversationStateHandler))
+	http.HandleFunc("POST /users/{id}/messages/{conversationId}/offers", self(app.CreateDMOfferHandler))
+	http.HandleFunc("PATCH /users/{id}/messages/offers/{offerId}", self(app.RespondDMOfferHandler))
+	http.HandleFunc("POST /users/{id}/messages/sales/{saleId}/reception", self(app.ConfirmDMSaleReceptionHandler))
+	http.HandleFunc("POST /users/{id}/messages/sales/{saleId}/review", self(app.ReviewDMSaleHandler))
 
 	//notification
 	http.HandleFunc("GET /notifications", app.GetAllNotificationsHandler)

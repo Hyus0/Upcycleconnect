@@ -81,7 +81,7 @@ import SiteFooter from "../components/SiteFooter.vue";
 const router = useRouter();
 const loading = ref(false);
 const status = ref({ is_subscriber: false });
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const currentUserId = () => Number(sessionStorage.getItem("userId")) || 0;
 const getHeaders = () => ({

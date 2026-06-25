@@ -182,7 +182,7 @@ const form = ref({
 
 onMounted(async () => {
   try {
-    const res = await fetch("http://localhost:8081/categories");
+    const res = await fetch("/go/categories");
     if (res.ok) categories.value = await res.json();
   } catch (err) {
     console.error("Erreur categories:", err);
@@ -215,7 +215,7 @@ const handleSubmit = async () => {
     const token = sessionStorage.getItem("userToken");
 
     try {
-        const response = await fetch("http://localhost:8081/annonces", {
+        const response = await fetch("/go/annonces", {
             method: "POST",
             headers: {
                 "Authorization": token,
@@ -232,7 +232,7 @@ const handleSubmit = async () => {
                 const formData = new FormData();
                 formData.append("image", imageFile.value);
 
-                const imgResponse = await fetch(`http://localhost:8081/annonces/${annonceId}/image`, {
+                const imgResponse = await fetch(`/go/annonces/${annonceId}/image`, {
                     method: "POST",
                     headers: {
                         "Authorization": token

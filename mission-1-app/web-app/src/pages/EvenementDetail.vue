@@ -266,7 +266,7 @@ const formatDateLong = (d) => {
 
 const fetchCreateur = async (id) => {
     try {
-        const res = await fetch(`http://localhost:8081/users/${id}`);
+        const res = await fetch(`/go/users/${id}`);
         if (res.ok) createur.value = await res.json();
     } catch (error) {
         console.error("Erreur créateur: ", error);
@@ -288,7 +288,7 @@ const fetchParticipants = async (evenementId) => {
     participantsLoading.value = true;
     try {
         const res = await fetch(
-            `http://localhost:8081/api/evenements/${evenementId}/participants`,
+            `/go/api/evenements/${evenementId}/participants`,
         );
         if (res.ok) {
             participants.value = await res.json();
@@ -305,7 +305,7 @@ const fetchDetail = async () => {
     const userId = sessionStorage.getItem("userId") || 0;
     try {
         const res = await fetch(
-            `http://localhost:8081/evenements/${id}?user_id=${userId}`,
+            `/go/evenements/${id}?user_id=${userId}`,
         );
         if (res.ok) {
             const data = await res.json();
@@ -343,7 +343,7 @@ const handleInscription = async () => {
     isRegistering.value = true;
     try {
         const res = await fetch(
-            `http://localhost:8081/api/evenements/${evenement.value.id}/join`,
+            `/go/api/evenements/${evenement.value.id}/join`,
             {
                 method: "POST",
                 headers: {
@@ -381,7 +381,7 @@ const handleQuit = async () => {
     isLeaving.value = true;
     try {
         const res = await fetch(
-            `http://localhost:8081/api/evenements/${evenement.value.id}/quit`,
+            `/go/api/evenements/${evenement.value.id}/quit`,
             {
                 method: "POST",
                 headers: {

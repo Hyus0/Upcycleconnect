@@ -135,12 +135,12 @@ const selectedSiteName = computed(() => {
 const fetchData = async () => {
     const token = sessionStorage.getItem("userToken");
     try {
-        const resSites = await fetch("http://localhost:8081/sites", {
+        const resSites = await fetch("/go/sites", {
             headers: { Authorization: token },
         });
         if (resSites.ok) sites.value = await resSites.json();
 
-        const resAnnonce = await fetch(`http://localhost:8081/annonces/${route.params.id}`, {
+        const resAnnonce = await fetch(`/go/annonces/${route.params.id}`, {
             headers: { Authorization: token },
         });
         if (resAnnonce.ok) annonce.value = await resAnnonce.json();
@@ -157,7 +157,7 @@ const confirmReservation = async () => {
     const token = sessionStorage.getItem("userToken");
 
     try {
-        const res = await fetch(`http://localhost:8081/annonces/${route.params.id}/reserver`, {
+        const res = await fetch(`/go/annonces/${route.params.id}/reserver`, {
             method: "POST",
             headers: {
                 Authorization: token,

@@ -34,7 +34,7 @@ func GetUserSubscription(userID int) (SubscriptionStatus, error) {
 	return sub, nil
 }
 
-func SubscribeUser(userID int, planID int) error {
+func SubscribeUser(userID int, planID int, stripePaymentID string) error {
 	active, _ := GetUserSubscription(userID)
 	
 	if active.IsPremium && active.PlanID == planID {
@@ -66,10 +66,10 @@ func SubscribeUser(userID int, planID int) error {
 
 	_, err = tx.Exec(`
 		INSERT INTO ABONNEMENT (id_acheteur, id_type_abonnement, date_debut, date_fin, statut, stripe_subscription_id)
-		SELECT ?, id, NOW(), DATE_ADD(NOW(), INTERVAL duree_mois MONTH), 'Actif', 'local_checkout_temp'
+		SELECT ?, id, NOW(), DATE_ADD(NOW(), INTERVAL duree_mois MONTH), 'Actif', ?
 		FROM TYPE_ABONNEMENT
 		WHERE id = ?
-	`, userID, planID)
+	`, userID, stripePaymentID, planID)
 	if err != nil {
 		return err
 	}
@@ -86,8 +86,8 @@ func SubscribeUser(userID int, planID int) error {
 		return err
 	}
 
-	transactionRes, err := tx.Exec(`INSERT INTO TRANSACTION (id_acheteur, id_commande, montant_total, statut_paiement, date_transaction)
-					  VALUES (?, ?, ?, 'Valide', NOW())`, userID, commandeID, prixPlan)
+	transactionRes, err := tx.Exec(`INSERT INTO TRANSACTION (id_acheteur, id_commande, montant_total, statut_paiement, date_transaction, stripe_payment_id)
+					  VALUES (?, ?, ?, 'Valide', NOW(), ?)`, userID, commandeID, prixPlan, stripePaymentID)
 	if err != nil {
 		return err
 	}

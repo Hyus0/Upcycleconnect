@@ -580,9 +580,10 @@ func splitLocation(location string) (string, string, string) {
 func createAdminEventInDB(payload AdminEvent) (*AdminEvent, error) {
 	payload = normalizeEvent(payload)
 	address, city, postal := splitLocation(payload.Location)
+	// id_createur est NOT NULL : on rattache l'evenement a un compte Admin existant.
 	res, err := db.Conn.Exec(`
-		INSERT INTO EVENEMENT (titre, description, adresse, ville, code_postal, date_evenement, capacite_max, statut, type)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Atelier')
+		INSERT INTO EVENEMENT (id_createur, titre, description, adresse, ville, code_postal, date_evenement, capacite_max, statut, type)
+		VALUES ((SELECT id FROM UTILISATEUR WHERE role = 'Admin' ORDER BY id LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, 'Atelier')
 	`, payload.Title, payload.Description, address, city, postal, normalizeDateTime(payload.Date), payload.Capacity, payload.Status)
 	if err != nil {
 		return nil, err
@@ -613,10 +614,12 @@ func deleteAdminEventInDB(id string) error {
 func financeOverviewFromDB() (map[string]any, []AdminFinanceRecord, error) {
 	items := []AdminFinanceRecord{}
 
+	// La base reelle suit le modele COMMANDE (montant_total + statut),
+	// alimente par le checkout. On agrege les revenus a partir de la.
 	rows, err := db.Conn.Query(`
-		SELECT id, type, montant_ht, statut_paiement, date_transaction
-		FROM ` + "`TRANSACTION`" + `
-		ORDER BY date_transaction DESC, id DESC
+		SELECT id, montant_total, statut, date_commande
+		FROM COMMANDE
+		ORDER BY date_commande DESC, id DESC
 	`)
 	if err != nil {
 		return nil, nil, err
@@ -627,15 +630,15 @@ func financeOverviewFromDB() (map[string]any, []AdminFinanceRecord, error) {
 	pendingTotal := 0.0
 	for rows.Next() {
 		var id int
-		var category, status string
+		var status string
 		var amount float64
 		var dueDate time.Time
-		if err := rows.Scan(&id, &category, &amount, &status, &dueDate); err != nil {
+		if err := rows.Scan(&id, &amount, &status, &dueDate); err != nil {
 			return nil, nil, err
 		}
 		recordStatus := "failed"
 		switch status {
-		case "Valide":
+		case "Payee":
 			recordStatus = "paid"
 			paidTotal += amount
 		case "En attente":
@@ -644,12 +647,12 @@ func financeOverviewFromDB() (map[string]any, []AdminFinanceRecord, error) {
 		}
 		items = append(items, AdminFinanceRecord{
 			ID:       strconv.Itoa(id),
-			Label:    fmt.Sprintf("Transaction #%d", id),
-			Category: strings.ToLower(category),
+			Label:    fmt.Sprintf("Commande #%d", id),
+			Category: "commande",
 			Amount:   amount,
 			Status:   recordStatus,
 			DueDate:  createdDate(dueDate),
-			Source:   "transaction",
+			Source:   "commande",
 		})
 	}
 

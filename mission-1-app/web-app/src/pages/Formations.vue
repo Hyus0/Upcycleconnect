@@ -180,7 +180,7 @@ const formatDate = (dateStr) => {
 const fetchFormations = async () => {
     loading.value = true;
     try {
-        const res = await fetch(`http://localhost:8081/formations`, {
+        const res = await fetch(`/go/formations`, {
             method: "GET"
         });
         if (res.ok) {

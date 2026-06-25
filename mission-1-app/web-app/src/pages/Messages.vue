@@ -482,7 +482,7 @@ import { Check } from "lucide-vue-next";
 
 const route = useRoute();
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const currentUserId = () => Number(sessionStorage.getItem("userId")) || 0;
 const getHeaders = () => ({

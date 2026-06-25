@@ -117,7 +117,7 @@ const removeAnnonce = async (id) => {
     const token = sessionStorage.getItem("userToken");
     
     try {
-        const res = await fetch(`http://localhost:8081/annonces/${id}`, {
+        const res = await fetch(`/go/annonces/${id}`, {
             method: "DELETE",
             headers: { 
                 "Authorization": token 
@@ -144,7 +144,7 @@ onMounted(async () => {
     if (!id || !token) return;
 
     try {
-        const resAnnonces = await fetch(`http://localhost:8081/users/${id}/annonces`, {
+        const resAnnonces = await fetch(`/go/users/${id}/annonces`, {
             headers: { "Authorization": token }
         });
         if (resAnnonces.ok) {

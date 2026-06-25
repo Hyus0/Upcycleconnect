@@ -764,8 +764,9 @@ func AcheterAnnonceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		UserID  int     `json:"id_acheteur"` 
-		Montant float64 `json:"montant_paye"`
+		UserID          int     `json:"id_acheteur"`
+		Montant         float64 `json:"montant_paye"`
+		StripePaymentID string  `json:"stripe_payment_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -778,7 +779,7 @@ func AcheterAnnonceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	factureID, numeroFacture, err := db.AcheterAnnonce(annonceID, req.UserID, req.Montant)
+	factureID, numeroFacture, err := db.AcheterAnnonce(annonceID, req.UserID, req.Montant, req.StripePaymentID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -2177,14 +2178,15 @@ func SouscrireAbonnementHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		PlanID int `json:"plan_id"`
+		PlanID          int    `json:"plan_id"`
+		StripePaymentID string `json:"stripe_payment_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Requete invalide", http.StatusBadRequest)
 		return
 	}
 
-	if err := db.SubscribeUser(userID, req.PlanID); err != nil {
+	if err := db.SubscribeUser(userID, req.PlanID, req.StripePaymentID); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -2851,19 +2853,19 @@ func CheckoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commandeID, err := db.Checkout(userID)
+	checkout, err := db.Checkout(userID, "")
 	if err != nil {
 		fmt.Println("❌ Erreur lors du Checkout :", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Println("Commande validée ! ID :", commandeID)
+	fmt.Println("Commande validée ! ID :", checkout.CommandeID)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":     "Commande créée avec succès",
-		"commande_id": commandeID,
+		"commande_id": checkout.CommandeID,
 	})
 }
 
@@ -2874,7 +2876,12 @@ func CheckoutWithInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checkout, err := db.Checkout(userID)
+	var req struct {
+		StripePaymentID string `json:"stripe_payment_id"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	checkout, err := db.Checkout(userID, req.StripePaymentID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

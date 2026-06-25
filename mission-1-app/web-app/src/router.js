@@ -72,6 +72,12 @@ const routes = [
     meta: { requiresRole: "Salarie" }
   },
   {
+    path: "/module/science/1",
+    name: "module-science1",
+    component: () => import('./pages/ReportDataMining.vue'),
+    meta: { requiresRole: "Admin" }
+  },
+  {
     path: "/claim",
     name: "recuperer-objet",
     component: () => import('./pages/ClaimObjet.vue'),

@@ -357,6 +357,14 @@ const objetsChildren = [
   },
 ];
 
+const dataChildren = [
+  {
+    label: "Modèle logique",
+    to: "/module/science/1",
+    description: "Modèle de ML de prédiction"
+  },
+];
+
 const dynamicNavGroups = computed(() => {
   let dashboardChildren = dashboardChildrenParticulier;
 
@@ -385,6 +393,12 @@ const dynamicNavGroups = computed(() => {
     groups.push({
       label: "Réclamer ou Retirer un objet", 
       children: objetsChildren
+    });
+  }
+  if (activeUserRole.value === "Salarie" || activeUserRole.value === "Admin") {
+    groups.push({
+      label: "Data Mining", 
+      children: dataChildren
     });
   }
 

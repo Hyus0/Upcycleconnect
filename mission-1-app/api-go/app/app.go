@@ -3094,3 +3094,20 @@ func UpdateLangueHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+//Bloc Science Module 1
+
+func GetAnalyticsHandler(w http.ResponseWriter, r *http.Request) {
+	acteurs, _ := db.GetStatsActeurs()
+	prestations, _ := db.GetStatsPrestations()
+	predictions, _ := db.GetMLPredictions()
+
+	response := map[string]interface{}{
+		"acteurs":     acteurs,
+		"prestations": prestations,
+		"predictions": predictions,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

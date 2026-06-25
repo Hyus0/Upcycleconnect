@@ -165,7 +165,7 @@
                                     >
                                         Vendu / Indisponible
                                     </button>
-                                </template>
+                                </template>     
                             </div>
                         </div>
                     </div>

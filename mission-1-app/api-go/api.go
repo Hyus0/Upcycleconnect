@@ -234,6 +234,9 @@ func main() {
 	http.HandleFunc("GET /traductions/{code}", app.GetTraductionsHandler)
 	http.HandleFunc("PUT /users/{id}/langue", app.UpdateLangueHandler)
 
+	//Module Science 1
+	http.HandleFunc("GET /api/analytics", app.GetAnalyticsHandler)
+
 	fmt.Println("Listening at http://localhost:8081")
 	http.ListenAndServe(":8081", enableCORS(http.DefaultServeMux))
 }

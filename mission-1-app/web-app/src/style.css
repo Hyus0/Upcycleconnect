@@ -71,7 +71,6 @@ button {
   background: rgba(25, 31, 28, 0.96);
   border: 1px solid rgba(101, 140, 116, 0.16);
   box-shadow: 0 18px 38px rgba(15, 28, 20, 0.18);
-  margin-bottom: 30px;
 }
 
 .site-navbar__left {
@@ -619,13 +618,13 @@ button {
 }
 
 .tag-don {
-  background: #fff3e0;
-  color: #e8a030;
+background: #e6f4ea;
+  color: #1e7e34;
 }
 
 .tag-vente {
-  background-color: #e6f4ea;
-  color: #1e7e34;
+  background-color: #fff3e0;
+  color: #e8a030;
 }
 
 .tag-score {

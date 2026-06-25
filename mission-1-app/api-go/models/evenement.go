@@ -12,4 +12,5 @@ type Evenement struct {
 	DateCreation  time.Time `json:"date_creation"`
 	DateEvenement time.Time `json:"date_evenement"`
 	Type          string    `json:"type"`
+	Id_createur   int       `json:"id_createur"`
 }

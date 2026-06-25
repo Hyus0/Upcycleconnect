@@ -1,222 +1,344 @@
 <template>
-    
-    <main class="page-container">
+    <div class="layout-wrapper">
         <SiteNavbar
             :is-authenticated="isLoggedIn"
             :user-name="userName"
             user-role="Particulier"
             :user-score="userScore"
         />
-        <header class="content-header">
-            <div class="header-left">
-                <p class="sidebar__category2">
-                    ACCUEIL > FORMATIONS > {{ formation?.titre }}
-                </p>
-                <h1 class="hero-title1">
-                    {{ formation?.titre || "Chargement..." }}
-                </h1>
-            </div>
-            <div class="header-actions">
-                <button class="btn-secondary" @click="$router.back()">
-                    🠔 Retour
-                </button>
-            </div>
-        </header>
 
-        <div v-if="loading" class="loading-state">
-            Récupération des données...
-        </div>
-
-        <div v-else-if="formation?.id" class="split-layout">
-            <div class="left-column">
-                <div class="info-card">
-                    <div class="card-header-flex">
-                        <h2 class="card-title">Présentation de la session</h2>
-                        <span
-                            :class="[
-                                'type-badge',
-                                'type-' + formation.type?.toLowerCase(),
-                            ]"
-                        >
-                            {{ formation.type?.toUpperCase() }}
-                        </span>
-                    </div>
-
-                    <div class="description-section">
-                        <label class="info-label"
-                            >Description & Programme</label
-                        >
-                        <div class="description-box">
-                            {{ formation.description }}
-                        </div>
-                    </div>
-
-                    <div class="specs-grid">
-                        <div class="spec-item">
-                            <label>Date de début</label>
-                            <p class="highlight-val">
-                                {{ formatDate(formation.date_debut) }}
-                            </p>
-                        </div>
-                        <div class="spec-item">
-                            <label>Date de fin</label>
-                            <p>{{ formatDate(formation.date_fin) }}</p>
-                        </div>
-                        <div class="spec-item">
-                            <label>Capacité Max</label>
-                            <p>{{ formation.capacite_max }} participants</p>
-                        </div>
-                        <div class="spec-item">
-                            <label>Format</label>
-                            <p>{{ formation.type }}</p>
-                        </div>
-                    </div>
-
-                    <div class="location-section">
-                        <label>Lieu exact de rendez-vous</label>
-                        <p class="address-text">
-                            <strong>📍 {{ formation.adresse }}</strong
-                            ><br />
-                            {{ formation.code_postal }} {{ formation.ville }}
+        <main class="page-container">
+            <header class="content-header">
+                <div class="header-left">
+                    <p class="sidebar__category2">
+                        ACCUEIL > FORMATIONS > DÉTAIL
+                    </p>
+                    <h1 class="hero-title1">
+                        {{ formation?.titre || "Chargement..." }}
+                    </h1>
+                    <div v-if="formation" class="project-sub-header">
+                        <p class="classic-text">
+                            Du {{ formatDateLong(formation.date_debut) }}
+                            <span class="dot-separator">•</span>
+                            au {{ formatDateLong(formation.date_fin) }}
+                            <span class="dot-separator">•</span>
+                            {{ formation.nb_inscrit }} /
+                            {{ formation.capacite_max }} participants
                         </p>
                     </div>
                 </div>
+                <button class="btn-secondary" @click="$router.back()">
+                    🠔 Retour
+                </button>
+            </header>
+
+            <div v-if="loading" class="loading-state">
+                Récupération des données...
             </div>
 
-            <div class="right-column">
-                <div class="info-card status-card">
-                    <h3>Organisateur de la session</h3>
-                    <div class="trainer-preview">
-                        <div class="mini-avatar">
-                            {{ formation.prenom_formateur?.charAt(0)
-                            }}{{ formation.nom_formateur?.charAt(0) }}
-                        </div>
-                        <div>
-                            <p class="trainer-name">
-                                {{ formation.prenom_formateur }}
-                                {{ formation.nom_formateur }}
-                            </p>
-                            <button
-                                class="link-btn"
-                                @click="viewProfile(formation.id_formateur)"
+            <div v-else-if="formation?.id" class="split-layout">
+                <div class="left-column">
+                    <div class="form-card">
+                        <div class="card-header-flex">
+                            <h2 class="card-title">
+                                Présentation de la session
+                            </h2>
+                            <span
+                                :class="[
+                                    'type-badge',
+                                    'type-' + formation.type?.toLowerCase(),
+                                ]"
                             >
-                            </button>
+                                {{ formation.type?.toUpperCase() }}
+                            </span>
+                        </div>
+
+                        <div class="description-section">
+                            <label class="info-label"
+                                >Description & Programme</label
+                            >
+                            <div class="description-box">
+                                {{ formation.description }}
+                            </div>
+                        </div>
+
+                        <div class="specs-section">
+                            <label class="info-label"
+                                >Informations pratiques</label
+                            >
+                            <div class="specs-grid">
+                                <div class="spec-item">
+                                    <span class="spec-label"
+                                        >Date de début</span
+                                    >
+                                    <p class="spec-value highlight-val">
+                                        {{
+                                            formatDateLong(formation.date_debut)
+                                        }}
+                                    </p>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">Date de fin</span>
+                                    <p class="spec-value">
+                                        {{ formatDateLong(formation.date_fin) }}
+                                    </p>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">Capacité max</span>
+                                    <p class="spec-value">
+                                        {{
+                                            formation.capacite_max
+                                        }}
+                                        participants
+                                    </p>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">Format</span>
+                                    <p class="spec-value">
+                                        {{ formation.type }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="description-section">
+                            <label class="info-label"
+                                >Lieu exact de rendez-vous</label
+                            >
+                            <div class="description-box address-box">
+                                <strong>📍 {{ formation.adresse }}</strong
+                                ><br />
+                                {{ formation.code_postal }}
+                                {{ formation.ville }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="canViewParticipants" class="form-card">
+                        <div class="card-header-flex">
+                            <h2 class="card-title">Liste des participants</h2>
+                            <span
+                                class="type-badge"
+                                style="background: #e8eaf6; color: #3f51b5"
+                                >Privé</span
+                            >
+                        </div>
+
+                        <div
+                            v-if="participantsLoading"
+                            class="loading-state"
+                            style="padding: 1rem"
+                        >
+                            Chargement de la liste...
+                        </div>
+                        <div
+                            v-else-if="participants.length === 0"
+                            class="description-box"
+                            style="text-align: center; color: #666"
+                        >
+                            Aucun participant inscrit pour le moment.
+                        </div>
+                        <div v-else class="participants-list">
+                            <div
+                                v-for="p in participants"
+                                :key="p.id"
+                                class="participant-item cursor-pointer"
+                                @click="viewProfile(p.id)"
+                            >
+                                <div class="mini-avatar">
+                                    <img
+                                        v-if="p.image_profil"
+                                        :src="p.image_profil"
+                                        class="mini-avatar-img"
+                                    />
+                                    <span v-else
+                                        >{{ p.prenom?.charAt(0)
+                                        }}{{ p.nom?.charAt(0) }}</span
+                                    >
+                                </div>
+                                <div>
+                                    <strong class="hover-underline"
+                                        >{{ p.prenom }} {{ p.nom }}</strong
+                                    >
+                                    <div
+                                        style="font-size: 0.75rem; color: #666"
+                                    >
+                                        {{ p.role }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="info-card dates-card">
-                    <h3>Inscriptions</h3>
-                    <div class="data-row">
-                        <span class="data-label">Validation Admin :</span>
-                        <span class="text-success">✓ APPROUVÉ</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Places occupées :</span>
-                        <span class="status-badge"
-                            >{{ formation.nb_inscrit }} /
-                            {{ formation.capacite_max }}</span
+                <div class="right-column">
+                    <div class="form-card side-card">
+                        <h2 class="card-title-side">
+                            Organisateur de la session
+                        </h2>
+                        <div
+                            class="trainer-preview cursor-pointer"
+                            @click="viewProfile(formation.id_formateur)"
                         >
+                            <div class="mini-avatar">
+                                <img
+                                    v-if="formation.image_formateur"
+                                    :src="formation.image_formateur"
+                                    class="mini-avatar-img"
+                                />
+                                <span v-else>
+                                    {{ formation.prenom_formateur?.charAt(0)
+                                    }}{{ formation.nom_formateur?.charAt(0) }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="trainer-name hover-underline">
+                                    {{ formation.prenom_formateur }}
+                                    {{ formation.nom_formateur }}
+                                </p>
+                                <button class="link-btn">
+                                    Voir le profil expert
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="price-card">
-                    <label>PRIX DE LA RÉSERVATION</label>
-                    <div class="price-value">
-                        {{
-                            formation.prix_unitaire > 0
-                                ? formation.prix_unitaire + "€"
-                                : "GRATUIT"
-                        }}
+                    <div class="form-card side-card">
+                        <h2 class="card-title-side">Inscriptions</h2>
+                        <div class="data-row">
+                            <span class="data-label">Validation Admin :</span>
+                            <span class="text-success">APPROUVÉ</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Places occupées :</span>
+                            <span class="status-badge"
+                                >{{ formation.nb_inscrit }} /
+                                {{ formation.capacite_max }}</span
+                            >
+                        </div>
                     </div>
-                    <p class="price-hint">par personne</p>
-                </div>
 
-                <div class="card registration-card">
-                    <button
-                        @click="handleInscription"
-                        class="btn-main-action"
-                        :class="{ 'btn-registered': isRegistered }"
-                        :disabled="
-                            isRegistered ||
-                            formation.statut !== 'Ouvert' ||
-                            isRegistering
-                        "
-                    >
-                        <span v-if="isRegistered">✓ Déjà inscrit</span>
-                        <span v-else>
+                    <div class="form-card side-card price-card">
+                        <h2 class="card-title-side">Prix de la réservation</h2>
+                        <div class="price-value">
                             {{
-                                formation.statut === "Ouvert"
-                                    ? "Réserver ma place"
-                                    : "❌ Complet"
+                                formation.prix_unitaire > 0
+                                    ? formation.prix_unitaire + " €"
+                                    : "GRATUIT"
                             }}
-                        </span>
-                    </button>
+                        </div>
+                        <p class="price-hint">par personne</p>
+                    </div>
 
-                    <button
-                        v-if="isRegistered"
-                        @click="handleQuit"
-                        class="btn-quit"
-                        :disabled="isLeaving"
-                    >
-                        Se désister de la session
-                    </button>
+                    <div class="form-actions-card">
+                        <button
+                            @click="
+                                formation.prix_unitaire > 0
+                                    ? handleAddToCart()
+                                    : handleInscription()
+                            "
+                            class="btn-save"
+                            :class="{ 'btn-liked-active': isRegistered }"
+                            :disabled="
+                                isRegistered ||
+                                formation.statut !== 'Ouvert' ||
+                                isRegistering ||
+                                isAddingToCart
+                            "
+                        >
+                            <span v-if="isRegistered">Déjà inscrit</span>
+                            <span v-else>
+                                <template v-if="formation.statut !== 'Ouvert'"
+                                    >❌ Complet</template
+                                >
+                                <template
+                                    v-else-if="formation.prix_unitaire > 0"
+                                    >Ajouter au panier</template
+                                >
+                                <template v-else
+                                    >Réserver ma place (Gratuit)</template
+                                >
+                            </span>
+                        </button>
+
+                        <button
+                            v-if="isRegistered"
+                            @click="handleQuit"
+                            class="btn-quit"
+                            :disabled="isLeaving"
+                        >
+                            Se désister de la session
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
+    <SiteFooter />
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
 
 const loading = ref(true);
 const isRegistering = ref(false);
+const isAddingToCart = ref(false);
 const formation = ref(null);
-const userScore = ref(0); 
+const userScore = ref(0);
 
 const isRegistered = ref(false);
 const isLeaving = ref(false);
 
-const isLoggedIn = computed(() => {
-    return !!localStorage.getItem("userToken");
-});
+const participants = ref([]);
+const participantsLoading = ref(false);
 
+const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {
-    const prenom = localStorage.getItem("userPrenom") || "";
-    const nom = localStorage.getItem("userNom") || "";
+    const prenom = sessionStorage.getItem("userPrenom") || "";
+    const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
-const formatDate = (d) => {
-    if (!d || d.startsWith("0001")) return "Non définie";
-    return new Date(d).toLocaleString("fr-FR", {
+const canViewParticipants = computed(() => {
+    if (!formation.value) return false;
+    const currentUserId = parseInt(sessionStorage.getItem("userId") || "0");
+    const currentUserRole = sessionStorage.getItem("userRole") || "";
+    return (
+        currentUserId === formation.value.id_formateur ||
+        currentUserRole === "Admin"
+    );
+});
+
+const formatDateLong = (d) => {
+    if (!d || d.startsWith("0001")) return "Date inconnue";
+    return new Date(d).toLocaleDateString("fr-FR", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
     });
 };
 
 const fetchDetail = async () => {
     const id = route.params.id;
-    const userId = localStorage.getItem("userId") || 0;
-
+    const userId = sessionStorage.getItem("userId") || 0;
     try {
         const res = await fetch(
-            `http://localhost:8081/formations/${id}?user_id=${userId}`,
+            `/go/formations/${id}?user_id=${userId}`,
         );
         if (res.ok) {
             const data = await res.json();
             formation.value = data;
             isRegistered.value = data.is_registered;
+
+            if (canViewParticipants.value) {
+                fetchParticipants(id);
+            }
         }
     } catch (error) {
         console.error("Erreur fetch :", error);
@@ -225,36 +347,82 @@ const fetchDetail = async () => {
     }
 };
 
+const fetchParticipants = async (formationId) => {
+    participantsLoading.value = true;
+    try {
+        const res = await fetch(
+            `/go/api/formations/${formationId}/participants`,
+        );
+        if (res.ok) {
+            participants.value = await res.json();
+        }
+    } catch (error) {
+        console.error("Erreur chargement participants:", error);
+    } finally {
+        participantsLoading.value = false;
+    }
+};
+
 const viewProfile = (id) => {
-    router.push({ name: "public-profile", params: { id } });
+    if (id) {
+        router.push(`/user/${id}`);
+    } else {
+        console.error("ID manquant pour la redirection");
+    }
+};
+
+const handleAddToCart = async () => {
+    const token = sessionStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
+    if (!token || !userId) return router.push("/connexion");
+    isAddingToCart.value = true;
+    try {
+        const res = await fetch(
+            `/go/users/${userId}/panier`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    type_item: "Formation",
+                    reference_id: parseInt(formation.value.id),
+                    prix_unitaire: parseFloat(formation.value.prix_unitaire),
+                }),
+            },
+        );
+        if (res.ok) {
+            alert("Formation ajoutée à votre panier!");
+        } else {
+            const errorMsg = await res.text();
+            alert("Erreur lors de l'ajout au panier : " + errorMsg);
+        }
+    } catch (error) {
+        console.error("Erreur panier :", error);
+        alert("Impossible de joindre le serveur.");
+    } finally {
+        isAddingToCart.value = false;
+    }
 };
 
 const handleInscription = async () => {
-    const token = localStorage.getItem("userToken");
-    const userId = localStorage.getItem("userId");
-
-    if (!token || !userId) {
-        alert("Vous devez être connecté pour vous inscrire.");
-        return router.push("/connexion");
-    }
-
+    const token = sessionStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
+    if (!token || !userId) return router.push("/connexion");
     isRegistering.value = true;
-
     try {
         const res = await fetch(
-            `http://localhost:8081/api/formations/${formation.value.id}/join`,
+            `/go/api/formations/${formation.value.id}/join`,
             {
                 method: "POST",
                 headers: {
                     Authorization: token,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    id_utilisateur: parseInt(userId),
-                }),
+                body: JSON.stringify({ id_utilisateur: parseInt(userId) }),
             },
         );
-
         if (res.status === 201) {
             alert("Inscription réussie !");
             isRegistered.value = true;
@@ -276,14 +444,12 @@ const handleInscription = async () => {
 const handleQuit = async () => {
     if (!confirm("Voulez-vous vraiment vous désinscrire de cette formation ?"))
         return;
-
-    const token = localStorage.getItem("userToken");
-    const userId = localStorage.getItem("userId");
-
+    const token = sessionStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
     isLeaving.value = true;
     try {
         const res = await fetch(
-            `http://localhost:8081/api/formations/${formation.value.id}/quit`,
+            `/go/api/formations/${formation.value.id}/quit`,
             {
                 method: "POST",
                 headers: {
@@ -293,7 +459,6 @@ const handleQuit = async () => {
                 body: JSON.stringify({ id_utilisateur: parseInt(userId) }),
             },
         );
-
         if (res.ok) {
             alert("Vous avez bien été désinscrit.");
             isRegistered.value = false;
@@ -312,49 +477,113 @@ onMounted(fetchDetail);
 </script>
 
 <style scoped>
-.page-container {
+.layout-wrapper {
     min-height: 100vh;
     padding: 20px;
     background: #f7f9f7;
-    max-width: 1600px; 
+    max-width: 1600px;
     margin: 0 auto;
 }
 
+.page-container {
+    padding: 0 20px;
+}
+
 .content-header {
-    padding-top: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 2rem;
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.header-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar__category2 {
+    font-size: 0.8rem;
+    color: #8fa396;
+    letter-spacing: 1px;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
 }
 
 .hero-title1 {
-    font-size: 2.2rem;
-    font-weight: 900;
-    margin: 0.5rem 0 0;
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem 0;
+    color: #1a1a1a;
+}
+
+.classic-text {
+    color: #666;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.dot-separator {
+    margin: 0 4px;
+    color: #ccc;
+}
+
+.btn-secondary {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.split-layout {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 2rem;
+    width: 100%;
+}
+
+.right-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-card {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid #eee;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-bottom: 2rem;
 }
 
 .card-header-flex {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid #f0f0f0;
     padding-bottom: 1rem;
 }
 
-.type-badge {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-weight: 800;
-    font-size: 0.75rem;
+.card-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a1a;
 }
 
+.type-badge {
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
 .type-atelier {
-    background: #e0f2f1;
-    color: #00796b;
+    background: #e9f5ed;
+    color: #2d7a4f;
 }
 .type-cours {
     background: #e8eaf6;
@@ -366,213 +595,260 @@ onMounted(fetchDetail);
 }
 
 .description-section {
-    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
 }
 
 .info-label {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: 0.85rem;
+    color: #2d7a4f;
     text-transform: uppercase;
-    color: #999;
-    margin-bottom: 8px;
+    font-weight: 800;
     letter-spacing: 0.5px;
 }
 
 .description-box {
-    background: #f9f9f9;
+    background: #fcfcfc;
     padding: 1.2rem;
-    border-radius: 12px;
-    color: #444;
+    border-radius: 10px;
+    font-size: 0.95rem;
     line-height: 1.6;
-    font-size: 1rem;
-    border: 1px solid #f0f0f0;
+    border: 1px solid #eee;
+    color: #333;
+}
+
+.address-box {
+    line-height: 1.8;
+}
+
+.specs-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
 }
 
 .specs-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    background: #fcfcfc;
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid #f5f5f5;
-    margin-bottom: 2rem;
+    gap: 1.2rem;
+    background: #fafafa;
+    padding: 1.2rem;
+    border-radius: 10px;
+    border: 1px solid #eee;
 }
 
-.spec-item label {
-    font-size: 0.7rem;
+.spec-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.spec-label {
+    font-size: 0.75rem;
     color: #aaa;
     text-transform: uppercase;
-    margin-bottom: 4px;
-    display: block;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
-.spec-item p {
-    font-weight: bold;
+.spec-value {
+    font-weight: 700;
     color: #333;
     margin: 0;
+    font-size: 0.95rem;
 }
+
 .highlight-val {
-    color: #2d6a4f;
+    color: #2d7a4f !important;
 }
 
-.split-layout {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 2rem;
-    margin-bottom: 3rem;
+.side-card {
+    padding: 1.5rem 2rem;
+    gap: 1rem;
 }
 
-.info-card,
-.status-card,
-.dates-card,
-.price-card {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 16px;
-    border: 1px solid #eee;
-    margin-bottom: 1.5rem;
+.card-title-side {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a1a;
 }
 
 .trainer-preview {
     display: flex;
-    gap: 15px;
+    gap: 12px;
     align-items: center;
 }
+
 .mini-avatar {
-    width: 50px;
-    height: 50px;
-    background: #2d6a4f;
+    width: 44px;
+    height: 44px;
+    background: #2d7a4f;
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
+    font-size: 1rem;
+    text-transform: uppercase;
+    overflow: hidden;
+    flex-shrink: 0;
 }
+
+.mini-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .trainer-name {
-    font-weight: 800;
-    margin: 0;
+    font-weight: 700;
+    margin: 0 0 2px 0;
+    font-size: 0.95rem;
 }
+
 .link-btn {
     background: none;
     border: none;
-    color: #2d6a4f;
+    color: #2d7a4f;
     text-decoration: underline;
-    padding: 0;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    padding: 0;
 }
 
 .data-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 10px;
-    font-size: 0.9rem;
     align-items: center;
+    font-size: 0.95rem;
 }
+
 .data-label {
-    color: #888;
+    color: #666;
 }
+
 .text-success {
-    color: #2d6a4f;
-    font-weight: bold;
+    color: #2d7a4f;
+    font-weight: 700;
 }
+
 .status-badge {
     background: #f5f5f5;
     padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 0.8rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.participants-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cursor-pointer:hover {
+    transform: translateY(-2px);
+}
+
+.participant-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border-color: #dcdcdc;
 }
 
 .price-card {
     text-align: center;
-    border-color: #f0f0f0;
 }
 
 .price-value {
-    font-size: 3.5rem;
+    font-size: 2.8rem;
     font-weight: 900;
-    color: #2d6a4f;
-    margin: 10px 0;
+    color: #2d7a4f;
+    margin: 0.2rem 0;
 }
 
 .price-hint {
-    font-size: 0.95rem;
-    color: #888;
+    font-size: 0.85rem;
+    color: #999;
+    margin: 0;
 }
 
-.btn-main-action {
-    width: 100%;
-    background: #2d6a4f;
-    color: white;
-    padding: 1.2rem;
-    border-radius: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    border: none;
-    transition: 0.2s;
+.form-actions-card {
+    margin-top: 0.2rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
 }
-.btn-main-action:disabled {
-    background: #ccc;
+
+.btn-save {
+    background-color: #2d7a4f;
+    color: white;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+}
+
+.btn-save:hover:not(:disabled) {
+    background-color: #246343;
+}
+
+.btn-save:disabled {
+    opacity: 0.6;
     cursor: not-allowed;
 }
-.btn-main-action:hover:not(:disabled) {
-    background: #1b4332;
+
+.btn-liked-active {
+    background-color: #2d7a4f;
+    opacity: 0.6;
+    cursor: default;
 }
 
 .btn-quit {
     width: 100%;
     background: none;
-    border: 1px solid #ff4d4d;
-    color: #ff4d4d;
+    border: 1px solid #ef4444;
+    color: #ef4444;
     padding: 10px;
     border-radius: 12px;
-    margin-top: 15px;
+    margin-top: 12px;
     font-weight: 700;
     cursor: pointer;
-    transition: 0.2s;
+    transition: background 0.2s;
 }
 
-.btn-quit:hover {
+.btn-quit:hover:not(:disabled) {
     background: #fff5f5;
-    transform: scale(0.98);
-}
-.sidebar__category2 {
-    font-size: 0.75rem;
-    color: #999;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.btn-secondary {
-    background: #f5f5f5;
-    color: #666;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
 }
 
-.btn-main-action.btn-registered {
-    background-color: #2d6a4f;
-    opacity: 0.5;
-    cursor: default;
-    transform: none;
-    box-shadow: none;
-}
-
-.btn-modify {
-    background: #e8f5e9;
-    color: #2d6a4f;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-left: 10px;
+.loading-state {
+    text-align: center;
+    padding: 3rem;
+    color: #8fa396;
+    font-style: italic;
 }
 </style>

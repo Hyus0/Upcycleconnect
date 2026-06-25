@@ -19,41 +19,42 @@
                     Upcycle <span class="accent">Connect</span>
                 </div>
                 <h1 class="register-left__title">
-                    Rejoignez la <span class="accent">communauté</span><br />
-                    qui agit.
+                    {{ t.JoinThe || 'Rejoignez la ' }}<span class="accent">{{ t.Community || 'communauté' }}</span><br />
+                    {{ t.ThatActs || 'qui agit.' }}
                 </h1>
-                <p class="register-left__desc">
-                    Plus de 12 400 membres, 340 artisans et des <br />centaines
-                    de projets d'upcycling chaque mois. <br />Commencez
-                    gratuitement dès aujourd'hui.
+                
+                <p class="register-left__desc" v-html="t.RegisterDesc || 'Plus de 12 400 membres, 340 artisans et des <br />centaines de projets d\'upcycling chaque mois. <br />Commencez gratuitement dès aujourd\'hui.'">
                 </p>
 
                 <div class="register-left__stats">
                     <div class="stat">
-                        <strong>2.4t</strong>
-                        <span>CO₂ évité / mois</span>
+                        <strong>
+                          {{ stats.co2_evite_mois >= 1000 
+                             ? (stats.co2_evite_mois / 1000).toFixed(1) + 't' 
+                             : stats.co2_evite_mois.toFixed(0) + 'kg' 
+                          }}
+                        </strong>
+                        <span>{{ t.StatCO2Month || 'CO₂ évité / mois' }}</span>
                     </div>
                     <div class="stat">
-                        <strong>8k+</strong>
-                        <span>Objets upcyclés</span>
+                        <strong>{{ stats.objets_upcycles >= 1000 ? Math.floor(stats.objets_upcycles/1000) + 'k+' : stats.objets_upcycles }}</strong>
+                        <span>{{ t.StatUpcycled || 'Objets upcyclés' }}</span>
                     </div>
                     <div class="stat">
-                        <strong>340</strong>
-                        <span>Artisans actifs</span>
+                        <strong>{{ stats.artisans_actifs }}</strong>
+                        <span>{{ t.StatArtisans || 'Artisans actifs' }}</span>
                     </div>
                 </div>
-
+                
                 <div class="register-testimonial">
                     <p class="register-testimonial__text">
-                        "Grâce à UpcycleConnect, j'ai trouvé les matériaux
-                        parfaits pour mes créations. La plateforme a transformé
-                        mon activité d'artisan."
+                        {{ t.TestimonialText || '"Grâce à UpcycleConnect, j\'ai trouvé les matériaux parfaits pour mes créations. La plateforme a transformé mon activité d\'artisan."' }}
                     </p>
                     <div class="register-testimonial__author">
                         <div class="register-testimonial__avatar">ML</div>
                         <div>
                             <strong>Marie L.</strong>
-                            <span>Artisane ébéniste — Paris 11e</span>
+                            <span>{{ t.TestimonialAuthorRole || 'Artisane ébéniste — Paris 11e' }}</span>
                         </div>
                     </div>
                 </div>
@@ -70,15 +71,15 @@
                     Upcycle <span class="accent-green">Connect</span>
                 </div>
 
-                <h2 class="register-right__title">Créer un compte</h2>
+                <h2 class="register-right__title">{{ t.CreateAccountTitle || 'Créer un compte' }}</h2>
                 <p class="register-right__subtitle">
-                    Déjà membre ?
+                    {{ t.AlreadyMember || 'Déjà membre ?' }}
                     <router-link to="/connexion" class="register-right__link">
-                        Se connecter
+                        {{ t.LoginLink || 'Se connecter' }}
                     </router-link>
                 </p>
 
-                <p class="register-right__label">Je suis...</p>
+                <p class="register-right__label">{{ t.IAm || 'Je suis...' }}</p>
                 <div class="register-type">
                     <button
                         class="register-type__btn"
@@ -88,7 +89,7 @@
                         }"
                         @click="accountType = 'particulier'"
                     >
-                        🏠 <br />Particulier
+                        🏠 <br />{{ t.Individual || 'Particulier' }}
                     </button>
                     <button
                         class="register-type__btn"
@@ -98,13 +99,13 @@
                         @click="accountType = 'pro'"
                     >
                         🔨<br />
-                        Pro / Artisan
+                        {{ t.ProArtisan || 'Pro / Artisan' }}
                     </button>
                 </div>
 
                 <div class="register-row">
                     <div class="register-field">
-                        <label>Prénom</label>
+                        <label>{{ t.FirstName || 'Prénom' }}</label>
                         <input
                             type="text"
                             placeholder="Marie"
@@ -112,7 +113,7 @@
                         />
                     </div>
                     <div class="register-field">
-                        <label>Nom</label>
+                        <label>{{ t.LastName || 'Nom' }}</label>
                         <input
                             type="text"
                             placeholder="Lambert"
@@ -122,7 +123,7 @@
                 </div>
 
                 <div class="register-field">
-                    <label>Adresse e-mail</label>
+                    <label>{{ t.EmailLabel || 'Adresse e-mail' }}</label>
                     <input
                         type="email"
                         placeholder="marie.lambert@exemple.fr"
@@ -132,7 +133,7 @@
                 </div>
 
                 <div class="register-field">
-                    <label>Mot de passe</label>
+                    <label>{{ t.PasswordLabel || 'Mot de passe' }}</label>
                     <input
                         type="password"
                         placeholder="••••••••••"
@@ -150,49 +151,63 @@
                     </ul>
                 </div>
                 
-                <div class="register-field">
-                    <label>Code postal</label>
-                    <input
-                        type="text"
-                        placeholder="75011"
-                        v-model="codePostal"
-                        :class="{ 'input--error': isPostalCodeInvalid }"
-                    />
+                <div class="register-row">
+                    <div class="register-field">
+                        <label>{{ t.ZipCode || 'Code postal' }}</label>
+                        <input
+                            type="text"
+                            placeholder="75011"
+                            v-model="codePostal"
+                            :class="{ 'input--error': isPostalCodeInvalid }"
+                        />
+                    </div>
+
+                    <div class="register-field">
+                        <label>{{ t.BirthDate || 'Date de naissance' }}</label>
+                        <input
+                            type="date"
+                            v-model="dateNaissance"
+                            :class="{ 'input--error': isUnderage }"
+                        />
+                    </div>
                 </div>
 
                 <div class="register-cgu">
                     <input type="checkbox" id="cgu" v-model="cguAccepte" />
                     <label for="cgu">
-                        J'accepte les
-                        <router-link to="/" class="register-right__link">CGU</router-link> et la
+                        {{ t.IAcceptThe || "J'accepte les" }}
+                        <router-link to="/" class="register-right__link">{{ t.TOS || 'CGU' }}</router-link> {{ t.AndThe || 'et la' }}
                         <router-link to="/" class="register-right__link"
-                            >politique de confidentialité</router-link
+                            >{{ t.PrivacyPolicy || 'politique de confidentialité' }}</router-link
                         >
                     </label>
                 </div>
 
                 <button class="register-submit" @click="handleSubmit">
-                    Créer mon compte gratuitement →
+                    {{ t.CreateMyAccountFreeBtn || 'Créer mon compte gratuitement' }} →
                 </button>
 
                 <div class="register-separator">
-                    <span>ou</span>
+                    <span>{{ t.Or || 'ou' }}</span>
                 </div>
 
-                <button class="register-google">Continuer avec Google</button>
+                <button class="register-google">{{ t.ContinueWithGoogle || 'Continuer avec Google' }}</button>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 
+import { useTraduction } from "../composables/useTraduction"; 
+const { t } = useTraduction();
+
 const router = useRouter();
 const accountType = ref("particulier");
-const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
+const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || sessionStorage.getItem("userToken")));
 const userName = ref("Marie Lambert");
 
 const errorMessages = ref([]);
@@ -202,7 +217,18 @@ const nom = ref("");
 const email = ref("");
 const motDePasse = ref("");
 const codePostal = ref("");
+const dateNaissance = ref("");
 const cguAccepte = ref(false);
+
+const stats = ref({
+    co2_evite_mois: 0,
+    objets_upcycles: 0,
+    artisans_actifs: 0
+});
+
+const commentaires = ref([]);
+const currentComment = ref(null);
+let intervalId = null;
 
 const isEmailInvalid = computed(() => {
     return email.value.length > 0 && !email.value.includes("@");
@@ -216,18 +242,55 @@ const isPostalCodeInvalid = computed(() => {
     );
 });
 
+const isUnderage = computed(() => {
+    if (!dateNaissance.value) return false; 
+
+    const birthDate = new Date(dateNaissance.value);
+    const today = new Date();
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    return age < 18;
+});
+
+const fetchStats = async () => {
+    try {
+        const res = await fetch("/go/stats/platform");
+        if (res.ok) {
+            stats.value = await res.json();
+        }
+    } catch (e) {
+        console.error("Erreur stats:", e);
+    }
+};
+
 async function handleSubmit() {
     errorMessages.value = [];
     
     if (!prenom.value.trim() || !nom.value.trim() || !email.value.trim() || 
-        !motDePasse.value.trim() || !codePostal.value.trim()) {
-        errorMessages.value = ["Il manque des informations."];
+        !motDePasse.value.trim() || !codePostal.value.trim() || !dateNaissance.value) {
+        errorMessages.value = ["Il manque des informations (n'oubliez pas la date de naissance)."];
         return;
+    }
+
+    if (isUnderage.value) {
+      errorMessages.value = ["Vous devez avoir au moins 18 ans pour vous inscrire."];
+      return;
     }
     
     if (!cguAccepte.value) {
         errorMessages.value = ["Veuillez accepter les CGU pour continuer."];
         return;
+    }
+    
+    let dbRole = "Particulier";
+    if (accountType.value === "pro") {
+        dbRole = "Prestataire";
     }
 
     const userData = {
@@ -236,19 +299,19 @@ async function handleSubmit() {
         mail: email.value,
         password: motDePasse.value,
         code_postal: codePostal.value,
-        role: "Particulier", 
+        date_naissance: dateNaissance.value,
+        role: dbRole, 
         id_langue: 1     
     };
     
     try {
-        const response = await fetch("http://localhost:8081/users", {
+        const response = await fetch("/go/users", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData),
         });
 
         if (response.ok) {
-            alert("Compte créé avec succès");
             router.push("/connexion");
             return;
         } else {
@@ -270,6 +333,33 @@ async function handleSubmit() {
         }
     }
 }
+
+const pickRandomComment = () => {
+    if (commentaires.value.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * commentaires.value.length);
+    currentComment.value = commentaires.value[randomIndex];
+};
+
+const fetchCommentaires = async () => {
+    try {
+        const res = await fetch("/go/commentaires");
+        if (res.ok) {
+            commentaires.value = await res.json();
+            if (commentaires.value && commentaires.value.length > 0) {
+                pickRandomComment();
+                intervalId = setInterval(pickRandomComment, 25000);
+            }
+        }
+    } catch (error) {
+        console.error("Impossible de charger les commentaires", error);
+    }
+};
+
+onMounted(() => {
+  fetchCommentaires();
+  fetchStats();
+});
+
 </script>
 
 <style scoped>

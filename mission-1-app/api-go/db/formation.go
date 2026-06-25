@@ -79,7 +79,7 @@ func GetFormation(formationID int, userID int) (*models.GetFormation, error) {
 
     query := `
         SELECT 
-            f.id, f.id_formateur, u.prenom, u.nom, f.type, f.titre, f.description, 
+            f.id, f.id_formateur, u.prenom, u.nom, COALESCE(u.image_profil, ''), f.type, f.titre, f.description, 
             f.capacite_max, f.date_debut, f.date_fin, f.statut, f.prix_unitaire, 
             f.adresse, f.ville, f.code_postal,
             (SELECT COUNT(*) FROM FORMATION_INSCRIPTION WHERE id_formation = f.id) as nb_inscrit
@@ -94,6 +94,7 @@ func GetFormation(formationID int, userID int) (*models.GetFormation, error) {
         &f.ID_formateur, 
         &f.Prenom_formateur, 
         &f.Nom_formateur,  
+        &f.Image_formateur,
         &f.Type, 
         &f.Titre, 
         &f.Description, 
@@ -119,6 +120,7 @@ func GetFormation(formationID int, userID int) (*models.GetFormation, error) {
 
     return &f, nil
 }
+
 func CreateFormation(formation models.Formation) error {
 	if Conn == nil {
 		return fmt.Errorf("connexion DB non initialisee")
@@ -130,6 +132,7 @@ func CreateFormation(formation models.Formation) error {
 		titre,
 		description,
 		capacite_max,
+		est_valide,
 		date_debut,
 		date_fin,
 		statut,
@@ -137,7 +140,7 @@ func CreateFormation(formation models.Formation) error {
 		adresse,
 		ville,
 		code_postal
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	) VALUES (?, ?, ?, ?, ?, "En attente", ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := Conn.Exec(
 		query,
@@ -165,7 +168,48 @@ func ModifyFormation(id int, f models.Formation) error {
 		return fmt.Errorf("connexion DB non initialisee")
 	}
 
-	query := `
+	var estValide string
+	var nbInscrits int
+
+	checkQuery := `
+		SELECT est_valide, 
+		       (SELECT COUNT(*) FROM FORMATION_INSCRIPTION WHERE id_formation = ?) 
+		FROM FORMATION 
+		WHERE id = ?
+	`
+	err := Conn.QueryRow(checkQuery, id, id).Scan(&estValide, &nbInscrits)
+	if err != nil {
+		return fmt.Errorf("erreur lors de la vérification de la formation: %v", err)
+	}
+
+	if estValide == "Valide" || nbInscrits > 0 {
+		querySafe := `
+			UPDATE FORMATION SET
+				titre = ?,
+				description = ?,
+				statut = ?,
+				adresse = ?,
+				ville = ?,
+				code_postal = ?
+			WHERE id = ?
+		`
+		_, err = Conn.Exec(
+			querySafe,
+			f.Titre,
+			f.Description,
+			f.Statut,
+			f.Adresse,
+			f.Ville,
+			f.Code_postal,
+			id,
+		)
+		if err != nil {
+			return fmt.Errorf("ModifyFormation partielle: %v", err)
+		}
+		return nil
+	}
+
+	queryFull := `
 		UPDATE FORMATION SET
 			id_formateur = ?,
 			type = ?,
@@ -183,7 +227,7 @@ func ModifyFormation(id int, f models.Formation) error {
 	`
 
 	result, err := Conn.Exec(
-		query,
+		queryFull,
 		f.ID_formateur,
 		f.Type,
 		f.Titre,
@@ -198,6 +242,7 @@ func ModifyFormation(id int, f models.Formation) error {
 		f.Code_postal,
 		id,
 	)
+	
 	if err != nil {
 		return fmt.Errorf("ModifyFormation: %v", err)
 	}
@@ -209,6 +254,7 @@ func ModifyFormation(id int, f models.Formation) error {
 	if rows == 0 {
 		return fmt.Errorf("aucune formation trouvee avec l'ID %d", id)
 	}
+	
 	return nil
 }
 
@@ -283,4 +329,58 @@ func QuitFormation(userID int, formationID int) error {
 	}
 
 	return nil
+}
+
+func GetUserFormations(userID int) ([]models.GetFormation, error) {
+	query := `
+		SELECT f.id, f.id_formateur, f.type, f.titre, f.description, f.capacite_max,
+		       f.date_debut, f.date_fin, f.statut, f.prix_unitaire, f.adresse, f.ville, f.code_postal
+		FROM FORMATION f
+		INNER JOIN FORMATION_INSCRIPTION fi ON f.id = fi.id_formation
+		WHERE fi.id_utilisateur = ?`
+
+	rows, err := Conn.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var formations []models.GetFormation
+	for rows.Next() {
+		var f models.GetFormation
+		rows.Scan(&f.ID, &f.ID_formateur, &f.Type, &f.Titre, &f.Description, &f.Capacite_max,
+			&f.Date_debut, &f.Date_fin, &f.Statut, &f.Prix_unitaire, &f.Adresse, &f.Ville, &f.CodePostal)
+		f.IsRegistered = true
+		formations = append(formations, f)
+	}
+	return formations, nil
+}
+
+func GetFormationParticipants(formationID int) ([]models.Participant, error) {
+	query := `
+		SELECT 
+			u.id, 
+			u.prenom, 
+			u.nom, 
+			COALESCE(u.image_profil, '') as image_profil, 
+			u.role
+		FROM UTILISATEUR u
+		JOIN FORMATION_INSCRIPTION i ON u.id = i.id_utilisateur
+		WHERE i.id_formation = ?
+	`
+	
+	rows, err := Conn.Query(query, formationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var participants []models.Participant
+	for rows.Next() {
+		var p models.Participant
+		if err := rows.Scan(&p.ID, &p.Prenom, &p.Nom, &p.ImageProfil, &p.Role); err == nil {
+			participants = append(participants, p)
+		}
+	}
+	return participants, nil
 }

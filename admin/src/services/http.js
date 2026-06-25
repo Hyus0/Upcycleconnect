@@ -1,3 +1,5 @@
+import { getToken, clearSession } from "./auth";
+
 export class ApiError extends Error {
   constructor(message, status = 500, payload = null) {
     super(message);
@@ -24,15 +26,26 @@ async function parseResponseBody(response) {
 }
 
 export async function request(url, options = {}) {
+  const token = getToken();
   const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: token } : {}),
       ...(options.headers ?? {})
     },
     ...options
   });
 
   const payload = await parseResponseBody(response);
+
+  // Session invalide/expiree : on purge et on renvoie vers le login.
+  if (response.status === 401) {
+    clearSession();
+    const loginPath = import.meta.env.BASE_URL + "login";
+    if (!window.location.pathname.endsWith("/login")) {
+      window.location.assign(loginPath);
+    }
+  }
 
   if (!response.ok) {
     const message =

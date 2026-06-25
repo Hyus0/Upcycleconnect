@@ -22,7 +22,8 @@ func GetAllEvenements() ([]models.Evenement, error) {
 			code_postal,
 			date_creation,
 			date_evenement,
-			type
+			type,
+			id_createur
 		FROM EVENEMENT
 	`
 
@@ -45,6 +46,7 @@ func GetAllEvenements() ([]models.Evenement, error) {
 			&e.DateCreation,
 			&e.DateEvenement,
 			&e.Type,
+			&e.Id_createur,
 		)
 		if err != nil {
 			return nil, err
@@ -74,7 +76,8 @@ func GetEvenement(id int) (*models.Evenement, error) {
 			code_postal,
 			date_creation,
 			date_evenement,
-			type
+			type,
+			id_createur
 		FROM EVENEMENT
 		WHERE id = ?
 	`
@@ -92,6 +95,7 @@ func GetEvenement(id int) (*models.Evenement, error) {
 		&e.DateCreation,
 		&e.DateEvenement,
 		&e.Type,
+		&e.Id_createur,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -116,8 +120,9 @@ func CreateEvenement(e models.Evenement) error {
 			ville,
 			code_postal,
 			date_evenement,
-			type
-		) VALUES (?, ?, ?, ?, ?, ?, ?)
+			type,
+			id_createur
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := Conn.Exec(
@@ -129,6 +134,7 @@ func CreateEvenement(e models.Evenement) error {
 		e.CodePostal,
 		e.DateEvenement,
 		e.Type,
+		e.Id_createur,
 	)
 	if err != nil {
 		return fmt.Errorf("CreateEvenement: %v", err)
@@ -198,8 +204,6 @@ func DeleteEvenement(id int) error {
 	return nil
 }
 
-// À AJOUTER à la fin de db/evenement.go
-
 func JoinEvenement(userID int, evenementID int) error {
 	if Conn == nil {
 		return fmt.Errorf("connexion DB non initialisee")
@@ -257,4 +261,73 @@ func IsUserInscritEvenement(userID int, evenementID int) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func GetUserEvenements(userID int) ([]models.Evenement, error) {
+	query := `
+		SELECT e.id, e.titre, e.description, e.adresse, e.ville, e.code_postal, e.date_evenement, e.type
+		FROM EVENEMENT e
+		INNER JOIN EVENEMENT_INSCRIPTION ei ON e.id = ei.id_evenement
+		WHERE ei.id_utilisateur = ?`
+
+	rows, err := Conn.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var evenements []models.Evenement
+	for rows.Next() {
+		var e models.Evenement
+		rows.Scan(&e.ID, &e.Titre, &e.Description, &e.Adresse, &e.Ville, &e.CodePostal, &e.DateEvenement, &e.Type)
+		evenements = append(evenements, e)
+	}
+	return evenements, nil
+}
+
+func GetUserPlanning(userID int) (models.UserPlanning, error) {
+	var planning models.UserPlanning
+
+	formations, err := GetUserFormations(userID)
+	if err != nil {
+		return planning, err
+	}
+
+	evenements, err := GetUserEvenements(userID)
+	if err != nil {
+		return planning, err
+	}
+
+	planning.Formations = formations
+	planning.Evenements = evenements
+	return planning, nil
+}
+
+func GetEvenementParticipants(evenementID int) ([]models.Participant, error) {
+	query := `
+		SELECT 
+			u.id, 
+			u.prenom, 
+			u.nom, 
+			COALESCE(u.image_profil, '') as image_profil, 
+			u.role
+		FROM UTILISATEUR u
+		JOIN EVENEMENT_INSCRIPTION i ON u.id = i.id_utilisateur
+		WHERE i.id_evenement = ?
+	`
+	
+	rows, err := Conn.Query(query, evenementID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var participants []models.Participant
+	for rows.Next() {
+		var p models.Participant
+		if err := rows.Scan(&p.ID, &p.Prenom, &p.Nom, &p.ImageProfil, &p.Role); err == nil {
+			participants = append(participants, p)
+		}
+	}
+	return participants, nil
 }

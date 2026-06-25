@@ -128,6 +128,7 @@
             </div>
         </div>
     </main>
+    <SiteFooter />
 </template>
 
 <script setup>
@@ -135,6 +136,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
 import SiteNavbar from "../components/SiteNavbar.vue";
+import SiteFooter from "../components/SiteFooter.vue";
 
 const formations = ref([]);
 const loading = ref(true);
@@ -144,12 +146,12 @@ const userScore = ref(0);
 const router = useRouter();
 
 const isLoggedIn = computed(() => {
-    return !!localStorage.getItem("userToken");
+    return !!sessionStorage.getItem("userToken");
 });
 
 const userName = computed(() => {
-    const prenom = localStorage.getItem("userPrenom") || "";
-    const nom = localStorage.getItem("userNom") || "";
+    const prenom = sessionStorage.getItem("userPrenom") || "";
+    const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
@@ -178,7 +180,7 @@ const formatDate = (dateStr) => {
 const fetchFormations = async () => {
     loading.value = true;
     try {
-        const res = await fetch(`http://localhost:8081/formations`, {
+        const res = await fetch(`/go/formations`, {
             method: "GET"
         });
         if (res.ok) {

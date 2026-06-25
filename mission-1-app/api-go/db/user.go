@@ -1,10 +1,11 @@
 package db
 
 import (
-	"upcycleconnect/api-go/models"
-	"upcycleconnect/api-go/passwordHashing"
 	"database/sql"
 	"fmt"
+	"strings"
+	"upcycleconnect/api-go/models"
+	"upcycleconnect/api-go/passwordHashing"
 )
 
 func GetAllUsers() ([]models.GetUser, error) {
@@ -33,15 +34,31 @@ func GetAllUsers() ([]models.GetUser, error) {
 
 func GetUser(userId int) (*models.GetUser, error) {
 	var u models.GetUser
-	query := `SELECT id, prenom, nom, mail, adresse, ville, code_postal,
-		          COALESCE(date_naissance, ''),
-		          COALESCE(date_inscription, ''),
-					COALESCE(date_update_password, ''),
-		          role, id_langue
-		          FROM UTILISATEUR WHERE id = ?`
+
+	query := `SELECT id, prenom, nom, COALESCE(image_profil, ''), COALESCE(banniere, ''), mail, COALESCE(mail_valide, 'false'), adresse, ville, code_postal, date_naissance, date_inscription, date_update_password, role, statut, id_langue, COALESCE(siret, ''), COALESCE(siret_valide, false) FROM UTILISATEUR WHERE id=?`
+
 	row := Conn.QueryRow(query, userId)
 
-	err := row.Scan(&u.Id, &u.Prenom, &u.Nom, &u.Mail, &u.Adresse, &u.Ville, &u.CodePostal, &u.DateNaissance, &u.DateInscription, &u.DateUpdatePassword, &u.Role, &u.IdLangue)
+	err := row.Scan(
+		&u.Id, 
+		&u.Prenom, 
+		&u.Nom, 
+		&u.ImageProfil, 
+		&u.Banniere, 
+		&u.Mail, 
+		&u.MailValide,    
+		&u.Adresse, 
+		&u.Ville, 
+		&u.CodePostal,
+		&u.DateNaissance, 
+		&u.DateInscription, 
+		&u.DateUpdatePassword, 
+		&u.Role, 
+		&u.Statut, 
+		&u.IdLangue,
+		&u.Siret, 
+		&u.SiretValide,
+	)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -54,14 +71,14 @@ func GetUser(userId int) (*models.GetUser, error) {
 }
 
 func EmailExists(email string) (bool, error) {
-    var count int
-    query := "SELECT COUNT(*) FROM UTILISATEUR WHERE mail = ?"
+	var count int
+	query := "SELECT COUNT(*) FROM UTILISATEUR WHERE mail = ?"
 
-    err := Conn.QueryRow(query, email).Scan(&count)
-    if err != nil {
-        return false, err
-    }
-    return count > 0, nil
+	err := Conn.QueryRow(query, email).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func CreateUser(user models.User) error {
@@ -83,30 +100,30 @@ func CreateUser(user models.User) error {
 		dateN = user.DateNaissance
 	}
 
-	query := `INSERT INTO UTILISATEUR (prenom, nom, password, mail, adresse, ville, code_postal, date_naissance, role, id_langue)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO UTILISATEUR (prenom, nom, password, mail, mail_valide, adresse, ville, code_postal, date_naissance, role, id_langue, siret_valide)
+	          VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 0)`
 
 	result, err := Conn.Exec(query,
-		user.Prenom, 
-		user.Nom, 
-		user.Password, 
+		user.Prenom,
+		user.Nom,
+		user.Password,
 		user.Mail,
-		user.Adresse, 
-		user.Ville, 
+		user.Adresse,
+		user.Ville,
 		user.CodePostal,
 		dateN,
-		user.Role, 
+		user.Role,
 		user.IdLangue,
 	)
 	if err != nil {
-		return err 
+		return err
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
-	
-	queryScore := `INSERT INTO UPCYCLING_SCORE (id_utilisateur, ressources_economisees, co2_total_evite_kg, nb_objets_recycles, total_points, niveau) 
+
+	queryScore := `INSERT INTO UPCYCLING_SCORE (id_utilisateur, ressources_economisees, co2_total_evite_kg, nb_objets_recycles, total_points, niveau)
 	               VALUES (?, 0, 0, 0, 0, 'Débutant 🌱')`
 
 	_, err = Conn.Exec(queryScore, lastInsertId)
@@ -114,11 +131,27 @@ func CreateUser(user models.User) error {
 }
 
 func ModifyUser(userId int, user models.User) error {
-	query := `UPDATE UTILISATEUR SET prenom=?, nom=?, mail=?, adresse=?, ville=?, code_postal=?, role=?, id_langue=? WHERE id=?`
+	if user.Role != "Prestataire" {
+		user.Siret = ""
+	}
+
+	query := `
+		UPDATE UTILISATEUR
+		SET prenom=?, nom=?, mail=?, adresse=?, ville=?, code_postal=?, role=?, id_langue=?,
+		    siret=?, siret_valide=false
+		WHERE id=?`
 
 	_, err := Conn.Exec(query,
-		user.Prenom, user.Nom, user.Mail, user.Adresse,
-		user.Ville, user.CodePostal, user.Role, user.IdLangue, userId,
+		user.Prenom,     
+		user.Nom,        
+		user.Mail,       
+		user.Adresse,     
+		user.Ville,      
+		user.CodePostal,  
+		user.Role,        
+		user.IdLangue,    
+		user.Siret,       
+		userId,          
 	)
 	return err
 }
@@ -134,22 +167,25 @@ func ModifyUserPassword(userId int, user models.User) error {
 }
 
 func GetPasswordHashed(userId int) (string, error) {
-    var hash string
-    query := `SELECT password FROM UTILISATEUR WHERE id = ?`
-    err := Conn.QueryRow(query, userId).Scan(&hash)
-    if err != nil {
-        return "", err
-    }
-    return hash, nil
+	var hash string
+	query := `SELECT password FROM UTILISATEUR WHERE id = ?`
+	err := Conn.QueryRow(query, userId).Scan(&hash)
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
 }
 
 func DeleteUser(id int) error {
 	result, err := Conn.Exec("DELETE FROM UTILISATEUR WHERE id = ?", id)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	count, _ := result.RowsAffected()
 	if count == 0 {
-		return fmt.Errorf("aucun utilisateur trouvé") }
+		return fmt.Errorf("aucun utilisateur trouvé")
+	}
 	return nil
 }
 
@@ -173,22 +209,38 @@ func GetUserByEmail(email string) (*models.User, error) {
 }
 
 func UpdateUserToken(userId int, token string) error {
-    query := "UPDATE UTILISATEUR SET token = ? WHERE id = ?"
-    _, err := Conn.Exec(query, token, userId)
-    return err
+	query := "UPDATE UTILISATEUR SET token = ? WHERE id = ?"
+	_, err := Conn.Exec(query, token, userId)
+	return err
+}
+
+// GetUserByToken resout l'identite (id + role) a partir du seul token de session.
+// Utilise par le middleware d'authentification.
+func GetUserByToken(token string) (int, string, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return 0, "", sql.ErrNoRows
+	}
+	var id int
+	var role string
+	query := "SELECT id, COALESCE(role, '') FROM UTILISATEUR WHERE token = ? AND token <> '' LIMIT 1"
+	if err := Conn.QueryRow(query, token).Scan(&id, &role); err != nil {
+		return 0, "", err
+	}
+	return id, role, nil
 }
 
 func VerifyUserByToken(userId int, token string) bool {
-    var dbToken string
-    query := "SELECT token FROM UTILISATEUR WHERE id = ?"
+	var dbToken string
+	query := "SELECT token FROM UTILISATEUR WHERE id = ?"
 
-    err := Conn.QueryRow(query, userId).Scan(&dbToken)
+	err := Conn.QueryRow(query, userId).Scan(&dbToken)
 
-    if err != nil || dbToken != token || token == "" {
-        return false
-    }
+	if err != nil || dbToken != token || token == "" {
+		return false
+	}
 
-    return true
+	return true
 }
 
 func GetUserStats(userId int) (*models.UserStats, error) {
@@ -217,9 +269,9 @@ func GetUserStats(userId int) (*models.UserStats, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s.Points > 500 {
+	if s.Points > 1500 {
 		s.Niveau = "Héro 🌿"
-	} else if s.Points > 200 {
+	} else if s.Points > 600 {
 		s.Niveau = "Protecteur 🍃"
 	} else {
 		s.Niveau = "Débutant 🌱"

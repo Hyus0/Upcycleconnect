@@ -19,42 +19,58 @@
                     Upcycle <span class="accent">Connect</span>
                 </div>
                 <h1 class="login-left__title">
-                    Heureux de vous <span class="accent">revoir</span>.
+                    {{ t.WelcomeBackLeft || 'Heureux de vous ' }}<span class="accent">{{ t.WelcomeBackAccent || 'revoir' }}</span>.
                 </h1>
                 <p class="login-left__desc">
-                    Connectez-vous pour retrouver vos annonces, vos projets en
-                    cours et continuer à faire grandir la communauté de
-                    l'upcycling.
+                    {{ t.LoginDesc || "Connectez-vous pour retrouver vos annonces, vos projets en cours et continuer à faire grandir la communauté de l'upcycling." }}
                 </p>
 
                 <div class="login-left__stats">
                     <div class="stat">
-                        <strong>2.4t</strong>
-                        <span>CO₂ évité / mois</span>
+                        <strong>
+                          {{ stats.co2_evite_mois >= 1000 
+                             ? (stats.co2_evite_mois / 1000).toFixed(1) + 't' 
+                             : stats.co2_evite_mois.toFixed(0) + 'kg' 
+                          }}
+                        </strong>
+                        <span>{{ t.StatCO2Month || 'CO₂ évité / mois' }}</span>
                     </div>
                     <div class="stat">
-                        <strong>8k+</strong>
-                        <span>Objets upcyclés</span>
+                        <strong>{{ stats.objets_upcycles >= 1000 ? Math.floor(stats.objets_upcycles/1000) + 'k+' : stats.objets_upcycles }}</strong>
+                        <span>{{ t.StatUpcycled || 'Objets upcyclés' }}</span>
                     </div>
                     <div class="stat">
-                        <strong>340</strong>
-                        <span>Artisans actifs</span>
+                        <strong>{{ stats.artisans_actifs }}</strong>
+                        <span>{{ t.StatArtisans || 'Artisans actifs' }}</span>
                     </div>
                 </div>
 
                 <div class="login-testimonial">
-                    <p class="login-testimonial__text">
-                        "La simplicité de gestion de mes dépôts sur
-                        UpcycleConnect m'a permis de me concentrer sur ce que
-                        j'aime : créer."
-                    </p>
-                    <div class="login-testimonial__author">
-                        <div class="login-testimonial__avatar">ML</div>
-                        <div>
-                            <strong>Marie L.</strong>
-                            <span>Artisane ébéniste — Paris 11e</span>
+                    <transition name="fade" mode="out-in">
+                        <div v-if="currentComment" :key="currentComment.id">
+                            <p class="login-testimonial__text">
+                                "{{ currentComment.description }}"
+                            </p>
+                            <div class="login-testimonial__author">
+                                <div class="login-testimonial__avatar">
+                                    {{
+                                        currentComment.author
+                                            .charAt(0)
+                                            .toUpperCase()
+                                    }}
+                                </div>
+                                <div>
+                                    <strong>{{ currentComment.author }}</strong>
+                                    <span>{{ t.MemberUpcycle || 'Membre UpcycleConnect' }}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                        <div v-else key="loading">
+                            <p class="login-testimonial__text">
+                                {{ t.LoadingReviews || 'Chargement des avis...' }}
+                            </p>
+                        </div>
+                    </transition>
                 </div>
             </div>
         </div>
@@ -69,17 +85,17 @@
                     Upcycle <span class="accent-green">Connect</span>
                 </div>
 
-                <h2 class="login-right__title">Bon retour parmi nous</h2>
+                <h2 class="login-right__title">{{ t.WelcomeBackRight || 'Bon retour parmi nous' }}</h2>
                 <p class="login-right__subtitle">
-                    Pas encore membre ?
+                    {{ t.NotMemberYet || 'Pas encore membre ?' }}
                     <router-link to="/inscription" class="login-right__link">
-                        Créer un compte gratuitement
+                        {{ t.CreateAccountFree || 'Créer un compte gratuitement' }}
                     </router-link>
                 </p>
 
                 <form @submit.prevent="handleLogin">
                     <div class="login-field">
-                        <label>Adresse e-mail</label>
+                        <label>{{ t.EmailLabel || 'Adresse e-mail' }}</label>
                         <input
                             type="email"
                             placeholder="marie.lambert@exemple.fr"
@@ -96,8 +112,13 @@
                                 align-items: center;
                             "
                         >
-                            <label>Mot de passe</label>
-                            <router-link to="/connexion" class="login-right__link" style="font-size: 0.8rem">Oublié ?</router-link>
+                            <label>{{ t.PasswordLabel || 'Mot de passe' }}</label>
+                            <router-link
+                                to="/connexion"
+                                class="login-right__link"
+                                style="font-size: 0.8rem"
+                                >{{ t.ForgotPwd || 'Oublié ?' }}</router-link
+                            >
                         </div>
                         <input
                             type="password"
@@ -113,7 +134,7 @@
                             id="remember"
                             v-model="rememberMe"
                         />
-                        <label for="remember">Se souvenir de moi</label>
+                        <label for="remember">{{ t.RememberMe || 'Se souvenir de moi' }}</label>
                     </div>
 
                     <div
@@ -138,12 +159,12 @@
                     </div>
 
                     <button type="submit" class="login-submit">
-                        Se connecter →
+                        {{ t.LoginBtn || 'Se connecter' }} →
                     </button>
                 </form>
 
                 <div class="login-separator">
-                    <span>ou continuer avec</span>
+                    <span>{{ t.OrContinueWith || 'ou continuer avec' }}</span>
                 </div>
 
                 <button class="login-google">Google</button>
@@ -153,9 +174,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import {useRouter} from "vue-router";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
+
+import { useTraduction } from "../composables/useTraduction"; 
+const { t } = useTraduction();
 
 const router = useRouter();
 
@@ -163,8 +187,71 @@ const email = ref("");
 const motDePasse = ref("");
 const rememberMe = ref(false);
 const errorMessages = ref([]);
-const isLoggedIn = ref(Boolean(sessionStorage.getItem("userToken") || localStorage.getItem("userToken")));
+
+const stats = ref({
+    co2_evite_mois: 0,
+    objets_upcycles: 0,
+    artisans_actifs: 0
+});
+
+const isLoggedIn = ref(!!sessionStorage.getItem("userToken"));
+
+const fetchStats = async () => {
+    try {
+        const res = await fetch("/go/stats/platform");
+        if (res.ok) {
+            stats.value = await res.json();
+        }
+    } catch (e) {
+        console.error("Erreur stats:", e);
+    }
+};
+
+const getUserRole = () => {
+    const role = sessionStorage.getItem("userRole");
+    if (!role || role === "null" || role === "undefined") {
+        return "Particulier";
+    }
+    return role;
+};
+const userRole = ref(getUserRole());
 const userName = ref("Marie Lambert");
+
+const commentaires = ref([]);
+const currentComment = ref(null);
+let intervalId = null;
+
+const pickRandomComment = () => {
+    if (commentaires.value.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * commentaires.value.length);
+    currentComment.value = commentaires.value[randomIndex];
+};
+
+const fetchCommentaires = async () => {
+    try {
+        const res = await fetch("/go/commentaires");
+        if (res.ok) {
+            commentaires.value = await res.json();
+            if (commentaires.value && commentaires.value.length > 0) {
+                pickRandomComment();
+                intervalId = setInterval(pickRandomComment, 25000);
+            }
+        }
+    } catch (error) {
+        console.error("Impossible de charger les commentaires", error);
+    }
+};
+
+onMounted(() => {
+  fetchCommentaires();
+  fetchStats();
+});
+
+onUnmounted(() => {
+    if (intervalId) {
+        clearInterval(intervalId);
+    }
+});
 
 const isEmailInvalid = computed(() => {
     return email.value.length > 0 && !email.value.includes("@");
@@ -184,7 +271,7 @@ async function handleLogin() {
     };
 
     try {
-        const response = await fetch("http://localhost:8081/login", {
+        const response = await fetch("/go/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData),
@@ -194,17 +281,18 @@ async function handleLogin() {
 
         if (response.ok) {
             if (data.token) {
-                localStorage.setItem("userToken", data.token);
+                sessionStorage.setItem("userToken", data.token);
             }
-            localStorage.setItem("userId", data.userId);
-            localStorage.setItem("userPrenom", data.prenom);
-            localStorage.setItem("userNom", data.nom);
-            
-            alert("Connecté avec succès !");
+
+            sessionStorage.setItem("userId", data.userId || "");
+            sessionStorage.setItem("userPrenom", data.prenom || "");
+            sessionStorage.setItem("userNom", data.nom || "");
+            sessionStorage.setItem("userRole", data.role || "Particulier");
             router.push("/profil");
-            return;
         } else {
-            errorMessages.value = Array.isArray(data) ? data : [data.message || "Erreur de connexion"];
+            errorMessages.value = Array.isArray(data)
+                ? data
+                : [data.message || "Erreur de connexion"];
         }
     } catch (error) {
         console.error("Détail :", error);
@@ -217,7 +305,7 @@ async function handleLogin() {
 .login-page {
     display: flex;
     min-height: calc(100vh - 86px);
-    margin-top: -108px;
+    margin-top: -92px;
 }
 
 .login-left {
@@ -310,6 +398,16 @@ async function handleLogin() {
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 120px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 
 .login-testimonial__text {

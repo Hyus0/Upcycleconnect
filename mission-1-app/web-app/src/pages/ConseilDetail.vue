@@ -119,7 +119,7 @@ import SiteFooter from "../components/SiteFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const tip = ref(null);
 const loading = ref(true);

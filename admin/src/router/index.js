@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { isAuthenticated } from "../services/auth";
 import AdminLayout from "../components/layout/AdminLayout.vue";
 import LoginPage from "../pages/LoginPage.vue";
 import DashboardPage from "../pages/DashboardPage.vue";
@@ -76,6 +77,18 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
+});
+
+// Garde d'authentification : tout est protege sauf /login.
+router.beforeEach((to) => {
+  const authed = isAuthenticated();
+  if (to.name !== "login" && !authed) {
+    return { name: "login", query: { redirect: to.fullPath } };
+  }
+  if (to.name === "login" && authed) {
+    return { name: "dashboard" };
+  }
+  return true;
 });
 
 router.afterEach((to) => {

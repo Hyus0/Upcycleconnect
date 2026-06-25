@@ -172,7 +172,7 @@ const isFetching = ref(true);
 const errors = ref([]);
 const successMsg = ref("");
 
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 const tipId = route.params.id;
 
 const currentUserId = computed(() => {

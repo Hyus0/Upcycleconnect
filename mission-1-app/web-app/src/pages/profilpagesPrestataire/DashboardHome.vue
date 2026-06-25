@@ -22,7 +22,7 @@ import SiteFooter from "../../components/SiteFooter.vue";
 import DashboardClassique from './DashboardFreemium.vue';
 import DashboardPro from './DashboardPremium.vue';
 
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 const loading = ref(true);
 const isPremium = ref(false);
 

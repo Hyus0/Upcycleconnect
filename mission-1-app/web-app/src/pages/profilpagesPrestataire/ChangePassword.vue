@@ -120,7 +120,7 @@ onMounted(async () => {
     if (!id || !token) return;
 
     try {
-        const response = await fetch(`http://localhost:8081/users/${id}`, {
+        const response = await fetch(`/go/users/${id}`, {
             headers: { Authorization: token }
         });
         if (response.ok) {
@@ -150,7 +150,7 @@ const handlePasswordUpdate = async () => {
     const token = sessionStorage.getItem("userToken");
 
     try {
-        const response = await fetch(`http://localhost:8081/users/${userId}/password`, {
+        const response = await fetch(`/go/users/${userId}/password`, {
             method: "PUT",
             headers: {
                 "Authorization": token,

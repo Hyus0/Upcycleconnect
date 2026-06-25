@@ -260,7 +260,7 @@ import imageParDefaut from "../components/upcycling-concept.jpg";
 
 const route = useRoute();
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const loading = ref(true);
 const isAddingToCart = ref(false);

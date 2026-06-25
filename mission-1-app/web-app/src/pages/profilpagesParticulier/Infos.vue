@@ -219,7 +219,7 @@ onMounted(async () => {
     if (!id || !token) return;
 
     try {
-        const response = await fetch(`http://localhost:8081/users/${id}`, {
+        const response = await fetch(`/go/users/${id}`, {
             method: "GET",
             headers: {
                 Authorization: token,
@@ -268,7 +268,7 @@ const updateProfile = async () => {
     if (!userId || !token) return;
 
     try {
-        const responseText = await fetch(`http://localhost:8081/users/${userId}`, {
+        const responseText = await fetch(`/go/users/${userId}`, {
             method: "PUT",
             headers: {
                 Authorization: token,
@@ -288,7 +288,7 @@ const updateProfile = async () => {
             if (profileFile.value) formData.append("profil", profileFile.value);
             if (bannerFile.value) formData.append("banniere", bannerFile.value);
 
-            const responseImg = await fetch(`http://localhost:8081/users/${userId}/images`, {
+            const responseImg = await fetch(`/go/users/${userId}/images`, {
                 method: "POST",
                 headers: {
                     Authorization: token,

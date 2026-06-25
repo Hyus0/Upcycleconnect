@@ -72,7 +72,7 @@ func RemoveFromPanier(itemID int, userID int) error {
 	return nil
 }
 
-func Checkout(userID int) (*CheckoutResult, error) {
+func Checkout(userID int, stripePaymentID string) (*CheckoutResult, error) {
 	tx, err := Conn.Begin()
 	if err != nil {
 		return nil, err
@@ -143,8 +143,8 @@ func Checkout(userID int) (*CheckoutResult, error) {
 		}
 	}
 
-	transactionRes, err := tx.Exec(`INSERT INTO `+"`TRANSACTION`"+` (id_acheteur, id_commande, montant_total, statut_paiement)
-	                  VALUES (?, ?, ?, 'Valide')`, userID, commandeID, montantTotal)
+	transactionRes, err := tx.Exec(`INSERT INTO `+"`TRANSACTION`"+` (id_acheteur, id_commande, montant_total, statut_paiement, stripe_payment_id)
+	                  VALUES (?, ?, ?, 'Valide', ?)`, userID, commandeID, montantTotal, stripePaymentID)
 	if err != nil {
 		tx.Rollback()
 		return nil, err

@@ -336,7 +336,7 @@ const formatDate = (d) => {
 
 const fetchSitesCache = async () => {
     try {
-        const res = await fetch("http://localhost:8081/sites");
+        const res = await fetch("/go/sites");
         if (res.ok) {
             const data = await res.json();
             data.forEach((s) => {
@@ -362,7 +362,7 @@ const fetchAnnonces = async () => {
     const token = sessionStorage.getItem("userToken");
     loading.value = true;
     try {
-        const res = await fetch(`http://localhost:8081/users/${id}/annonces`, {
+        const res = await fetch(`/go/users/${id}/annonces`, {
             headers: { Authorization: token },
         });
         if (res.ok) annonces.value = await res.json();
@@ -375,7 +375,7 @@ const fetchAndOpenSite = async (siteId) => {
     if (!siteId) return;
     const token = sessionStorage.getItem("userToken");
     try {
-        const res = await fetch(`http://localhost:8081/site/${siteId}`, {
+        const res = await fetch(`/go/site/${siteId}`, {
             headers: { Authorization: token },
         });
         if (res.ok) {
@@ -399,7 +399,7 @@ const annulerFlux = async (id, statut) => {
 
     try {
         const res = await fetch(
-            `http://localhost:8081/annonces/${id}/retirer`,
+            `/go/annonces/${id}/retirer`,
             {
                 method: "POST",
                 headers: {

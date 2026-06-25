@@ -136,7 +136,7 @@ import { useTraduction } from "../../composables/useTraduction";
 const { t, currentLangCode } = useTraduction();
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const calendarEntries = ref([]);
 const currentMonth = ref(

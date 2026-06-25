@@ -329,7 +329,7 @@ const fetchDetail = async () => {
     const userId = sessionStorage.getItem("userId") || 0;
     try {
         const res = await fetch(
-            `http://localhost:8081/formations/${id}?user_id=${userId}`,
+            `/go/formations/${id}?user_id=${userId}`,
         );
         if (res.ok) {
             const data = await res.json();
@@ -351,7 +351,7 @@ const fetchParticipants = async (formationId) => {
     participantsLoading.value = true;
     try {
         const res = await fetch(
-            `http://localhost:8081/api/formations/${formationId}/participants`,
+            `/go/api/formations/${formationId}/participants`,
         );
         if (res.ok) {
             participants.value = await res.json();
@@ -378,7 +378,7 @@ const handleAddToCart = async () => {
     isAddingToCart.value = true;
     try {
         const res = await fetch(
-            `http://localhost:8081/users/${userId}/panier`,
+            `/go/users/${userId}/panier`,
             {
                 method: "POST",
                 headers: {
@@ -413,7 +413,7 @@ const handleInscription = async () => {
     isRegistering.value = true;
     try {
         const res = await fetch(
-            `http://localhost:8081/api/formations/${formation.value.id}/join`,
+            `/go/api/formations/${formation.value.id}/join`,
             {
                 method: "POST",
                 headers: {
@@ -449,7 +449,7 @@ const handleQuit = async () => {
     isLeaving.value = true;
     try {
         const res = await fetch(
-            `http://localhost:8081/api/formations/${formation.value.id}/quit`,
+            `/go/api/formations/${formation.value.id}/quit`,
             {
                 method: "POST",
                 headers: {

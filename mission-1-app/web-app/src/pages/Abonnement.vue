@@ -173,7 +173,7 @@ import SiteFooter from "../components/SiteFooter.vue";
 import { Check } from 'lucide-vue-next';
 
 const router = useRouter();
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 
 const loading = ref(true);
 const processing = ref(false);

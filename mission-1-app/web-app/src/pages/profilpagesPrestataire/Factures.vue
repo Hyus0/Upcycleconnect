@@ -84,7 +84,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 
-const API_URL = "http://localhost:8081";
+const API_URL = "/go";
 const loading = ref(true);
 const error = ref("");
 const factures = ref([]);

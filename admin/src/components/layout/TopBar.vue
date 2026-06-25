@@ -13,20 +13,33 @@
 
     <div class="topbar-actions">
       <span class="page-chip">{{ pageTitle }}</span>
-      <div class="admin-avatar">AD</div>
+      <div class="admin-avatar" :title="adminName">{{ initials }}</div>
+      <button class="logout-btn" type="button" @click="onLogout">Deconnexion</button>
     </div>
   </header>
 </template>
 
 <script setup>
 import { computed } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import logoTextSrc from "../logo_texte.png";
+import { getName, clearSession } from "../../services/auth";
 
 defineEmits(["toggle-menu"]);
 
 const route = useRoute();
+const router = useRouter();
 const pageTitle = computed(() => route.meta.title ?? "Admin");
+const adminName = computed(() => getName() || "Administrateur");
+const initials = computed(() => {
+  const parts = adminName.value.split(" ").filter(Boolean).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "AD";
+});
+
+function onLogout() {
+  clearSession();
+  router.replace({ name: "login" });
+}
 </script>
 
 <style scoped>
@@ -106,6 +119,22 @@ const pageTitle = computed(() => route.meta.title ?? "Admin");
   color: white;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.logout-btn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4faf6;
+  border-radius: 12px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 @media (max-width: 1080px) {

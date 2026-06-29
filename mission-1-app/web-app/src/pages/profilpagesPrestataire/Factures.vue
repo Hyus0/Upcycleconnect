@@ -29,7 +29,6 @@
         </div>
         <div v-else-if="error" class="state-card error">{{ error }}</div>
         <div v-else-if="factures.length === 0" class="empty-state">
-            <div class="empty-icon">📄</div>
             <h2>Aucune facture disponible</h2>
             <p>
                 Vos factures seront générées automatiquement après chaque

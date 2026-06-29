@@ -5,7 +5,7 @@
                 <p class="sidebar__category2">ACCUEIL > FORMATIONS > CRÉER</p>
                 <h1 class="hero-title1">DÉPOSER UNE FORMATION</h1>
                 <p class="classic-text">
-                    Proposez une session de formation à la communauté.
+                    Proposez une ou plusieurs sessions de formation à la communauté.
                 </p>
 
                 <div
@@ -40,7 +40,7 @@
                     <div class="form-card">
                         <h2 class="card-title">1. La Formation</h2>
                         <p class="card-subtitle">
-                            Décrivez le contenu et le format de votre session.
+                            Décrivez le contenu et le format de votre enseignement.
                         </p>
 
                         <div class="form-group">
@@ -89,65 +89,89 @@
                             </div>
                         </div>
 
-                        <div class="form-divider">Dates & Disponibilité</div>
+                        <!-- GESTION DYNAMIQUE DES SESSIONS -->
+                        <div class="form-divider" style="margin-top: 1.5rem;">2. Vos Sessions (Dates & Horaires)</div>
+                        <p class="card-subtitle" style="margin-bottom: 1rem;">
+                            Ajoutez au moins une session à laquelle les utilisateurs pourront s'inscrire.
+                        </p>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Date de début</label>
-                                <input
-                                    v-model="form.date_debut"
-                                    type="datetime-local"
-                                    required
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label>Date de fin</label>
-                                <input
-                                    v-model="form.date_fin"
-                                    type="datetime-local"
-                                    required
-                                />
-                            </div>
-                        </div>
+                        <div class="sessions-container">
+                            <div v-for="(session, index) in form.sessions" :key="index" class="session-block">
+                                <div class="session-header">
+                                    <h4 style="margin: 0; color: #2d7a4f;">Session {{ index + 1 }}</h4>
+                                    <button 
+                                        v-if="form.sessions.length > 1" 
+                                        type="button" 
+                                        class="btn-remove-session" 
+                                        @click="removeSession(index)"
+                                    >
+                                        Retirer
+                                    </button>
+                                </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Statut</label>
-                                <select v-model="form.statut" required>
-                                    <option value="" disabled>Sélectionner...</option>
-                                    <option value="Ouvert">Ouvert</option>
-                                    <option value="Complet">Complet</option>
-                                    <option value="Termine">Terminé</option>
-                                    <option value="Annule">Annulé</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Prix unitaire</label>
-                                <div class="price-input-wrapper">
+                                <div class="form-group mt-2">
+                                    <label>Nom de la session</label>
                                     <input
-                                        v-model.number="form.prix_unitaire"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0.00"
+                                        v-model="session.nom"
+                                        type="text"
+                                        required
+                                        placeholder="Ex: Groupe du matin, Session d'Automne..."
                                     />
-                                    <span class="currency-symbol">€</span>
+                                </div>
+
+                                <div class="form-row mt-2">
+                                    <div class="form-group">
+                                        <label>Date de début</label>
+                                        <input
+                                            v-model="session.date_debut"
+                                            type="datetime-local"
+                                            required
+                                        />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date de fin</label>
+                                        <input
+                                            v-model="session.date_fin"
+                                            type="datetime-local"
+                                            required
+                                        />
+                                    </div>
                                 </div>
                             </div>
+
+                            <button type="button" class="btn-add-session" @click="addSession">
+                                + Ajouter une autre session
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="right-column">
                     <div class="form-card">
-                        <h2 class="card-title">2. Lieu de la session</h2>
+                        <h2 class="card-title">3. Détails & Lieu</h2>
                         <p class="card-subtitle">
-                            Renseignez l'adresse exacte du rendez-vous.
+                            Renseignez l'adresse exacte du rendez-vous et le tarif.
                         </p>
 
-                        <div class="form-group">
-                            <label>Adresse</label>
+
+                        <div class="form-group mt-2">
+                            <label>Prix unitaire</label>
+                            <div class="price-input-wrapper">
+                                <input
+                                    v-model.number="form.prix_unitaire"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                />
+                                <span class="currency-symbol">€</span>
+                            </div>
+                        </div>
+
+                        <div class="form-divider" style="margin-top: 1.5rem;">Localisation</div>
+
+                        <div class="form-group mt-2">
+                            <label>Adresse (Laissez vide si Webinaire)</label>
                             <input
                                 v-model="form.adresse"
                                 type="text"
@@ -155,7 +179,7 @@
                             />
                         </div>
 
-                        <div class="form-row">
+                        <div class="form-row mt-2">
                             <div class="form-group">
                                 <label>Code postal</label>
                                 <input
@@ -207,11 +231,10 @@ const loading = ref(false);
 const errors = ref([]);
 const successMsg = ref("");
 
-const API_URL = "/go";
+const API_URL = "http://localhost:8081";
 
 const currentUserId = computed(() => {
-    const storedId =
-        sessionStorage.getItem("id") || sessionStorage.getItem("userId");
+    const storedId = sessionStorage.getItem("id") || sessionStorage.getItem("userId");
     return Number(storedId) || 0;
 });
 
@@ -220,14 +243,25 @@ const form = ref({
     description: "",
     type: "",
     capacite_max: null,
-    date_debut: "",
-    date_fin: "",
     statut: "Ouvert",
     prix_unitaire: 0,
     adresse: "",
     ville: "",
     code_postal: "",
+    sessions: [
+        { nom: "", date_debut: "", date_fin: "" }
+    ]
 });
+
+const addSession = () => {
+    form.value.sessions.push({ nom: "", date_debut: "", date_fin: "" });
+};
+
+const removeSession = (index) => {
+    if (form.value.sessions.length > 1) {
+        form.value.sessions.splice(index, 1);
+    }
+};
 
 const validateFrontend = () => {
     errors.value = [];
@@ -239,12 +273,19 @@ const validateFrontend = () => {
         errors.value.push("Veuillez sélectionner un type de formation.");
     if (!form.value.capacite_max || form.value.capacite_max < 1)
         errors.value.push("La capacité maximale doit être d'au moins 1.");
-    if (!form.value.date_debut)
-        errors.value.push("La date de début est obligatoire.");
-    if (!form.value.date_fin)
-        errors.value.push("La date de fin est obligatoire.");
-    if (form.value.date_debut && form.value.date_fin && form.value.date_fin <= form.value.date_debut)
-        errors.value.push("La date de fin doit être postérieure à la date de début.");
+    
+    if (form.value.sessions.length === 0) {
+        errors.value.push("Vous devez proposer au moins une session.");
+    } else {
+        form.value.sessions.forEach((s, idx) => {
+            if (!s.nom) errors.value.push(`Session ${idx + 1} : Le nom de la session est obligatoire.`);
+            if (!s.date_debut || !s.date_fin) errors.value.push(`Session ${idx + 1} : Les dates sont obligatoires.`);
+            if (s.date_debut && s.date_fin && s.date_fin <= s.date_debut) {
+                errors.value.push(`Session ${idx + 1} : La date de fin doit être postérieure à la date de début.`);
+            }
+        });
+    }
+
     return errors.value.length === 0;
 };
 
@@ -254,7 +295,10 @@ const handleSubmit = async () => {
         return;
     }
 
-    if (!validateFrontend()) return;
+    if (!validateFrontend()) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
 
     loading.value = true;
     successMsg.value = "";
@@ -268,21 +312,24 @@ const handleSubmit = async () => {
         description: form.value.description,
         type: form.value.type,
         capacite_max: parseInt(form.value.capacite_max),
-        date_debut: new Date(form.value.date_debut).toISOString(),
-        date_fin: new Date(form.value.date_fin).toISOString(),
         statut: form.value.statut,
         prix_unitaire: parseFloat(form.value.prix_unitaire) || 0,
         adresse: form.value.adresse || "",
         ville: form.value.ville || "",
         code_postal: form.value.code_postal || "",
         est_valide: "En attente",
+        sessions: form.value.sessions.map(s => ({
+            nom: s.nom,
+            date_debut: new Date(s.date_debut).toISOString(),
+            date_fin: new Date(s.date_fin).toISOString()
+        }))
     };
 
     try {
         const response = await fetch(`${API_URL}/formation`, {
             method: "POST",
             headers: {
-                Authorization: token,
+                Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
@@ -290,16 +337,19 @@ const handleSubmit = async () => {
 
         if (response.ok) {
             successMsg.value = "Formation soumise avec succès ! Elle sera visible après validation.";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             setTimeout(() => {
                 router.push("/profil/formations");
             }, 1500);
         } else {
             const errMsg = await response.text();
             errors.value.push("Erreur serveur : " + errMsg);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     } catch (err) {
         console.error("Erreur:", err);
         errors.value.push("Impossible de joindre le serveur.");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
         loading.value = false;
     }
@@ -309,6 +359,8 @@ const handleSubmit = async () => {
 <style scoped>
 .page-container {
     padding: 20px;
+    background: #f7f9f7;
+    min-height: 100vh;
 }
 
 .content-header {
@@ -444,6 +496,10 @@ const handleSubmit = async () => {
     color: #333;
 }
 
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
 input,
 select,
 textarea {
@@ -454,6 +510,7 @@ textarea {
     font-size: 0.95rem;
     width: 100%;
     box-sizing: border-box;
+    background: #fff;
 }
 
 input:focus,
@@ -486,88 +543,59 @@ textarea {
     font-size: 0.9rem;
 }
 
-.info-label {
-    font-size: 0.85rem;
-    color: #2d7a4f;
-    text-transform: uppercase;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    display: block;
-    margin-bottom: 0.4rem;
+.sessions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
-.address-preview {
-    background: #fcfcfc;
-    border: 1px solid #eee;
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
+.session-block {
+    background: #fbfdfb;
+    border: 1px solid #e5ede7;
+    border-radius: 12px;
+    padding: 1.5rem;
 }
 
-.address-preview-text {
-    margin: 0;
-    font-size: 0.95rem;
-    color: #333;
-    line-height: 1.8;
-}
-
-.recap-card {
-    gap: 1rem;
-}
-
-.recap-row {
+.session-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.9rem;
-    padding: 0.4rem 0;
-    border-bottom: 1px solid #f5f5f5;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed #cfe0d4;
 }
 
-.recap-row:last-child {
-    border-bottom: none;
-}
-
-.recap-label {
-    color: #888;
-    font-weight: 500;
-}
-
-.recap-value {
-    font-weight: 700;
-    color: #333;
-}
-
-.recap-value.muted {
-    color: #999;
-    font-weight: 500;
-    font-style: italic;
-    font-size: 0.85rem;
-}
-
-.text-success {
-    color: #2d7a4f;
-    font-weight: 700;
-}
-
-.status-badge {
-    background: #f5f5f5;
-    padding: 4px 10px;
+.btn-remove-session {
+    background: #ffe5e5;
+    color: #d32f2f;
+    border: 1px solid #ffcccc;
+    padding: 6px 12px;
     border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.82rem;
-    color: #444;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-remove-session:hover {
+    background: #ffcccc;
 }
 
-.type-badge {
-    padding: 4px 10px;
+.btn-add-session {
+    background: transparent;
+    border: 2px dashed #9bcbae;
+    color: #2d7a4f;
+    padding: 1rem;
     border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 800;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
 }
-
-.type-atelier   { background: #e9f5ed; color: #2d7a4f; }
-.type-cours     { background: #e8eaf6; color: #3f51b5; }
-.type-webinaire { background: #f3e5f5; color: #7b1fa2; }
+.btn-add-session:hover {
+    background: #f0f4f1;
+    border-color: #2d7a4f;
+}
 
 .form-actions-card {
     margin-top: 0.5rem;
@@ -609,5 +637,11 @@ textarea {
 .btn-cancel:hover {
     background-color: #f5f5f5;
     border-color: #999;
+}
+
+@media (max-width: 900px) {
+    .split-layout {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

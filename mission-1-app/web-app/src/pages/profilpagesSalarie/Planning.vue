@@ -219,7 +219,7 @@ const goToEntryRoute = (entry) => {
     closeEntryDetail();
     if (entry.kind === "formation" || entry.kind === "my-formation") {
         router.push({
-            name: "FormationDetail",
+            name: "formation-detail",
             params: { id: entry.originalId },
         });
     } else if (entry.kind === "event" || entry.kind === "my-event") {
@@ -263,11 +263,11 @@ const loadCalendarEntries = async (id) => {
 
         const resF = await fetch(`${API_URL}/formations`);
         const allFormations = resF.ok ? await resF.json() : [];
-        const mesFormationsCreees = allFormations.filter(f => String(f.id_utilisateur) === String(id));
+        const mesFormationsCreees = allFormations.filter(f => String(f.id_formateur) === String(id));
 
         const resE = await fetch(`${API_URL}/evenements`);
         const allEvenements = resE.ok ? await resE.json() : [];
-        const mesEvenementsCrees = allEvenements.filter(e => String(e.id_utilisateur) === String(id));
+        const mesEvenementsCrees = allEvenements.filter(e => String(e.id_createur) === String(id));
 
         let entries = [];
 
@@ -282,10 +282,10 @@ const loadCalendarEntries = async (id) => {
         }
 
         const creaFormations = mesFormationsCreees.map((f) =>
-            toCalendarEntry(f, "my-formation", + f.titre, f.date_debut),
+            toCalendarEntry(f, "my-formation", f.titre, f.date_debut),
         );
         const creaEvenements = mesEvenementsCrees.map((e) =>
-            toCalendarEntry(e, "my-event", + e.titre, e.date_evenement),
+            toCalendarEntry(e, "my-event", e.titre, e.date_evenement),
         );
 
         const allEntries = [...entries, ...creaFormations, ...creaEvenements].filter(Boolean);

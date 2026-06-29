@@ -360,3 +360,35 @@ func GetProjetsByUserId(userID int) ([]models.ProjetUpcycling, error) {
 	}
 	return projets, nil
 }
+
+func CheckProjectLimit(userID int) error {
+	sub, err := GetUserSubscription(userID)
+	if err != nil {
+		return fmt.Errorf("erreur vérification abonnement: %v", err)
+	}
+
+	var activeProjectsCount int
+	query := `
+		SELECT COUNT(*) 
+		FROM PROJET_UPCYCLING 
+		WHERE id_createur = ? AND visible_public = 1
+	`
+	err = Conn.QueryRow(query, userID).Scan(&activeProjectsCount)
+	if err != nil {
+		return fmt.Errorf("erreur comptage projets: %v", err)
+	}
+
+	limite := 2 
+	if sub.IsPremium {
+		limite = 3 
+	}
+
+	if activeProjectsCount >= limite {
+		if sub.IsPremium {
+			return fmt.Errorf("Limite atteinte de 20 projets en ligne") 
+		}
+		return fmt.Errorf("Limite atteinte de 5 projets en ligne") 
+	}
+
+	return nil
+}

@@ -149,6 +149,11 @@
                                     >
                                         {{ p.role }}
                                     </div>
+                                    <div
+                                        style="font-size: 0.75rem; color: #666"
+                                    >
+                                        {{ p.mail }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -186,20 +191,6 @@
                         </div>
                     </div>
 
-                    <div class="form-card side-card">
-                        <h2 class="card-title-side">Participation</h2>
-                        <div class="data-row">
-                            <span class="data-label">Accès :</span>
-                            <span class="text-success">Gratuit</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Publié le :</span>
-                            <span class="status-badge">{{
-                                formatDateLong(evenement.date_creation)
-                            }}</span>
-                        </div>
-                    </div>
-
                     <div class="form-actions-card">
                         <button
                             @click="handleInscription"
@@ -214,6 +205,15 @@
                         </button>
 
                         <button
+                            v-if="!isRegistered"
+                            @click="handleInscription"
+                            class="btn-test"
+                            :disabled="isRegistering"
+                        >
+                            Inscription TEST
+                        </button>
+
+                        <button
                             v-if="isRegistered"
                             @click="handleQuit"
                             class="btn-quit"
@@ -222,6 +222,7 @@
                             Annuler ma participation
                         </button>
                     </div>
+
                 </div>
             </div>
         </main>

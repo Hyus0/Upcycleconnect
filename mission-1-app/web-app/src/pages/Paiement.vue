@@ -150,7 +150,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { loadStripe } from "@stripe/stripe-js";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 
@@ -267,7 +266,6 @@ const validerPaiement = async () => {
     stripeError.value = "";
 
     try {
-        // 1. Demander un PaymentIntent au backend
         const intentRes = await fetch(`${API_URL}/paiement/intent`, {
             method: "POST",
             headers: {
@@ -290,7 +288,6 @@ const validerPaiement = async () => {
 
         const { client_secret } = await intentRes.json();
 
-        // 2. Confirmer le paiement côté Stripe
         const { error: stripeConfirmError, paymentIntent } = await stripe.confirmCardPayment(
             client_secret,
             { payment_method: { card: cardElement } }
@@ -304,7 +301,6 @@ const validerPaiement = async () => {
             throw new Error(`Statut inattendu : ${paymentIntent.status}`);
         }
 
-        // 3. Notifier le backend pour finaliser la commande
         await finaliserCommande(paymentIntent.id);
 
         router.push("/profil?paiement=success");
@@ -460,7 +456,6 @@ const finaliserCommande = async (stripePaymentId) => {
     padding-bottom: 10px;
 }
 
-/* ── Stripe wrapper ── */
 .stripe-card-wrapper {
     background: #fafdfb;
     border: 1px solid #e5ede7;
@@ -523,7 +518,6 @@ const finaliserCommande = async (stripePaymentId) => {
     padding: 14px;
 }
 
-/* ── Summary ── */
 .summary-item {
     display: flex;
     justify-content: space-between;
@@ -585,7 +579,6 @@ const finaliserCommande = async (stripePaymentId) => {
     height: auto;
 }
 
-/* ── Empty state ── */
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;

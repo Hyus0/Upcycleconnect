@@ -13,6 +13,26 @@ type SubscriptionStatus struct {
 	PlanID    int    `json:"plan_id,omitempty"` 
 }
 
+type TypeAbonnement struct {
+	ID          int     `json:"id"`
+	Nom         string  `json:"nom"`
+	Description string  `json:"description"`
+	PrixHT      float64 `json:"prix_ht"`
+	DureeMois   int     `json:"duree_mois"`
+}
+
+func GetTypeAbonnementByID(planID int) (TypeAbonnement, error) {
+	var p TypeAbonnement
+	err := Conn.QueryRow("SELECT id, nom, description, prix_ht, duree_mois FROM TYPE_ABONNEMENT WHERE id = ?", planID).
+		Scan(&p.ID, &p.Nom, &p.Description, &p.PrixHT, &p.DureeMois)
+	
+	if err != nil {
+		return p, err
+	}
+	return p, nil
+}
+
+
 func GetUserSubscription(userID int) (SubscriptionStatus, error) {
 	var sub SubscriptionStatus
 

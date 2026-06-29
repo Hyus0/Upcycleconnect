@@ -2,11 +2,11 @@
     <div class="layout-wrapper planning-page">
         <header class="content-header">
             <div class="header-left">
-                <p class="sidebar__category2">{{t.Home}} > {{t.MySchedule}}</p>
-                <h1 class="hero-title1">{{t.Calendrier}}</h1>
+                <p class="sidebar__category2">ACCUEIL > MON PLANNING</p>
+                <h1 class="hero-title1">Calendrier d'inscriptions</h1>
             </div>
             <router-link to="/profil" class="btn-secondary" style="text-decoration: none"
-                >🠔 {{t.BackToDashboard}}</router-link
+                >🠔 Retour au tableau de bord</router-link
             >
         </header>
 
@@ -14,24 +14,24 @@
             <div class="planning-toolbar">
                 <div class="toolbar-left">
                     <button class="btn-icon" @click="previousMonth">
-                        ❮ {{t.Precedent}}
+                        ❮ Précédent
                     </button>
                     <button class="btn-today" @click="goToToday">
-                        {{t.Today}}
+                        Aujourd'hui
                     </button>
                     <button class="btn-icon" @click="nextMonth">
-                        {{t.Suivant}} ❯
+                        Suivant ❯
                     </button>
                 </div>
                 <h2 class="planning-month">{{ currentMonthLabel }}</h2>
                 <div class="planning-legend">
                     <span class="planning-legend__item"
                         ><i class="planning-dot planning-dot--formation"></i>
-                        {{t.Formation}}</span
+                        Formation</span
                     >
                     <span class="planning-legend__item"
                         ><i class="planning-dot planning-dot--event"></i>
-                        {{t.Evenement}}</span
+                        Événement</span
                     >
                 </div>
             </div>
@@ -132,9 +132,6 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import { useTraduction } from "../../composables/useTraduction";
-const { t, currentLangCode } = useTraduction();
-
 const router = useRouter();
 const API_URL = "/go";
 
@@ -142,17 +139,7 @@ const calendarEntries = ref([]);
 const currentMonth = ref(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
 );
-
-const weekDays = computed(() => [
-    t.Lundi || "LUN",
-    t.Mardi || "MAR",
-    t.Mercredi || "MER",
-    t.Jeudi || "JEU",
-    t.Vendredi || "VEN",
-    t.Samedi || "SAM",
-    t.Dimanche || "DIM"
-]);
-
+const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const selectedEntry = ref(null);
 
 const getLocalISODate = (date) => {
@@ -164,9 +151,7 @@ const getLocalISODate = (date) => {
 };
 
 const currentMonthLabel = computed(() => {
-    const localeStr = currentLangCode.value === 'en' ? 'en-US' : (currentLangCode.value === 'es' ? 'es-ES' : 'fr-FR');
-    
-    const label = currentMonth.value.toLocaleDateString(localeStr, {
+    const label = currentMonth.value.toLocaleDateString("fr-FR", {
         month: "long",
         year: "numeric",
     });
@@ -246,25 +231,49 @@ const toCalendarEntry = (item, kind, title, dateValue) => {
     const parsed = new Date(dateValue);
     if (Number.isNaN(parsed.getTime())) return null;
 
-    const localeStr = currentLangCode.value === 'en' ? 'en-US' : (currentLangCode.value === 'es' ? 'es-ES' : 'fr-FR');
+    const itemId = item.id || item.ID;
 
     return {
-        id: `${kind}-${item.id ?? title}-${parsed.getTime()}`,
-        originalId: item.id,
+        id: `${kind}-${itemId ?? title}-${parsed.getTime()}`,
+        originalId: itemId,
         kind,
         title,
         date: getLocalISODate(parsed),
-        dateLabelLong: parsed.toLocaleDateString(localeStr, {
+        dateLabelLong: parsed.toLocaleDateString("fr-FR", {
             weekday: "long",
             day: "numeric",
             month: "long",
             year: "numeric",
         }),
-        timeLabel: parsed.toLocaleTimeString(localeStr, {
+        timeLabel: parsed.toLocaleTimeString("fr-FR", {
             hour: "2-digit",
             minute: "2-digit",
         }),
     };
+};
+
+const parseFormations = (formationsArray, kindClass) => {
+    const results = [];
+    for (const f of formationsArray) {
+        const rawSessions = f.sessions || f.Sessions || [];
+        
+        if (rawSessions.length > 0) {
+            for (const s of rawSessions) {
+                const sessionName = s.nom || s.Nom || 'Session';
+                const sessionDate = s.date_debut || s.DateDebut;
+                const title = `${f.titre || f.Titre} - ${sessionName}`;
+                
+                const entry = toCalendarEntry(f, kindClass, title, sessionDate);
+                if (entry) results.push(entry);
+            }
+        } else {
+            const title = f.titre || f.Titre;
+            const fallbackDate = f.date_debut || f.Date_debut;
+            const entry = toCalendarEntry(f, kindClass, title, fallbackDate);
+            if (entry) results.push(entry);
+        }
+    }
+    return results;
 };
 
 const loadCalendarEntries = async (id) => {
@@ -281,12 +290,12 @@ const loadCalendarEntries = async (id) => {
         let entries = [];
 
         if (data && !Array.isArray(data)) {
-            const formations = (data.formations || []).map((f) =>
-                toCalendarEntry(f, "formation", f.titre, f.date_debut),
-            );
+            const formations = parseFormations(data.formations || [], "formation");
+            
             const evenements = (data.evenements || []).map((e) =>
-                toCalendarEntry(e, "event", e.titre, e.date_evenement),
+                toCalendarEntry(e, "event", e.titre || e.Titre, e.date_evenement || e.Date_evenement),
             );
+            
             entries = [...formations, ...evenements].filter(Boolean);
         }
 
@@ -317,7 +326,6 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 2rem;
 }
-
 
 .section-container {
     background: white;

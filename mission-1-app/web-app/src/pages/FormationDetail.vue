@@ -14,16 +14,16 @@
                         ACCUEIL > FORMATIONS > DÉTAIL
                     </p>
                     <h1 class="hero-title1">
-                        {{ formation?.titre || "Chargement..." }}
+                        {{ formation?.titre || formation?.Titre || "Chargement..." }}
                     </h1>
                     <div v-if="formation" class="project-sub-header">
                         <p class="classic-text">
-                            Du {{ formatDateLong(formation.date_debut) }}
+                            Du {{ formatDateLong(formation.date_debut || formation.Date_debut) }}
                             <span class="dot-separator">•</span>
-                            au {{ formatDateLong(formation.date_fin) }}
+                            au {{ formatDateLong(formation.date_fin || formation.Date_fin) }}
                             <span class="dot-separator">•</span>
-                            {{ formation.nb_inscrit }} /
-                            {{ formation.capacite_max }} participants
+                            {{ formation.nb_inscrit || formation.Nb_inscrit || 0 }} /
+                            {{ formation.capacite_max || formation.Capacite_max || 0 }} participants (Total)
                         </p>
                     </div>
                 </div>
@@ -36,20 +36,20 @@
                 Récupération des données...
             </div>
 
-            <div v-else-if="formation?.id" class="split-layout">
+            <div v-else-if="formation?.id || formation?.ID" class="split-layout">
                 <div class="left-column">
                     <div class="form-card">
                         <div class="card-header-flex">
                             <h2 class="card-title">
-                                Présentation de la session
+                                Présentation de la formation
                             </h2>
                             <span
                                 :class="[
                                     'type-badge',
-                                    'type-' + formation.type?.toLowerCase(),
+                                    'type-' + (formation.type || formation.Type || '').toLowerCase(),
                                 ]"
                             >
-                                {{ formation.type?.toUpperCase() }}
+                                {{ (formation.type || formation.Type || '').toUpperCase() }}
                             </span>
                         </div>
 
@@ -58,7 +58,7 @@
                                 >Description & Programme</label
                             >
                             <div class="description-box">
-                                {{ formation.description }}
+                                {{ formation.description || formation.Description }}
                             </div>
                         </div>
 
@@ -69,25 +69,25 @@
                             <div class="specs-grid">
                                 <div class="spec-item">
                                     <span class="spec-label"
-                                        >Date de début</span
+                                        >Date de début (globale)</span
                                     >
                                     <p class="spec-value highlight-val">
                                         {{
-                                            formatDateLong(formation.date_debut)
+                                            formatDateLong(formation.date_debut || formation.Date_debut)
                                         }}
                                     </p>
                                 </div>
                                 <div class="spec-item">
-                                    <span class="spec-label">Date de fin</span>
+                                    <span class="spec-label">Date de fin (globale)</span>
                                     <p class="spec-value">
-                                        {{ formatDateLong(formation.date_fin) }}
+                                        {{ formatDateLong(formation.date_fin || formation.Date_fin) }}
                                     </p>
                                 </div>
                                 <div class="spec-item">
-                                    <span class="spec-label">Capacité max</span>
+                                    <span class="spec-label">Capacité max par session</span>
                                     <p class="spec-value">
                                         {{
-                                            formation.capacite_max
+                                            formation.capacite_max || formation.Capacite_max
                                         }}
                                         participants
                                     </p>
@@ -95,7 +95,7 @@
                                 <div class="spec-item">
                                     <span class="spec-label">Format</span>
                                     <p class="spec-value">
-                                        {{ formation.type }}
+                                        {{ formation.type || formation.Type }}
                                     </p>
                                 </div>
                             </div>
@@ -106,10 +106,10 @@
                                 >Lieu exact de rendez-vous</label
                             >
                             <div class="description-box address-box">
-                                <strong>📍 {{ formation.adresse }}</strong
+                                <strong>📍 {{ formation.adresse || formation.Adresse }}</strong
                                 ><br />
-                                {{ formation.code_postal }}
-                                {{ formation.ville }}
+                                {{ formation.code_postal || formation.CodePostal }}
+                                {{ formation.ville || formation.Ville }}
                             </div>
                         </div>
                     </div>
@@ -138,7 +138,7 @@
                         >
                             Aucun participant inscrit pour le moment.
                         </div>
-                        <div v-else class="participants-list">
+                        <div class="participants-list" v-else>
                             <div
                                 v-for="p in participants"
                                 :key="p.id"
@@ -160,10 +160,22 @@
                                     <strong class="hover-underline"
                                         >{{ p.prenom }} {{ p.nom }}</strong
                                     >
+                                    
                                     <div
                                         style="font-size: 0.75rem; color: #666"
                                     >
                                         {{ p.role }}
+                                    </div>
+                                    <div
+                                        style="font-size: 0.75rem; color: #666"
+                                    >
+                                        {{ p.mail }}
+                                    </div>
+                                    <div 
+                                        v-if="canViewParticipants && p.email"
+                                        style="font-size: 0.75rem; color: #2d7a4f; font-weight: 600; margin-top: 2px;"
+                                    >
+                                        {{ p.email }}
                                     </div>
                                 </div>
                             </div>
@@ -174,27 +186,27 @@
                 <div class="right-column">
                     <div class="form-card side-card">
                         <h2 class="card-title-side">
-                            Organisateur de la session
+                            Organisateur
                         </h2>
                         <div
                             class="trainer-preview cursor-pointer"
-                            @click="viewProfile(formation.id_formateur)"
+                            @click="viewProfile(formation.id_formateur || formation.ID_formateur)"
                         >
                             <div class="mini-avatar">
                                 <img
-                                    v-if="formation.image_formateur"
-                                    :src="formation.image_formateur"
+                                    v-if="formation.image_formateur || formation.Image_formateur"
+                                    :src="formation.image_formateur || formation.Image_formateur"
                                     class="mini-avatar-img"
                                 />
                                 <span v-else>
-                                    {{ formation.prenom_formateur?.charAt(0)
-                                    }}{{ formation.nom_formateur?.charAt(0) }}
+                                    {{ (formation.prenom_formateur || formation.Prenom_formateur)?.charAt(0)
+                                    }}{{ (formation.nom_formateur || formation.Nom_formateur)?.charAt(0) }}
                                 </span>
                             </div>
                             <div>
                                 <p class="trainer-name hover-underline">
-                                    {{ formation.prenom_formateur }}
-                                    {{ formation.nom_formateur }}
+                                    {{ formation.prenom_formateur || formation.Prenom_formateur }}
+                                    {{ formation.nom_formateur || formation.Nom_formateur }}
                                 </p>
                                 <button class="link-btn">
                                     Voir le profil expert
@@ -203,73 +215,91 @@
                         </div>
                     </div>
 
-                    <div class="form-card side-card">
-                        <h2 class="card-title-side">Inscriptions</h2>
-                        <div class="data-row">
-                            <span class="data-label">Validation Admin :</span>
-                            <span class="text-success">APPROUVÉ</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Places occupées :</span>
-                            <span class="status-badge"
-                                >{{ formation.nb_inscrit }} /
-                                {{ formation.capacite_max }}</span
-                            >
-                        </div>
-                    </div>
-
+                    <!-- =========================================================
+                         CARTE DE PAIEMENT ET SÉLECTION DE SESSION
+                    ========================================================= -->
                     <div class="form-card side-card price-card">
-                        <h2 class="card-title-side">Prix de la réservation</h2>
+                        <h2 class="card-title-side">Prix par session</h2>
                         <div class="price-value">
                             {{
-                                formation.prix_unitaire > 0
-                                    ? formation.prix_unitaire + " €"
+                                (formation.prix_unitaire || formation.Prix_unitaire) > 0
+                                    ? (formation.prix_unitaire || formation.Prix_unitaire) + " €"
                                     : "GRATUIT"
                             }}
                         </div>
                         <p class="price-hint">par personne</p>
+
+                        <!-- Menu déroulant pour choisir la session -->
+                        <div v-if="availableSessions.length > 0" class="session-selector mt-4 text-left">
+                            <label class="info-label" style="display: block; margin-bottom: 8px;">Choisir une session :</label>
+                            <select v-model="selectedSessionId" class="session-select w-full">
+                                <option v-for="session in availableSessions" :key="session.id" :value="session.id" :disabled="session.statut !== 'Ouvert'">
+                                    {{ session.nom }} {{ session.statut !== 'Ouvert' ? `(${session.statut})` : '' }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="main-actions mt-4">
+                            <!-- Bouton principal (Panier ou Inscription Gratuite) -->
+                            <button 
+                                v-if="!isRegistered"
+                                @click="handleMainAction" 
+                                class="btn-save w-full"
+                                :disabled="isRegistering || isAddingToCart || !selectedSessionId || !isSessionOpen"
+                            >
+                                <template v-if="!isSessionOpen">❌ Session non disponible</template>
+                                <template v-else-if="(formation.prix_unitaire || formation.Prix_unitaire) > 0">Ajouter au panier</template>
+                                <template v-else>S'inscrire</template>
+                            </button>
+
+                            <!-- Bouton de désistement si déjà inscrit -->
+                            <button
+                                v-else
+                                @click="handleQuit(selectedSessionId)"
+                                class="btn-quit w-full"
+                                :disabled="isLeaving || !selectedSessionId"
+                            >
+                                Se désister de cette session
+                            </button>
+
+                            <!-- Bouton Inscription TEST (Contourne le panier) -->
+                            <button 
+                                v-if="!isRegistered"
+                                @click="handleTestInscription" 
+                                class="btn-test w-full mt-2"
+                                :disabled="isRegistering || !selectedSessionId || !isSessionOpen"
+                            >
+                                Inscription TEST (Directe)
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="form-actions-card">
-                        <button
-                            @click="
-                                formation.prix_unitaire > 0
-                                    ? handleAddToCart()
-                                    : handleInscription()
-                            "
-                            class="btn-save"
-                            :class="{ 'btn-liked-active': isRegistered }"
-                            :disabled="
-                                isRegistered ||
-                                formation.statut !== 'Ouvert' ||
-                                isRegistering ||
-                                isAddingToCart
-                            "
-                        >
-                            <span v-if="isRegistered">Déjà inscrit</span>
-                            <span v-else>
-                                <template v-if="formation.statut !== 'Ouvert'"
-                                    >❌ Complet</template
-                                >
-                                <template
-                                    v-else-if="formation.prix_unitaire > 0"
-                                    >Ajouter au panier</template
-                                >
-                                <template v-else
-                                    >Réserver ma place (Gratuit)</template
-                                >
-                            </span>
-                        </button>
+                    <!-- =========================================================
+                         LISTE DES SESSIONS (Détails uniquement, sans boutons)
+                    ========================================================= -->
+                    <div class="form-card side-card">
+                        <h2 class="card-title-side">Détail des sessions</h2>
+                        
+                        <div v-if="availableSessions.length > 0" class="sessions-list">
+                            <div v-for="session in availableSessions" :key="session.id" class="session-item">
+                                <div class="session-info">
+                                    <strong>📅 {{ session.nom }}</strong>
+                                    <div class="session-dates">
+                                        Début: {{ formatDateLong(session.date_debut) }}<br/>
+                                        Fin: {{ formatDateLong(session.date_fin) }}
+                                    </div>
+                                    <span class="status-badge" :class="session.statut === 'Ouvert' ? 'badge--green' : ''">
+                                        {{ session.statut }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
-                        <button
-                            v-if="isRegistered"
-                            @click="handleQuit"
-                            class="btn-quit"
-                            :disabled="isLeaving"
-                        >
-                            Se désister de la session
-                        </button>
+                        <div v-else class="description-box" style="text-align: center; color: #666; margin-top: 1rem;">
+                            Aucune session n'est disponible pour cette formation.
+                        </div>
                     </div>
+
                 </div>
             </div>
         </main>
@@ -278,7 +308,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
@@ -298,6 +328,8 @@ const isLeaving = ref(false);
 const participants = ref([]);
 const participantsLoading = ref(false);
 
+const selectedSessionId = ref(null);
+
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {
     const prenom = sessionStorage.getItem("userPrenom") || "";
@@ -305,23 +337,56 @@ const userName = computed(() => {
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
 });
 
+// SOLUTION AU PROBLÈME DE CASSE JSON DE GO
+const availableSessions = computed(() => {
+    if (!formation.value) return [];
+    
+    const rawSessions = formation.value.sessions || formation.value.Sessions || [];
+    
+    return rawSessions.map(s => ({
+        id: s.id || s.ID,
+        nom: s.nom || s.Nom,
+        date_debut: s.date_debut || s.DateDebut,
+        date_fin: s.date_fin || s.DateFin,
+        statut: s.statut || s.Statut
+    }));
+});
+
+// Auto-sélection de la première session ouverte
+watch(availableSessions, (newSessions) => {
+    if (newSessions.length > 0 && !selectedSessionId.value) {
+        const openSession = newSessions.find(s => s.statut === 'Ouvert');
+        selectedSessionId.value = openSession ? openSession.id : newSessions[0].id;
+    }
+}, { immediate: true });
+
+// Vérifie si la session sélectionnée est ouverte
+const isSessionOpen = computed(() => {
+    if (!selectedSessionId.value) return false;
+    const session = availableSessions.value.find(s => s.id === selectedSessionId.value);
+    return session && session.statut === 'Ouvert';
+});
+
 const canViewParticipants = computed(() => {
     if (!formation.value) return false;
     const currentUserId = parseInt(sessionStorage.getItem("userId") || "0");
     const currentUserRole = sessionStorage.getItem("userRole") || "";
     return (
-        currentUserId === formation.value.id_formateur ||
+        currentUserId === (formation.value.id_formateur || formation.value.ID_formateur) ||
         currentUserRole === "Admin"
     );
 });
 
 const formatDateLong = (d) => {
-    if (!d || d.startsWith("0001")) return "Date inconnue";
-    return new Date(d).toLocaleDateString("fr-FR", {
+    if (!d || d.startsWith("0001") || d.startsWith("1970")) return "Non définie";
+    const dateObj = new Date(d);
+    return dateObj.toLocaleDateString("fr-FR", {
         day: "numeric",
-        month: "long",
+        month: "short",
         year: "numeric",
-    });
+        hour: "2-digit",
+        minute: "2-digit"
+    }).replace(":", "h");
 };
 
 const fetchDetail = async () => {
@@ -334,7 +399,7 @@ const fetchDetail = async () => {
         if (res.ok) {
             const data = await res.json();
             formation.value = data;
-            isRegistered.value = data.is_registered;
+            isRegistered.value = data.is_registered || data.IsRegistered || false;
 
             if (canViewParticipants.value) {
                 fetchParticipants(id);
@@ -371,10 +436,27 @@ const viewProfile = (id) => {
     }
 };
 
-const handleAddToCart = async () => {
+// Actions globales basées sur la session sélectionnée
+const handleMainAction = () => {
+    if (!selectedSessionId.value) return;
+    const prix = formation.value.prix_unitaire || formation.value.Prix_unitaire || 0;
+    if (prix > 0) {
+        handleAddToCart(selectedSessionId.value);
+    } else {
+        handleInscription(selectedSessionId.value);
+    }
+};
+
+const handleTestInscription = () => {
+    if (!selectedSessionId.value) return;
+    handleInscription(selectedSessionId.value);
+};
+
+const handleAddToCart = async (sessionId) => {
     const token = sessionStorage.getItem("userToken");
     const userId = sessionStorage.getItem("userId");
     if (!token || !userId) return router.push("/connexion");
+    
     isAddingToCart.value = true;
     try {
         const res = await fetch(
@@ -387,13 +469,13 @@ const handleAddToCart = async () => {
                 },
                 body: JSON.stringify({
                     type_item: "Formation",
-                    reference_id: parseInt(formation.value.id),
-                    prix_unitaire: parseFloat(formation.value.prix_unitaire),
+                    reference_id: parseInt(formation.value.id || formation.value.ID),
+                    prix_unitaire: parseFloat(formation.value.prix_unitaire || formation.value.Prix_unitaire),
                 }),
             },
         );
         if (res.ok) {
-            alert("Formation ajoutée à votre panier!");
+            alert("Session de formation ajoutée à votre panier !");
         } else {
             const errorMsg = await res.text();
             alert("Erreur lors de l'ajout au panier : " + errorMsg);
@@ -406,29 +488,35 @@ const handleAddToCart = async () => {
     }
 };
 
-const handleInscription = async () => {
+// S'inscrire à la session
+const handleInscription = async (sessionId) => {
     const token = sessionStorage.getItem("userToken");
     const userId = sessionStorage.getItem("userId");
     if (!token || !userId) return router.push("/connexion");
+    
     isRegistering.value = true;
     try {
+        const formationId = formation.value.id || formation.value.ID;
         const res = await fetch(
-            `/go/api/formations/${formation.value.id}/join`,
+            `/go/api/formations/${formationId}/join`,
             {
                 method: "POST",
                 headers: {
-                    Authorization: token,
+                    Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ id_utilisateur: parseInt(userId) }),
+                body: JSON.stringify({ 
+                    id_utilisateur: parseInt(userId),
+                    id_session: parseInt(sessionId) // Utilise la session spécifique
+                }),
             },
         );
-        if (res.status === 201) {
-            alert("Inscription réussie !");
+        if (res.status === 201 || res.status === 200) {
+            alert("Inscription à la session réussie !");
             isRegistered.value = true;
             fetchDetail();
         } else if (res.status === 409) {
-            alert("Désolé, cette formation est déjà complète.");
+            alert("Désolé, cette session est déjà complète.");
         } else {
             const errorMsg = await res.text();
             alert("Erreur : " + errorMsg);
@@ -441,22 +529,27 @@ const handleInscription = async () => {
     }
 };
 
-const handleQuit = async () => {
-    if (!confirm("Voulez-vous vraiment vous désinscrire de cette formation ?"))
+// Se désister
+const handleQuit = async (sessionId) => {
+    if (!confirm("Voulez-vous vraiment vous désinscrire de cette session ?"))
         return;
     const token = sessionStorage.getItem("userToken");
     const userId = sessionStorage.getItem("userId");
     isLeaving.value = true;
     try {
+        const formationId = formation.value.id || formation.value.ID;
         const res = await fetch(
-            `/go/api/formations/${formation.value.id}/quit`,
+            `/go/api/formations/${formationId}/quit`,
             {
                 method: "POST",
                 headers: {
-                    Authorization: token,
+                    Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ id_utilisateur: parseInt(userId) }),
+                body: JSON.stringify({ 
+                    id_utilisateur: parseInt(userId),
+                    id_session: parseInt(sessionId)
+                }),
             },
         );
         if (res.ok) {
@@ -464,7 +557,8 @@ const handleQuit = async () => {
             isRegistered.value = false;
             fetchDetail();
         } else {
-            alert("Erreur lors de la désinscription.");
+            const msg = await res.text();
+            alert("Erreur lors de la désinscription : " + msg);
         }
     } catch (e) {
         alert("Erreur de connexion.");
@@ -793,24 +887,76 @@ onMounted(fetchDetail);
     margin: 0;
 }
 
-.form-actions-card {
-    margin-top: 0.2rem;
-    padding: 0;
+.session-selector {
+    width: 100%;
+}
+
+.session-select {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background-color: white;
+    outline: none;
+    color: #333;
+}
+.session-select:focus {
+    border-color: #2d7a4f;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.sessions-list {
     display: flex;
     flex-direction: column;
+    gap: 12px;
+    margin-top: 1rem;
+}
+
+.session-item {
+    background: #fbfdfb;
+    border: 1px solid #e5ede7;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.session-info strong {
+    display: block;
+    color: #2d7a4f;
+    margin-bottom: 6px;
+    font-size: 1rem;
+}
+
+.session-dates {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+.mt-4 {
+    margin-top: 1rem;
 }
 
 .btn-save {
     background-color: #2d7a4f;
     color: white;
-    padding: 1rem;
+    padding: 12px;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     font-weight: 700;
-    font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s;
-    width: 100%;
 }
 
 .btn-save:hover:not(:disabled) {
@@ -822,20 +968,32 @@ onMounted(fetchDetail);
     cursor: not-allowed;
 }
 
-.btn-liked-active {
-    background-color: #2d7a4f;
+.btn-test {
+    padding: 12px;
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.btn-test:hover:not(:disabled) {
+    background-color: #e5e7eb;
+}
+
+.btn-test:disabled {
     opacity: 0.6;
-    cursor: default;
+    cursor: not-allowed;
 }
 
 .btn-quit {
-    width: 100%;
-    background: none;
+    background: transparent;
     border: 1px solid #ef4444;
     color: #ef4444;
-    padding: 10px;
-    border-radius: 12px;
-    margin-top: 12px;
+    padding: 12px;
+    border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
     transition: background 0.2s;

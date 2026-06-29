@@ -149,9 +149,10 @@ func main() {
 	http.HandleFunc("POST /formation", app.CreateFormation)
 	http.HandleFunc("PUT /formation/{id}", app.ModifyFormation)
 	http.HandleFunc("DELETE /formation/{id}", app.DeleteFormation)
-	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormation)
+	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormationHandler)
 	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormation)
 	http.HandleFunc("GET /api/formations/{id}/participants", app.GetFormationParticipantsHandler)
+	http.HandleFunc("POST /formations/{id}/annuler", app.AnnulerFormationHandler)
 
 	//Logistique
 	http.HandleFunc("GET /sites", app.GetAllSites)
@@ -217,6 +218,7 @@ func main() {
 	http.HandleFunc("POST /users/{id}/factures/{factureId}/send", self(app.SendFactureByMailHandler))
 
 	//Abonnement
+	http.HandleFunc("GET /abonnements/{id}", app.GetTypeAbonnementByIDHandler)
 	http.HandleFunc("GET /users/{id}/abonnement", self(app.GetAbonnementHandler))
 	http.HandleFunc("POST /users/{id}/abonnement/souscrire", self(app.SouscrireAbonnementHandler))
 	http.HandleFunc("POST /users/{id}/abonnement/resilier", self(app.ResilierAbonnementHandler))

@@ -129,18 +129,6 @@
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Statut</label>
-                                <select v-model="form.statut" required>
-                                    <option value="" disabled>
-                                        Sélectionner...
-                                    </option>
-                                    <option value="Ouvert">Ouvert</option>
-                                    <option value="Complet">Complet</option>
-                                    <option value="Termine">Terminé</option>
-                                    <option value="Annule">Annulé</option>
-                                </select>
-                            </div>
 
                             <div class="form-group">
                                 <label>Prix unitaire</label>

@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 	"strings"
 	"upcycleconnect/api-go/models"
 )
@@ -112,6 +113,10 @@ func CreateEvenement(e models.Evenement) error {
 		return fmt.Errorf("connexion DB non initialisee")
 	}
 
+	if e.DateEvenement.Before(time.Now()) {
+		return fmt.Errorf("impossible de créer un événement à une date passée")
+	}
+
 	query := `
 		INSERT INTO EVENEMENT (
 			titre,
@@ -145,6 +150,10 @@ func CreateEvenement(e models.Evenement) error {
 func ModifyEvenement(id int, e models.Evenement) error {
 	if Conn == nil {
 		return fmt.Errorf("connexion DB non initialisee")
+	}
+
+	if e.DateEvenement.Before(time.Now()) {
+		return fmt.Errorf("impossible de repousser un événement à une date passée")
 	}
 
 	query := `
@@ -309,6 +318,7 @@ func GetEvenementParticipants(evenementID int) ([]models.Participant, error) {
 			u.id, 
 			u.prenom, 
 			u.nom, 
+			u.mail,
 			COALESCE(u.image_profil, '') as image_profil, 
 			u.role
 		FROM UTILISATEUR u
@@ -325,7 +335,7 @@ func GetEvenementParticipants(evenementID int) ([]models.Participant, error) {
 	var participants []models.Participant
 	for rows.Next() {
 		var p models.Participant
-		if err := rows.Scan(&p.ID, &p.Prenom, &p.Nom, &p.ImageProfil, &p.Role); err == nil {
+		if err := rows.Scan(&p.ID, &p.Prenom, &p.Nom, &p.Mail, &p.ImageProfil, &p.Role); err == nil {
 			participants = append(participants, p)
 		}
 	}

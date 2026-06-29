@@ -231,9 +231,11 @@ const toCalendarEntry = (item, kind, title, dateValue) => {
     const parsed = new Date(dateValue);
     if (Number.isNaN(parsed.getTime())) return null;
 
+    const itemId = item.id || item.ID;
+
     return {
-        id: `${kind}-${item.id ?? title}-${parsed.getTime()}`,
-        originalId: item.id,
+        id: `${kind}-${itemId ?? title}-${parsed.getTime()}`,
+        originalId: itemId,
         kind,
         title,
         date: getLocalISODate(parsed),
@@ -250,6 +252,30 @@ const toCalendarEntry = (item, kind, title, dateValue) => {
     };
 };
 
+const parseFormations = (formationsArray, kindClass) => {
+    const results = [];
+    for (const f of formationsArray) {
+        const rawSessions = f.sessions || f.Sessions || [];
+        
+        if (rawSessions.length > 0) {
+            for (const s of rawSessions) {
+                const sessionName = s.nom || s.Nom || 'Session';
+                const sessionDate = s.date_debut || s.DateDebut;
+                const title = `${f.titre || f.Titre} - ${sessionName}`;
+                
+                const entry = toCalendarEntry(f, kindClass, title, sessionDate);
+                if (entry) results.push(entry);
+            }
+        } else {
+            const title = f.titre || f.Titre;
+            const fallbackDate = f.date_debut || f.Date_debut;
+            const entry = toCalendarEntry(f, kindClass, title, fallbackDate);
+            if (entry) results.push(entry);
+        }
+    }
+    return results;
+};
+
 const loadCalendarEntries = async (id) => {
     try {
         const res = await fetch(`${API_URL}/user/planning/${id}`, {
@@ -264,12 +290,12 @@ const loadCalendarEntries = async (id) => {
         let entries = [];
 
         if (data && !Array.isArray(data)) {
-            const formations = (data.formations || []).map((f) =>
-                toCalendarEntry(f, "formation", f.titre, f.date_debut),
-            );
+            const formations = parseFormations(data.formations || [], "formation");
+            
             const evenements = (data.evenements || []).map((e) =>
-                toCalendarEntry(e, "event", e.titre, e.date_evenement),
+                toCalendarEntry(e, "event", e.titre || e.Titre, e.date_evenement || e.Date_evenement),
             );
+            
             entries = [...formations, ...evenements].filter(Boolean);
         }
 
@@ -300,7 +326,6 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 2rem;
 }
-
 
 .section-container {
     background: white;

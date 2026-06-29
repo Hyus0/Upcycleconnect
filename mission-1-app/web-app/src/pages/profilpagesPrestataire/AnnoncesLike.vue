@@ -19,7 +19,6 @@
       </div>
       
       <div v-else-if="favoris.length === 0" class="empty-state">
-        <span class="empty-icon">🤍</span>
         <p>Aucun favori pour le moment. Parcourez le catalogue et cliquez sur le cœur pour sauvegarder des annonces ici.</p>
         <router-link to="/catalogue" class="btn-main-action" style="text-decoration: none">
           Découvrir le catalogue

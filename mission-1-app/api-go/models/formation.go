@@ -20,6 +20,7 @@ type GetFormation struct {
 	Adresse       string  `json:"adresse"`
 	Ville         string  `json:"ville"`
 	CodePostal    string  `json:"code_postal"`
+	Sessions []FormationSession `json:"sessions"`
 }
 
 type Formation struct {
@@ -37,12 +38,22 @@ type Formation struct {
 	Adresse       string  `json:"adresse"`
 	Ville         string  `json:"ville"`
 	Code_postal   string  `json:"code_postal"`
+	Sessions []FormationSession `json:"sessions"`
 }
 
 type Participant struct {
 	ID          int    `json:"id"`
 	Prenom      string `json:"prenom"`
 	Nom         string `json:"nom"`
+	Mail		string `json:"mail"`
 	ImageProfil string `json:"image_profil"`
 	Role        string `json:"role"`
+}
+
+type FormationSession struct {
+	ID        int    `json:"id"`
+	Nom       string `json:"nom"`
+	DateDebut string `json:"date_debut"`
+	DateFin   string `json:"date_fin"`
+	Statut    string `json:"statut"`
 }

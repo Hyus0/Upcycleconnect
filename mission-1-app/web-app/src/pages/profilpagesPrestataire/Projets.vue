@@ -19,7 +19,6 @@
         </div>
       </div>
 
-      <!-- NOUVEAU : Bouton bloqué si limite atteinte -->
       <router-link 
         v-if="projetsEnLigne < maxProjets"
         to="/profil/createProjet" 

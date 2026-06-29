@@ -89,7 +89,6 @@
                             </div>
                         </div>
 
-                        <!-- GESTION DYNAMIQUE DES SESSIONS -->
                         <div class="form-divider" style="margin-top: 1.5rem;">2. Vos Sessions (Dates & Horaires)</div>
                         <p class="card-subtitle" style="margin-bottom: 1rem;">
                             Ajoutez au moins une session à laquelle les utilisateurs pourront s'inscrire.

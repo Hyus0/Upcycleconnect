@@ -215,9 +215,6 @@
                         </div>
                     </div>
 
-                    <!-- =========================================================
-                         CARTE DE PAIEMENT ET SÉLECTION DE SESSION
-                    ========================================================= -->
                     <div class="form-card side-card price-card">
                         <h2 class="card-title-side">Prix par session</h2>
                         <div class="price-value">
@@ -229,7 +226,6 @@
                         </div>
                         <p class="price-hint">par personne</p>
 
-                        <!-- Menu déroulant pour choisir la session -->
                         <div v-if="availableSessions.length > 0" class="session-selector mt-4 text-left">
                             <label class="info-label" style="display: block; margin-bottom: 8px;">Choisir une session :</label>
                             <select v-model="selectedSessionId" class="session-select w-full">
@@ -240,7 +236,6 @@
                         </div>
 
                         <div class="main-actions mt-4">
-                            <!-- Bouton principal (Panier ou Inscription Gratuite) -->
                             <button 
                                 v-if="!isRegistered"
                                 @click="handleMainAction" 
@@ -252,7 +247,6 @@
                                 <template v-else>S'inscrire</template>
                             </button>
 
-                            <!-- Bouton de désistement si déjà inscrit -->
                             <button
                                 v-else
                                 @click="handleQuit(selectedSessionId)"
@@ -262,7 +256,6 @@
                                 Se désister de cette session
                             </button>
 
-                            <!-- Bouton Inscription TEST (Contourne le panier) -->
                             <button 
                                 v-if="!isRegistered"
                                 @click="handleTestInscription" 
@@ -274,9 +267,7 @@
                         </div>
                     </div>
 
-                    <!-- =========================================================
-                         LISTE DES SESSIONS (Détails uniquement, sans boutons)
-                    ========================================================= -->
+
                     <div class="form-card side-card">
                         <h2 class="card-title-side">Détail des sessions</h2>
                         

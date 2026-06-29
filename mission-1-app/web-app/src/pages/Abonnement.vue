@@ -127,12 +127,12 @@
                             </li>
                         </ul>
                         <!-- <button
-              class="btn-main-action w-full justify-center btn-premium"
-              style="width: 100%; justify-content: center; margin-top: auto;"
-              @click="goToPaiement"
-            >
-              S'abonner maintenant
-            </button> -->
+                            class="btn-main-action w-full justify-center btn-premium"
+                            style="width: 100%; justify-content: center; margin-top: auto;"
+                            @click="goToPaiement"
+                            >
+                            S'abonner maintenant
+                        </button> -->
                         <button
                             class="btn-main-action w-full justify-center btn-premium"
                             style="

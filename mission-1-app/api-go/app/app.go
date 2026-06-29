@@ -921,6 +921,12 @@ func GetEvenement(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", string(res))
 }
 
+func isDateError(err error) bool {
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "date") && (strings.Contains(msg, "passé") || strings.Contains(msg, "antérieure"))
+}
+
+
 func CreateEvenement(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -931,6 +937,10 @@ func CreateEvenement(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := db.CreateEvenement(e); err != nil {
+		if isDateError(err) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		fmt.Println("Erreur DB CreateEvenement:", err.Error())
 		http.Error(w, "Erreur serveur lors de la création de l'événement", http.StatusInternalServerError)
 		return
@@ -960,6 +970,11 @@ func ModifyEvenement(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Événement non trouvé avec l'ID : %d", id), http.StatusNotFound)
 			return
 		}
+		if isDateError(err) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		
 		fmt.Println("Erreur DB ModifyEvenement:", err.Error())
 		http.Error(w, "Erreur serveur lors de la mise à jour de l'événement", http.StatusInternalServerError)
 		return

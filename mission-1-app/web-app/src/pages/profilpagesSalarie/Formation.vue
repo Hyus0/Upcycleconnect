@@ -87,7 +87,6 @@
                             >
                                 Modifier
                             </button>
-                            <!-- NOUVEAU BOUTON : Annuler la formation -->
                             <button
                                 v-if="form.statut !== 'Annule'"
                                 class="btn-cancel"

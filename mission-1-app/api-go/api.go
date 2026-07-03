@@ -218,10 +218,11 @@ func main() {
 	http.HandleFunc("POST /users/{id}/factures/{factureId}/send", self(app.SendFactureByMailHandler))
 
 	//Abonnement
+	http.HandleFunc("GET /abonnements", app.GetAllAbonnementsHandler)
 	http.HandleFunc("GET /abonnements/{id}", app.GetTypeAbonnementByIDHandler)
-	http.HandleFunc("GET /users/{id}/abonnement", self(app.GetAbonnementHandler))
-	http.HandleFunc("POST /users/{id}/abonnement/souscrire", self(app.SouscrireAbonnementHandler))
-	http.HandleFunc("POST /users/{id}/abonnement/resilier", self(app.ResilierAbonnementHandler))
+	http.HandleFunc("GET /users/{id}/abonnement", app.GetAbonnementHandler)
+	http.HandleFunc("POST /users/{id}/abonnement/souscrire", app.SouscrireAbonnementHandler)
+	http.HandleFunc("POST /users/{id}/abonnement/resilier", app.ResilierAbonnementHandler)
 
 	//Matériaux recherchés (prestataires)
 	http.HandleFunc("GET /materiaux/stats", app.GetMateriauxStatsHandler)

@@ -32,335 +32,210 @@
             style="margin-top: 24px; text-align: center"
         >
             Chargement de votre espace...
-        </div>
+        </div>        
 
         <section v-else class="section-container" style="margin-top: 24px">
+                
             <div
                 v-if="!subscription.is_premium"
                 class="pricing-container text-center"
             >
-                <div
-                    class="section-header justify-center"
-                    style="margin-bottom: 2rem"
-                >
+                <div class="section-header justify-center" style="margin-bottom: 2rem">
                     <div>
                         <h2 style="font-size: 1.8rem; margin-bottom: 8px">
                             Passez à la vitesse supérieure
                         </h2>
                         <p class="classic-text">
-                            Débloquez des outils puissants pour votre activité
-                            ({{ planPro.prix_ht }} € / mois).
+                            Débloquez des outils puissants pour votre activité.
                         </p>
                     </div>
                 </div>
 
                 <div class="pricing-grid">
-                    <div class="card card--white pricing-card">
-                        <h3 class="pricing-title">
-                            Artisan Débutant (Freemium)
+                    <div
+                        v-for="plan in sortedPlans"
+                        :key="plan.id"
+                        class="card pricing-card"
+                        :class="plan.prix_ht > 0 ? 'premium-card' : 'card--white'"
+                        :style="plan.color && plan.color.toLowerCase() !== 'ffffff' ? { backgroundColor: '#' + plan.color, borderColor: '#' + plan.color } : {}"
+                    >
+                        <div v-if="plan.prix_ht > 0" class="tag-score popular-tag" :style="subscription.is_premium ? { background: 'white', color: '#' + plan.color } : { background: '#ffb300', color: '#333' }">
+                            {{ subscription.is_premium ? 'ACTIF' : 'RECOMMANDÉ' }}
+                        </div>
+                        
+                        <h3 class="pricing-title" :class="{ 'text-white': plan.color.toLowerCase() !== 'ffffff' }">
+                            {{ plan.nom }}
                         </h3>
-                        <p class="pricing-price">0 € <span>/mois</span></p>
-                        <ul class="pricing-features">
-                            <li>
-                                <Check :size="18" class="text-green-500" />
-                                <strong>Vitrine limitée à 5 projets</strong>
+                        
+                        <p class="pricing-price" :class="{ 'text-white': plan.color.toLowerCase() !== 'ffffff' }">
+                            {{ Number(plan.prix_ht).toFixed(2) }} €
+                            <span :class="{ 'text-white-50': plan.color.toLowerCase() !== 'ffffff' }">/mois</span>
+                        </p>
+                        
+                        <ul class="pricing-features" :class="{ 'text-white': plan.color.toLowerCase() !== 'ffffff' }">
+                            <li v-for="avantage in plan.avantages" :key="avantage.id" :class="{ 'locked': !avantage.disponible }">
+                                <template v-if="avantage.disponible">
+                                    <Check :size="18" :class="plan.color.toLowerCase() !== 'ffffff' ? 'text-white' : 'text-green-500'" />
+                                    <strong v-if="avantage.nom.toLowerCase().includes('vitrine')">{{ avantage.nom }}</strong>
+                                    <span v-else>{{ avantage.nom }}</span>
+                                </template>
+                                <template v-else>
+                                    🔒 {{ avantage.nom }}
+                                </template>
                             </li>
-                            <li>
-                                <Check :size="18" class="text-green-500" />
-                                Publication & recherche d'annonces
-                            </li>
-                            <li>
-                                <Check :size="18" class="text-green-500" />
-                                Réservation standard de matériaux
-                            </li>
-                            <li class="locked">
-                                🔒 Statistiques & Impact écologique
-                            </li>
-                            <li class="locked">
-                                🔒 Alertes de collecte priorisées
-                            </li>
-                            <li class="locked">🔒 Campagnes de Sponsoring</li>
                         </ul>
+
                         <button
+                            v-if="plan.prix_ht == 0 && subscription.is_premium"
+                            class="btn-danger w-full"
+                            style="width: 100%; margin-top: auto; justify-content: center;"
+                            :disabled="processing"
+                            @click="resilierAbonnement"
+                        >
+                            {{ processing ? "Traitement..." : "Résilier et repasser au gratuit" }}
+                        </button>
+
+                        <button
+                            v-else-if="plan.prix_ht == 0"
                             class="btn-secondary w-full"
                             disabled
-                            style="width: 100%; margin-top: auto"
+                            style="width: 100%; margin-top: auto;"
                         >
                             Plan actuel
                         </button>
-                    </div>
 
-                    <div class="card card--score pricing-card premium-card">
-                        <div class="tag-score popular-tag">RECOMMANDÉ</div>
-                        <h3 class="pricing-title text-white">
-                            Pro & Entreprises
-                        </h3>
-                        <p class="pricing-price text-white">
-                            {{ planPro.prix_ht }} €<span class="text-white-50"
-                                >/mois</span
-                            >
-                        </p>
-                        <ul class="pricing-features text-white">
-                            <li>
-                                <Check :size="18" class="text-white" />
-                                <strong>Vitrine élargie à 20 projets</strong>
-                            </li>
-                            <li>
-                                <Check :size="18" class="text-white" /> Tout le
-                                plan gratuit
-                            </li>
-                            <li>
-                                <Check :size="18" class="text-white" /> Tableaux
-                                de bord avancés
-                            </li>
-                            <li>
-                                <Check :size="18" class="text-white" /> Analyse
-                                d'impact écologique détaillée
-                            </li>
-                            <li>
-                                <Check :size="18" class="text-white" /> Alertes
-                                priorisées pour la collecte
-                            </li>
-                            <li>
-                                <Check :size="18" class="text-white" />
-                                Campagnes de sponsoring
-                            </li>
-                        </ul>
-                        <!-- <button
-                            class="btn-main-action w-full justify-center btn-premium"
-                            style="width: 100%; justify-content: center; margin-top: auto;"
-                            @click="goToPaiement"
-                            >
-                            S'abonner maintenant
-                        </button> -->
                         <button
-                            class="btn-main-action w-full justify-center btn-premium"
-                            style="
-                                width: 100%;
-                                justify-content: center;
-                                margin-top: auto;
-                            "
-                            :disabled="processing"
-                            @click="souscrireDirectement"
+                            v-else-if="plan.prix_ht > 0 && subscription.is_premium && subscription.plan_id === plan.id"
+                            class="btn-secondary w-full"
+                            disabled
+                            style="width: 100%; margin-top: auto; color: #2d7a4f; background: white; opacity: 0.9;"
                         >
-                            {{
-                                processing
-                                    ? "Activation..."
-                                    : "S'abonner maintenant"
-                            }}
+                            Plan actuel
                         </button>
+
+                        <div v-else style="width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                            <button
+                                class="btn-main-action w-full justify-center btn-premium"
+                                style="width: 100%; justify-content: center;"
+                                :disabled="processing"
+                                @click="goToPaiement(plan)"
+                            >
+                                S'abonner maintenant
+                            </button>
+                            
+                            <button
+                                class="btn-test w-full justify-center"
+                                style="width: 100%; justify-content: center; padding: 8px; font-size: 0.85rem;"
+                                :disabled="processing"
+                                @click="souscrireDirectement(plan)"
+                            >
+                                {{ processing ? "Activation..." : "Test: Activer sans payer" }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div v-else>
-                <div
-                    class="pricing-container text-center"
-                    style="margin-bottom: 4rem"
-                >
-                    <div
-                        class="section-header justify-center"
-                        style="margin-bottom: 2rem"
-                    >
+
+                <div class="pricing-container text-center" style="margin-bottom: 4rem">
+                    <div class="section-header justify-center" style="margin-bottom: 2rem">
                         <div>
                             <h2 style="font-size: 1.8rem; margin-bottom: 8px">
                                 Gestion de votre abonnement
                             </h2>
                             <p class="classic-text" style="font-size: 1.1rem">
                                 Votre abonnement est actuellement
-                                <strong>{{
-                                    subscription.statut.toLowerCase()
-                                }}</strong>
+                                <strong>{{ subscription.statut.toLowerCase() }}</strong>
                                 Il est valable jusqu'au
-                                <strong>{{
-                                    formatDate(subscription.date_fin) ||
-                                    "Facturation continue"
-                                }}</strong
-                                >.
+                                <strong>{{ formatDate(subscription.date_fin) || "Facturation continue" }}</strong>.
                             </p>
                         </div>
                     </div>
 
                     <div class="pricing-grid">
-                        <div class="card card--white pricing-card">
-                            <h3 class="pricing-title">
-                                Artisan Débutant (Freemium)
+                        <div
+                            v-for="plan in sortedPlans"
+                            :key="plan.id"
+                            class="card pricing-card"
+                            :class="plan.prix_ht > 0 ? 'premium-card' : 'card--white'"
+                            :style="plan.color && plan.color.toLowerCase() !== 'ffffff' ? { backgroundColor: '#' + plan.color, borderColor: '#' + plan.color } : {}"
+                        >
+                            <div v-if="plan.prix_ht > 0" class="tag-score popular-tag" :style="subscription.is_premium ? { background: 'white', color: '#' + plan.color } : { background: '#ffb300', color: '#333' }">
+                                {{ subscription.is_premium ? 'ACTIF' : 'RECOMMANDÉ' }}
+                            </div>
+                            
+                            <h3 class="pricing-title" :class="{ 'text-white': plan.color.toLowerCase() !== 'ffffff' }">
+                                {{ plan.nom }}
                             </h3>
-                            <p class="pricing-price">0 € <span>/mois</span></p>
-                            <ul class="pricing-features">
-                                <li>
-                                    <Check :size="18" class="text-green-500" />
-                                    <strong>Vitrine limitée à 5 projets</strong>
-                                </li>
-                                <li>
-                                    <Check :size="18" class="text-green-500" />
-                                    Publication & recherche d'annonces
-                                </li>
-                                <li>
-                                    <Check :size="18" class="text-green-500" />
-                                    Réservation standard de matériaux
-                                </li>
-                                <li class="locked">
-                                    🔒 Statistiques & Impact écologique
-                                </li>
-                                <li class="locked">
-                                    🔒 Alertes de collecte priorisées
-                                </li>
-                                <li class="locked">
-                                    🔒 Campagnes de Sponsoring
+                            
+                            <p class="pricing-price" :class="{ 'text-white': plan.color.toLowerCase() !== 'ffffff' }">
+                                {{ Number(plan.prix_ht).toFixed(2) }} €
+                                <span :class="{ 'text-white-50': plan.color.toLowerCase() !== 'ffffff' }">/mois</span>
+                            </p>
+                            
+                            <ul class="pricing-features" :class="{ 'text-white': plan.color.toLowerCase() !== 'ffffff' }">
+                                <li v-for="avantage in plan.avantages" :key="avantage.id" :class="{ 'locked': !avantage.disponible }">
+                                    <template v-if="avantage.disponible">
+                                        <Check :size="18" :class="plan.color.toLowerCase() !== 'ffffff' ? 'text-white' : 'text-green-500'" />
+                                        <strong v-if="avantage.nom.toLowerCase().includes('vitrine')">{{ avantage.nom }}</strong>
+                                        <span v-else>{{ avantage.nom }}</span>
+                                    </template>
+                                    <template v-else>
+                                        🔒 {{ avantage.nom }}
+                                    </template>
                                 </li>
                             </ul>
+
                             <button
-                                v-if="subscription.statut === 'Actif'"
+                                v-if="plan.prix_ht == 0 && subscription.is_premium"
                                 class="btn-danger w-full"
-                                style="
-                                    width: 100%;
-                                    margin-top: auto;
-                                    justify-content: center;
-                                "
+                                style="width: 100%; margin-top: auto; justify-content: center;"
                                 :disabled="processing"
                                 @click="resilierAbonnement"
                             >
-                                {{
-                                    processing
-                                        ? "Traitement..."
-                                        : "Résilier et repasser au gratuit"
-                                }}
+                                {{ processing ? "Traitement..." : "Résilier et repasser au gratuit" }}
                             </button>
-                        </div>
 
-                        <div class="card card--score pricing-card premium-card">
-                            <div
-                                class="tag-score popular-tag"
-                                style="background: white; color: #2d7a4f"
-                            >
-                                ACTIF
-                            </div>
-                            <h3 class="pricing-title text-white">
-                                Pro & Entreprises
-                            </h3>
-                            <p class="pricing-price text-white">
-                                {{ planPro.prix_ht }} €<span
-                                    class="text-white-50"
-                                    >/mois</span
-                                >
-                            </p>
-                            <ul class="pricing-features text-white">
-                                <li>
-                                    <Check :size="18" class="text-white" />
-                                    <strong
-                                        >Vitrine élargie à 20 projets</strong
-                                    >
-                                </li>
-                                <li>
-                                    <Check :size="18" class="text-white" /> Tout
-                                    le plan gratuit
-                                </li>
-                                <li>
-                                    <Check :size="18" class="text-white" />
-                                    Tableaux de bord avancés
-                                </li>
-                                <li>
-                                    <Check :size="18" class="text-white" />
-                                    Analyse d'impact écologique détaillée
-                                </li>
-                                <li>
-                                    <Check :size="18" class="text-white" />
-                                    Alertes priorisées pour la collecte
-                                </li>
-                                <li>
-                                    <Check :size="18" class="text-white" />
-                                    Campagnes de sponsoring
-                                </li>
-                            </ul>
                             <button
+                                v-else-if="plan.prix_ht == 0"
                                 class="btn-secondary w-full"
                                 disabled
-                                style="
-                                    width: 100%;
-                                    margin-top: auto;
-                                    color: #2d7a4f;
-                                    background: white;
-                                    opacity: 0.9;
-                                "
+                                style="width: 100%; margin-top: auto"
                             >
                                 Plan actuel
                             </button>
-                        </div>
-                    </div>
-                </div>
 
-                <hr
-                    style="
-                        border: 0;
-                        border-top: 1px solid #eee;
-                        margin: 3rem 0;
-                    "
-                />
-
-                <div class="section-container" style="border: none; padding: 0">
-                    <div
-                        class="section-header"
-                        style="
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                        "
-                    >
-                        <div>
-                            <h2 style="font-size: 1.8rem; margin-bottom: 8px">
-                                Vos campagnes de sponsoring
-                            </h2>
-                            <p class="classic-text">
-                                Mettez en avant vos projets d'upcycling (100€ -
-                                500€ / campagne).
-                            </p>
-                        </div>
-                        <button class="btn-main-action" @click="createCampaign">
-                            + Nouvelle campagne
-                        </button>
-                    </div>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Projet Sponsorisé</th>
-                                <th>Budget</th>
-                                <th>Vues générées</th>
-                                <th>Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="campagne in campaigns"
-                                :key="campagne.id"
+                            <button
+                                v-else-if="plan.prix_ht > 0 && subscription.is_premium && subscription.plan_id === plan.id"
+                                class="btn-secondary w-full"
+                                disabled
+                                style="width: 100%; margin-top: auto; color: #2d7a4f; background: white; opacity: 0.9;"
                             >
-                                <td>
-                                    <strong>{{ campagne.titre }}</strong>
-                                </td>
-                                <td>{{ campagne.budget }} €</td>
-                                <td>{{ campagne.vues }}</td>
-                                <td>
-                                    <span
-                                        :class="
-                                            campagne.statut === 'Active'
-                                                ? 'status-valid'
-                                                : 'status-pending'
-                                        "
-                                    >
-                                        {{ campagne.statut.toUpperCase() }}
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr v-if="campaigns.length === 0">
-                                <td
-                                    colspan="4"
-                                    class="text-center text-grey py-4"
+                                Plan actuel
+                            </button>
+
+                            <div v-else style="width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                                <button
+                                    class="btn-main-action w-full justify-center btn-premium"
+                                    style="width: 100%; justify-content: center;"
+                                    :disabled="processing"
+                                    @click="goToPaiement(plan)"
                                 >
-                                    Vous n'avez aucune campagne en cours.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                    S'abonner maintenant
+                                </button>
+                                
+                                <button
+                                    class="btn-test w-full justify-center"
+                                    style="width: 100%; justify-content: center; padding: 8px; font-size: 0.85rem;"
+                                    :disabled="processing"
+                                    @click="souscrireDirectement(plan)"
+                                >
+                                    {{ processing ? "Activation..." : "Test: Activer sans payer" }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -387,6 +262,7 @@ const priorityAlerts = ref([]);
 const campaigns = ref([]);
 
 const subscription = ref({ is_premium: false, statut: "" });
+const AllAbonnements = ref([]);
 
 const currentUserId = computed(
     () => Number(sessionStorage.getItem("userId")) || 0,
@@ -396,6 +272,12 @@ const userName = computed(() => {
     const prenom = sessionStorage.getItem("userPrenom") || "";
     const nom = sessionStorage.getItem("userNom") || "";
     return prenom || nom ? `${prenom} ${nom}`.trim() : "Utilisateur";
+});
+
+const sortedPlans = computed(() => {
+    return AllAbonnements.value
+        .filter(plan => plan.id !== 1) 
+        .sort((a, b) => a.prix_ht - b.prix_ht);
 });
 
 const getHeaders = () => ({
@@ -414,20 +296,20 @@ const formatDate = (dateStr) => {
     }).format(date);
 };
 
-const planPro = ref({});
-
-const fetchPlanPro = async () => {
+const fetchAllAbonnements = async () => {
     try {
-        const res = await fetch(`${API_URL}/abonnements/2`);
+        const res = await fetch(`${API_URL}/abonnements`);
         if (res.ok) {
-            planPro.value = await res.json();
+            AllAbonnements.value = await res.json();
+        } else {
+            console.error("Erreur lors de la récupération des plans");
         }
     } catch (err) {
-        console.error(err);
+        console.error("Erreur réseau:", err);
     }
 };
 
-const souscrireDirectement = async () => {
+const souscrireDirectement = async (plan) => {
     if (!currentUserId.value) {
         alert("Veuillez vous connecter pour vous abonner.");
         router.push("/connexion");
@@ -441,16 +323,15 @@ const souscrireDirectement = async () => {
             {
                 method: "POST",
                 headers: getHeaders(),
-
                 body: JSON.stringify({
-                    plan_id: 2,
+                    plan_id: plan.id, 
                     stripe_payment_id: "bypass_stripe_manuel",
                 }),
             },
         );
 
         if (res.ok) {
-            alert("Félicitations, votre abonnement Pro est activé !");
+            alert(`Félicitations, votre abonnement ${plan.nom} est activé !`);
             await fetchAbonnement();
         } else {
             const errMsg = await res.text();
@@ -524,7 +405,7 @@ const fetchAbonnement = async () => {
     }
 };
 
-const goToPaiement = () => {
+const goToPaiement = (plan) => {
     if (!currentUserId.value) {
         alert("Veuillez vous connecter pour vous abonner.");
         router.push("/connexion");
@@ -534,9 +415,9 @@ const goToPaiement = () => {
     router.push({
         path: "/paiement",
         query: {
-            plan_id: 2,
-            prix: planPro.value.prix_ht,
-            nom_plan: "Pro & Entreprises",
+            plan_id: plan.id,
+            prix: plan.prix_ht,
+            nom_plan: plan.nom,
         },
     });
 };
@@ -572,13 +453,9 @@ const resilierAbonnement = async () => {
     }
 };
 
-const createCampaign = () => {
-    alert("Ouverture du module de création de campagne publicitaire !");
-};
-
-onMounted(() => {
-    fetchAbonnement();
-    fetchPlanPro();
+onMounted(async () => {
+    await fetchAllAbonnements();
+    await fetchAbonnement();
 });
 </script>
 
@@ -635,6 +512,20 @@ onMounted(() => {
     color: #999;
     border-color: #eee;
     cursor: not-allowed;
+}
+
+.btn-test {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-test:hover:not(:disabled) {
+    background-color: #e5e7eb;
 }
 
 .section-container {
@@ -882,60 +773,6 @@ onMounted(() => {
     font-size: 0.75rem;
     font-weight: bold;
     text-transform: uppercase;
-}
-
-.status-valid {
-    color: #2d7a4f;
-    font-weight: bold;
-}
-.status-pending {
-    color: #856404;
-    font-weight: bold;
-}
-
-.active-sub-card {
-    background: #fff;
-    border: 1px solid #e5ede7;
-    border-radius: 16px;
-    padding: 40px;
-    max-width: 700px;
-    margin: 0 auto;
-    box-shadow: 0 12px 24px rgba(44, 126, 79, 0.08);
-}
-
-.sub-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
-}
-.sub-perks {
-    background: #fbfdfb;
-    padding: 24px;
-    border-radius: 12px;
-    border: 1px solid #f0f4f1;
-    margin-bottom: 30px;
-}
-.sub-perks ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.sub-perks li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-    color: #1a1a1a;
-    font-weight: 600;
-}
-.check-icon-active {
-    color: #2c7e4f;
-}
-
-.sub-actions {
-    display: flex;
-    gap: 16px;
 }
 
 .btn-main-action {

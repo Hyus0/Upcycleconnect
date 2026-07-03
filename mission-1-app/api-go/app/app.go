@@ -2237,6 +2237,17 @@ func GetModerationTopicsHandler(w http.ResponseWriter, r *http.Request) {
 
 //Abonnement premium
 
+func GetAllAbonnementsHandler(w http.ResponseWriter, r *http.Request) {
+	plans, err := db.GetAllSubscriptionPlans()
+	if err != nil {
+		http.Error(w, "Erreur serveur lors de la récupération du catalogue", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(plans)
+}
+
 func GetTypeAbonnementByIDHandler(w http.ResponseWriter, r *http.Request) {
 	planIDStr := r.PathValue("id")
 	planID, err := strconv.Atoi(planIDStr)

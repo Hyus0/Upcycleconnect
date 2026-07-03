@@ -520,10 +520,10 @@
                         <td>{{ formatDate(facture.date_transaction || facture.date_emission) }}</td>
                         <td class="actions-cell" style="justify-content: flex-end;">
                             <button class="btn-view" type="button" @click="downloadFacture(facture.id)" title="Télécharger">
-                                ⬇️
+                                Télécharger
                             </button>
                             <button class="btn-secondary" type="button" @click="sendFacture(facture.id)" title="Envoyer par mail">
-                                📧
+                                Recevoir par mail
                             </button>
                         </td>
                     </tr>

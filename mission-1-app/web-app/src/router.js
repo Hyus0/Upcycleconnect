@@ -20,7 +20,7 @@ import Abonnement from "./pages/Abonnement.vue";
 import Paiement from "./pages/Paiement.vue";
 
 const routes = [
-  { path: "/", component: Home },
+  { path: "/front", component: Home },
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
   { path: "/messages", component: Messages },
@@ -311,7 +311,7 @@ router.beforeEach(async (to, from, next) => {
         return next("/connexion");
       }
     } catch (error) {
-      return next("/");
+      return next("/front");
     }
   }
 
@@ -323,7 +323,7 @@ router.beforeEach(async (to, from, next) => {
     if (userRole === "Prestataire" || userRole === "Salarie" || userRole === "Particulier") {
       return next("/profil"); 
     } else {
-      return next("/"); 
+      return next("/front"); 
     }
   }
 

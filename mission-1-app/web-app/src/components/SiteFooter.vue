@@ -35,9 +35,9 @@
           <div class="footer-column">
             <h4>{{ t.FooterCol3 || 'ENTREPRISE' }}</h4>
             <ul>
-              <li><router-link to="/">{{ t.FooterAbout || 'À propos' }}</router-link></li>
-              <li><router-link to="/">{{ t.FooterLocations || 'Nos sites' }}</router-link></li>
-              <li><router-link to="/">{{ t.FooterBlog || 'Blog' }}</router-link></li>
+              <li><router-link to="/front">{{ t.FooterAbout || 'À propos' }}</router-link></li>
+              <li><router-link to="/front">{{ t.FooterLocations || 'Nos sites' }}</router-link></li>
+              <li><router-link to="/front">{{ t.FooterBlog || 'Blog' }}</router-link></li>
               <li><router-link to="/connexion">{{ t.FooterContact || 'Contact' }}</router-link></li>
             </ul>
           </div>
@@ -49,9 +49,9 @@
       <div class="footer-bottom">
         <p>© 2026 UpcycleConnect — AlterNext · ESGI 2A</p>
         <div class="footer-legal">
-          <router-link to="/">{{ t.FooterLegal || 'Mentions légales' }}</router-link>
-          <router-link to="/">{{ t.FooterTOS || 'CGU' }}</router-link>
-          <router-link to="/">{{ t.FooterGDPR || 'RGPD' }}</router-link>
+          <router-link to="/front">{{ t.FooterLegal || 'Mentions légales' }}</router-link>
+          <router-link to="/front">{{ t.FooterTOS || 'CGU' }}</router-link>
+          <router-link to="/front">{{ t.FooterGDPR || 'RGPD' }}</router-link>
         </div>
       </div>
     </div>

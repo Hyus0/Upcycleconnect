@@ -129,11 +129,11 @@ const resolveImageUrl = (url) => {
         return `${API_URL}/img/${url.replace('uploads/', '')}`;
     }
     
-    if (!url.includes("/")) {
+    if (!url.includes("/front")) {
         return `${API_URL}/img/projets/${url}`;
     }
     
-    if (url.startsWith("/")) {
+    if (url.startsWith("/front")) {
         return `${API_URL}${url}`;
     }
     

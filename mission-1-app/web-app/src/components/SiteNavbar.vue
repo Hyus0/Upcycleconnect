@@ -2,7 +2,7 @@
   <header class="site-navbar">
     <div class="site-navbar__inner">
       <div class="site-navbar__left">
-        <RouterLink class="site-navbar__brand" to="/" aria-label="Accueil UpcycleConnect">
+        <RouterLink class="site-navbar__brand" to="/front" aria-label="Accueil UpcycleConnect">
           <img :src="logoSrc" alt="UpcycleConnect" class="site-navbar__logo" />
         </RouterLink>
 
@@ -421,8 +421,8 @@ function itemPath(item) {
 function isActive(item) {
   const path = itemPath(item);
   if (!path) return false;
-  if (path === "/" && item.to?.hash) {
-    return route.path === "/" && route.hash === item.to.hash;
+  if (path === "/front" && item.to?.hash) {
+    return route.path === "/front" && route.hash === item.to.hash;
   }
   if (path === "/profil") {
     return route.path === "/profil";

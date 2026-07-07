@@ -66,15 +66,19 @@
                             >
                             <div class="specs-grid">
                                 <div class="spec-item">
-                                    <span class="spec-label"
-                                        >Date de l'événement</span
-                                    >
+                                    <span class="spec-label">Début</span>
                                     <p class="spec-value highlight-val">
-                                        {{
-                                            formatDateLong(
-                                                evenement.date_evenement,
-                                            )
-                                        }}
+                                        {{ formatDateTimeLong(evenement.date_evenement) }}
+                                    </p>
+                                </div>
+                                
+                                <div
+                                    class="spec-item"
+                                    v-if="evenement.date_fin && !evenement.date_fin.startsWith('0001')"
+                                >
+                                    <span class="spec-label">Fin</span>
+                                    <p class="spec-value highlight-val">
+                                        {{ formatDateTimeLong(evenement.date_fin) }}
                                     </p>
                                 </div>
                                 <div class="spec-item">
@@ -241,6 +245,7 @@ const isLeaving = ref(false);
 const userScore = ref(0);
 const participants = ref([]);
 const participantsLoading = ref(false);
+const isAddingToCart = ref(false);
 
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {
@@ -251,10 +256,23 @@ const userName = computed(() => {
 
 const formatDateLong = (d) => {
     if (!d || d.startsWith("0001")) return "Date inconnue";
+
     return new Date(d).toLocaleDateString("fr-FR", {
         day: "numeric",
         month: "long",
         year: "numeric",
+    });
+};
+
+const formatDateTimeLong = (d) => {
+    if (!d || d.startsWith("0001")) return "Date inconnue";
+
+    return new Date(d).toLocaleString("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
     });
 };
 

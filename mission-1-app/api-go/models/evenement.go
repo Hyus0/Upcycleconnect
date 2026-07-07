@@ -11,6 +11,7 @@ type Evenement struct {
 	CodePostal    string    `json:"code_postal"`
 	DateCreation  time.Time `json:"date_creation"`
 	DateEvenement time.Time `json:"date_evenement"`
+	DateFin 	  time.Time `json:"date_fin"`
 	Type          string    `json:"type"`
 	Id_createur   int       `json:"id_createur"`
 }

@@ -85,6 +85,14 @@
                                 type="datetime-local"
                                 required
                             />
+                            <div class="form-group">
+                                <label>Date de fin</label>
+                                <input
+                                    v-model="form.date_fin"
+                                    type="datetime-local"
+                                    required
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -170,6 +178,7 @@ const form = ref({
     description: "",
     type: "",
     date_evenement: "",
+    date_fin: "",
     adresse: "",
     ville: "",
     code_postal: "",
@@ -184,7 +193,17 @@ const validateFrontend = () => {
     if (!form.value.type)
         errors.value.push("Veuillez sélectionner un type d'événement.");
     if (!form.value.date_evenement)
-        errors.value.push("La date de l'événement est obligatoire.");
+      errors.value.push("La date de l'événement est obligatoire.");
+    if (!form.value.date_fin)
+      errors.value.push("La date de fin est obligatoire.");
+    if (
+        new Date(form.value.date_fin) <=
+        new Date(form.value.date_evenement)
+    ) {
+        errors.value.push(
+            "La date de fin doit être postérieure à la date de début."
+        );
+    }
     return errors.value.length === 0;
 };
 
@@ -208,6 +227,7 @@ const handleSubmit = async () => {
         description: form.value.description,
         type: form.value.type,
         date_evenement: new Date(form.value.date_evenement).toISOString(),
+        date_fin: new Date(form.value.date_fin).toISOString(),
         adresse: form.value.adresse || "",
         ville: form.value.ville || "",
         code_postal: form.value.code_postal || "",

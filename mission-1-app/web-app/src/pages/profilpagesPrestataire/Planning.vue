@@ -98,14 +98,12 @@
 
                 <div class="detail-body">
                     <div class="detail-row">
-                        <span class="icon">📅</span>
                         <div>
                             <strong>Date :</strong>
                             <p>{{ selectedEntry.dateLabelLong }}</p>
                         </div>
                     </div>
                     <div class="detail-row">
-                        <span class="icon">⏰</span>
                         <div>
                             <strong>Horaires :</strong>
                             <p>{{ selectedEntry.timeLabel }}</p>
@@ -249,18 +247,40 @@ const toCalendarEntry = (item, kind, title, dateDebut, dateFin) => {
         }
     }
 
+    let dateLabelLong = parsedStart.toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+    
+    if (dateFin) {
+        const parsedEnd = new Date(dateFin);
+    
+        if (!Number.isNaN(parsedEnd.getTime())) {
+            const sameDay =
+                parsedStart.toDateString() === parsedEnd.toDateString();
+    
+            if (!sameDay) {
+                dateLabelLong +=
+                    " → " +
+                    parsedEnd.toLocaleDateString("fr-FR", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                    });
+            }
+        }
+    }
+    
     return {
         id: `${kind}-${itemId ?? title}-${parsedStart.getTime()}`,
         originalId: itemId,
         kind,
         title,
         date: getLocalISODate(parsedStart),
-        dateLabelLong: parsedStart.toLocaleDateString("fr-FR", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-        }),
+        dateLabelLong,
         timeLabel,
     };
 };
@@ -309,7 +329,7 @@ const loadCalendarEntries = async (id) => {
             const formations = parseFormations(data.formations || [], "formation");
             
             const evenements = (data.evenements || []).map((e) =>
-                toCalendarEntry(e, "event", e.titre || e.Titre, e.date_evenement || e.Date_evenement, null),
+                toCalendarEntry(e, "event", e.titre || e.Titre, e.date_evenement || e.Date_evenement, e.date_fin || e.Date_fin,),
             );
             
             entries = [...formations, ...evenements].filter(Boolean);

@@ -10,6 +10,7 @@ import EventsPage from "../pages/EventsPage.vue";
 import ModerationPage from "../pages/ModerationPage.vue";
 import FinancePage from "../pages/FinancePage.vue";
 import NotificationsPage from "../pages/NotificationsPage.vue";
+import ResourcesPage from "../pages/ResourcesPage.vue";
 
 const routes = [
   {
@@ -69,6 +70,12 @@ const routes = [
         name: "notifications",
         component: NotificationsPage,
         meta: { title: "Notifications", subtitle: "Campagnes et messages transactionnels" }
+      },
+      {
+        path: "resources",
+        name: "resources",
+        component: ResourcesPage,
+        meta: { title: "Ressources", subtitle: "Gestion complete des donnees front" }
       }
     ]
   }

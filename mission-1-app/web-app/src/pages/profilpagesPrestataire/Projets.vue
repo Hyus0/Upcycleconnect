@@ -8,10 +8,33 @@
           Gérez vos créations d'upcycling, suivez votre impact CO2 et
           votre visibilité auprès de la communauté.
         </p>
+
+        <div v-if="!loading" class="vitrine-counter mt-3">
+          <span class="status-valid" :class="{ 'limit-reached': projetsEnLigne >= maxProjets }">
+            Vitrine publique : {{ projetsEnLigne }} / {{ maxProjets }} projets en ligne
+          </span>
+          <span v-if="projetsEnLigne >= maxProjets && !isPremium" class="upgrade-text">
+            <router-link to="/abonnement" style='text-decoration:none;'>Passez Pro pour débloquer 20 emplacements</router-link>
+          </span>
+        </div>
       </div>
-      <router-link to="/profil/createProjet" class="btn-main-action" style="text-decoration: none;">
+
+      <router-link 
+        v-if="projetsEnLigne < maxProjets"
+        to="/profil/createProjet" 
+        class="btn-main-action" 
+        style="text-decoration: none;"
+      >
         + Créer un projet
       </router-link>
+      <button 
+        v-else 
+        class="btn-main-action disabled-btn" 
+        disabled
+        title="Limite de vitrine atteinte"
+      >
+        Vitrine pleine
+      </button>
     </header>
 
     <div class="section-container">
@@ -78,13 +101,23 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const API_URL = "/go";
+const API_URL = "http://localhost:8081";
 const loading = ref(true);
 const projets = ref([]);
+
+const isPremium = ref(false);
 
 const currentUserId = computed(() => {
   const storedId = sessionStorage.getItem("id") || sessionStorage.getItem("userId");
   return Number(storedId) || 0;
+});
+
+const projetsEnLigne = computed(() => {
+  return projets.value.filter(p => p.visible_public).length;
+});
+
+const maxProjets = computed(() => {
+  return isPremium.value ? 3 : 2;
 });
 
 const formatDate = (dateString) => {
@@ -113,7 +146,7 @@ const removeProjet = async (id) => {
   try {
     const res = await fetch(`${API_URL}/projets/${id}`, {
       method: "DELETE",
-      headers: { Authorization: token },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (res.ok) {
@@ -134,14 +167,21 @@ onMounted(async () => {
 
   loading.value = true;
   try {
-    const res = await fetch(`${API_URL}/users/${currentUserId.value}/projets`, {
-      headers: { Authorization: token },
-    });
-    if (res.ok) {
-      projets.value = (await res.json()) || [];
+    const [resProjets, resSub] = await Promise.all([
+        fetch(`${API_URL}/users/${currentUserId.value}/projets`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/users/${currentUserId.value}/abonnement`, { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+
+    if (resProjets.ok) {
+      projets.value = (await resProjets.json()) || [];
+    }
+    
+    if (resSub.ok) {
+      const sub = await resSub.json();
+      isPremium.value = sub.is_premium || false;
     }
   } catch (error) {
-    console.error("Erreur projets :", error);
+    console.error("Erreur projets/abonnement :", error);
   } finally {
     loading.value = false;
   }
@@ -198,8 +238,14 @@ onMounted(async () => {
     cursor: pointer;
 }
 
-.btn-main-action:hover {
+.btn-main-action:hover:not(.disabled-btn) {
   background-color: #246343;
+}
+
+.disabled-btn {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  background-color: #6d7b72;
 }
 
 .section-container {
@@ -266,13 +312,24 @@ onMounted(async () => {
   font-size: 0.8rem;
   font-weight: bold;
 }
-.status-pending {
-  background: #fff4e6;
-  color: #cc6600;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
+
+.vitrine-counter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mt-3 {
+  margin-top: 1rem;
+}
+.limit-reached {
+  background: #fff4e6 !important;
+  color: #cc6600 !important;
+}
+.upgrade-text a {
+  font-size: 0.85rem;
   font-weight: bold;
+  color: #2d7a4f;
+  text-decoration: underline;
 }
 
 .actions-cell {

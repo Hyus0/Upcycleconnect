@@ -520,10 +520,10 @@
                         <td>{{ formatDate(facture.date_transaction || facture.date_emission) }}</td>
                         <td class="actions-cell" style="justify-content: flex-end;">
                             <button class="btn-view" type="button" @click="downloadFacture(facture.id)" title="Télécharger">
-                                ⬇️
+                                Télécharger
                             </button>
                             <button class="btn-secondary" type="button" @click="sendFacture(facture.id)" title="Envoyer par mail">
-                                📧
+                                Recevoir par mail
                             </button>
                         </td>
                     </tr>
@@ -853,6 +853,14 @@ async function saveMateriauxRecherches() {
     }
 }
 
+function calculateImpactScore(totalPoints) {
+    if (!totalPoints || totalPoints <= 0) return 0;
+    const K = 500; 
+
+    const score = (Math.log1p(totalPoints) / Math.log1p(K)) * 100;
+    return Math.min(100, Math.round(score));
+}
+
 async function loadAlertesPrioritaires() {
     const id = userId();
     if (isNaN(id)) return;
@@ -976,13 +984,39 @@ onMounted(() => {
     loadMateriauxRecherches();
 
     Promise.all([
-        fetch(`${API_URL}/users/${id}/stats`, { headers })
-            .then((r) => r.json())
-            .then((d) => {
-                stats.value = d;
-                if (d.total_points)
-                    sessionStorage.setItem("userScore", d.total_points);
-            })
+      fetch(`${API_URL}/users/${id}/stats`, { headers })
+          .then((r) => r.json())
+          .then((d) => {
+              stats.value = d;
+      
+              if (d.total_points)
+                  sessionStorage.setItem("userScore", d.total_points);
+      
+              const co2 = Number(d.co2_total_evite_kg || 0);
+      
+              ecoStats.value = {
+                  ...ecoStats.value,
+      
+                  co2_total: co2,
+      
+                  eau_economisee: Math.round(co2 * 80),
+      
+                  materiaux_valorises: d.nb_objets_recycles || 0,
+      
+                  score_impact_moyen: calculateImpactScore(d.total_points),
+      
+                  co2_trend: 0,
+      
+                  co2_par_mois: [
+                      {
+                          mois: new Date().toLocaleString("fr-FR", {
+                              month: "short",
+                          }),
+                          valeur: co2,
+                      },
+                  ],
+              };
+          })
             .catch(() => {}),
 
         fetch(`${API_URL}/users/${id}/achats`, { headers })
@@ -1003,11 +1037,6 @@ onMounted(() => {
         fetch(`${API_URL}/users/${id}/notifications`, { headers })
             .then((r) => r.json())
             .then((d) => (latestNotification.value = d[0] || null))
-            .catch(() => {}),
-
-        fetch(`${API_URL}/users/${id}/eco-stats`, { headers })
-            .then((r) => r.json())
-            .then((d) => (ecoStats.value = { ...ecoStats.value, ...d }))
             .catch(() => {}),
 
         fetch(`${API_URL}/materiaux/stats`, { headers })

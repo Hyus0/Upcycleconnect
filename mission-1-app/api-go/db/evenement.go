@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 	"strings"
 	"upcycleconnect/api-go/models"
 )
@@ -22,6 +23,7 @@ func GetAllEvenements() ([]models.Evenement, error) {
 			code_postal,
 			date_creation,
 			date_evenement,
+			date_fin,
 			type,
 			id_createur
 		FROM EVENEMENT
@@ -45,6 +47,7 @@ func GetAllEvenements() ([]models.Evenement, error) {
 			&e.CodePostal,
 			&e.DateCreation,
 			&e.DateEvenement,
+			&e.DateFin,
 			&e.Type,
 			&e.Id_createur,
 		)
@@ -76,6 +79,7 @@ func GetEvenement(id int) (*models.Evenement, error) {
 			code_postal,
 			date_creation,
 			date_evenement,
+			date_fin,
 			type,
 			id_createur
 		FROM EVENEMENT
@@ -94,6 +98,7 @@ func GetEvenement(id int) (*models.Evenement, error) {
 		&e.CodePostal,
 		&e.DateCreation,
 		&e.DateEvenement,
+		&e.DateFin,
 		&e.Type,
 		&e.Id_createur,
 	)
@@ -112,17 +117,23 @@ func CreateEvenement(e models.Evenement) error {
 		return fmt.Errorf("connexion DB non initialisee")
 	}
 
+	if e.DateEvenement.Before(time.Now()) {
+		return fmt.Errorf("impossible de créer un événement à une date passée")
+	}
+
 	query := `
 		INSERT INTO EVENEMENT (
-			titre,
-			description,
-			adresse,
-			ville,
-			code_postal,
-			date_evenement,
-			type,
-			id_createur
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	    titre,
+	    description,
+	    adresse,
+	    ville,
+	    code_postal,
+	    date_evenement,
+	    date_fin,
+	    type,
+	    id_createur
+	)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := Conn.Exec(
@@ -133,6 +144,7 @@ func CreateEvenement(e models.Evenement) error {
 		e.Ville,
 		e.CodePostal,
 		e.DateEvenement,
+		e.DateFin,
 		e.Type,
 		e.Id_createur,
 	)
@@ -147,6 +159,10 @@ func ModifyEvenement(id int, e models.Evenement) error {
 		return fmt.Errorf("connexion DB non initialisee")
 	}
 
+	if e.DateEvenement.Before(time.Now()) {
+		return fmt.Errorf("impossible de repousser un événement à une date passée")
+	}
+
 	query := `
 		UPDATE EVENEMENT SET
 			titre = ?,
@@ -155,6 +171,7 @@ func ModifyEvenement(id int, e models.Evenement) error {
 			ville = ?,
 			code_postal = ?,
 			date_evenement = ?,
+			date_fin = ?,
 			type = ?
 		WHERE id = ?
 	`
@@ -167,6 +184,7 @@ func ModifyEvenement(id int, e models.Evenement) error {
 		e.Ville,
 		e.CodePostal,
 		e.DateEvenement,
+		e.DateFin,
 		e.Type,
 		id,
 	)
@@ -265,7 +283,7 @@ func IsUserInscritEvenement(userID int, evenementID int) (bool, error) {
 
 func GetUserEvenements(userID int) ([]models.Evenement, error) {
 	query := `
-		SELECT e.id, e.titre, e.description, e.adresse, e.ville, e.code_postal, e.date_evenement, e.type
+		SELECT e.id, e.titre, e.description, e.adresse, e.ville, e.code_postal, e.date_evenement, e.date_fin, e.type
 		FROM EVENEMENT e
 		INNER JOIN EVENEMENT_INSCRIPTION ei ON e.id = ei.id_evenement
 		WHERE ei.id_utilisateur = ?`
@@ -279,7 +297,7 @@ func GetUserEvenements(userID int) ([]models.Evenement, error) {
 	var evenements []models.Evenement
 	for rows.Next() {
 		var e models.Evenement
-		rows.Scan(&e.ID, &e.Titre, &e.Description, &e.Adresse, &e.Ville, &e.CodePostal, &e.DateEvenement, &e.Type)
+		rows.Scan(&e.ID, &e.Titre, &e.Description, &e.Adresse, &e.Ville, &e.CodePostal, &e.DateEvenement, &e.DateFin, &e.Type)
 		evenements = append(evenements, e)
 	}
 	return evenements, nil
@@ -309,6 +327,7 @@ func GetEvenementParticipants(evenementID int) ([]models.Participant, error) {
 			u.id, 
 			u.prenom, 
 			u.nom, 
+			u.mail,
 			COALESCE(u.image_profil, '') as image_profil, 
 			u.role
 		FROM UTILISATEUR u
@@ -325,7 +344,7 @@ func GetEvenementParticipants(evenementID int) ([]models.Participant, error) {
 	var participants []models.Participant
 	for rows.Next() {
 		var p models.Participant
-		if err := rows.Scan(&p.ID, &p.Prenom, &p.Nom, &p.ImageProfil, &p.Role); err == nil {
+		if err := rows.Scan(&p.ID, &p.Prenom, &p.Nom, &p.Mail, &p.ImageProfil, &p.Role); err == nil {
 			participants = append(participants, p)
 		}
 	}

@@ -66,15 +66,19 @@
                             >
                             <div class="specs-grid">
                                 <div class="spec-item">
-                                    <span class="spec-label"
-                                        >Date de l'événement</span
-                                    >
+                                    <span class="spec-label">Début</span>
                                     <p class="spec-value highlight-val">
-                                        {{
-                                            formatDateLong(
-                                                evenement.date_evenement,
-                                            )
-                                        }}
+                                        {{ formatDateTimeLong(evenement.date_evenement) }}
+                                    </p>
+                                </div>
+                                
+                                <div
+                                    class="spec-item"
+                                    v-if="evenement.date_fin && !evenement.date_fin.startsWith('0001')"
+                                >
+                                    <span class="spec-label">Fin</span>
+                                    <p class="spec-value highlight-val">
+                                        {{ formatDateTimeLong(evenement.date_fin) }}
                                     </p>
                                 </div>
                                 <div class="spec-item">
@@ -149,6 +153,11 @@
                                     >
                                         {{ p.role }}
                                     </div>
+                                    <div
+                                        style="font-size: 0.75rem; color: #666"
+                                    >
+                                        {{ p.mail }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -186,35 +195,23 @@
                         </div>
                     </div>
 
-                    <div class="form-card side-card">
-                        <h2 class="card-title-side">Participation</h2>
-                        <div class="data-row">
-                            <span class="data-label">Accès :</span>
-                            <span class="text-success">Gratuit</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Publié le :</span>
-                            <span class="status-badge">{{
-                                formatDateLong(evenement.date_creation)
-                            }}</span>
-                        </div>
-                    </div>
-
                     <div class="form-actions-card">
                         <button
-                            @click="handleInscription"
+                            v-if="!isRegistered"
+                            @click="handleMainAction"
                             class="btn-save"
-                            :class="{ 'btn-liked-active': isRegistered }"
-                            :disabled="isRegistering"
+                            :disabled="isRegistering || isAddingToCart"
                         >
-                            <span v-if="isRegistered"
-                                >Inscrit à l'événement</span
-                            >
-                            <span v-else>Participer à l'événement</span>
+                            <template v-if="evenement.prix_unitaire > 0">
+                                Ajouter au panier
+                            </template>
+                            <template v-else>
+                                Participer à l'événement
+                            </template>
                         </button>
-
+                        
                         <button
-                            v-if="isRegistered"
+                            v-else
                             @click="handleQuit"
                             class="btn-quit"
                             :disabled="isLeaving"
@@ -222,6 +219,7 @@
                             Annuler ma participation
                         </button>
                     </div>
+
                 </div>
             </div>
         </main>
@@ -247,6 +245,7 @@ const isLeaving = ref(false);
 const userScore = ref(0);
 const participants = ref([]);
 const participantsLoading = ref(false);
+const isAddingToCart = ref(false);
 
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => {
@@ -257,10 +256,23 @@ const userName = computed(() => {
 
 const formatDateLong = (d) => {
     if (!d || d.startsWith("0001")) return "Date inconnue";
+
     return new Date(d).toLocaleDateString("fr-FR", {
         day: "numeric",
         month: "long",
         year: "numeric",
+    });
+};
+
+const formatDateTimeLong = (d) => {
+    if (!d || d.startsWith("0001")) return "Date inconnue";
+
+    return new Date(d).toLocaleString("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
     });
 };
 
@@ -270,6 +282,60 @@ const fetchCreateur = async (id) => {
         if (res.ok) createur.value = await res.json();
     } catch (error) {
         console.error("Erreur créateur: ", error);
+    }
+};
+
+const handleAddToCart = async () => {
+    const token = sessionStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
+
+    if (!token || !userId) {
+        router.push("/connexion");
+        return;
+    }
+
+    isAddingToCart.value = true;
+
+    try {
+        const res = await fetch(
+            `/go/users/${userId}/panier`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    type_item: "Evenement",
+                    reference_id: evenement.value.id,
+                    prix_unitaire: parseFloat(
+                        evenement.value.prix_unitaire || 0,
+                    ),
+                }),
+            },
+        );
+
+        if (res.ok) {
+            alert("Événement ajouté au panier !");
+        } else {
+            const errorMsg = await res.text();
+            alert("Erreur lors de l'ajout au panier : " + errorMsg);
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Impossible de joindre le serveur.");
+    } finally {
+        isAddingToCart.value = false;
+    }
+};
+
+const handleMainAction = () => {
+    const prix = evenement.value.prix_unitaire || 0;
+
+    if (prix > 0) {
+        handleAddToCart();
+    } else {
+        handleInscription();
     }
 };
 

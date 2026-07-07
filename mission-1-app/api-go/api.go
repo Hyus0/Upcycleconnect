@@ -100,7 +100,7 @@ func main() {
 	http.HandleFunc("GET /check-session", app.CheckSession)
 	http.HandleFunc("PUT /users/{id}/password", app.ModifyUserPassword)
 	http.HandleFunc("GET /users/{id}/stats", app.GetUserStatsHandler)
-	http.HandleFunc("GET /user/planning/{id}", app.GetPlanningHandler)
+	http.HandleFunc("GET /user/planning/{id}", app.GetUserPlanningHandler)
 	http.HandleFunc("POST /users/{id}/images", app.UploadUserImages)
 	http.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./uploads"))))
 
@@ -149,9 +149,10 @@ func main() {
 	http.HandleFunc("POST /formation", app.CreateFormation)
 	http.HandleFunc("PUT /formation/{id}", app.ModifyFormation)
 	http.HandleFunc("DELETE /formation/{id}", app.DeleteFormation)
-	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormation)
-	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormation)
+	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormationHandler)
+	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormationHandler)
 	http.HandleFunc("GET /api/formations/{id}/participants", app.GetFormationParticipantsHandler)
+	http.HandleFunc("POST /formations/{id}/annuler", app.AnnulerFormationHandler)
 
 	//Logistique
 	http.HandleFunc("GET /sites", app.GetAllSites)
@@ -174,6 +175,8 @@ func main() {
 	http.HandleFunc("POST /projets", app.CreateProjetHandler)
 	http.HandleFunc("PUT /projets/{id}", app.UpdateProjetHandler)
 	http.HandleFunc("POST /projets/upload-image", app.UploadProjetImageHandler)
+	http.HandleFunc("POST /projets/{id}/acheter", app.PayerProjetHandler)
+	http.HandleFunc("GET /users/{id}/projets-likes", app.GetUserProjetsLikeHandler)
 
 	//tips
 	http.HandleFunc("GET /tips/role/{role}", app.GetTipByRoleHandler)
@@ -213,13 +216,15 @@ func main() {
 	http.HandleFunc("DELETE /users/{id}/panier/{itemId}", self(app.RemoveFromPanierHandler))
 	http.HandleFunc("POST /users/{id}/checkout", self(app.CheckoutWithInvoiceHandler))
 	http.HandleFunc("GET /users/{id}/factures", self(app.GetFacturesHandler))
-	http.HandleFunc("GET /users/{id}/factures/{factureId}/download", self(app.DownloadFactureHandler))
+	http.HandleFunc("GET /users/{id}/factures/{factureId}/download", app.DownloadFactureHandler)
 	http.HandleFunc("POST /users/{id}/factures/{factureId}/send", self(app.SendFactureByMailHandler))
 
 	//Abonnement
-	http.HandleFunc("GET /users/{id}/abonnement", self(app.GetAbonnementHandler))
-	http.HandleFunc("POST /users/{id}/abonnement/souscrire", self(app.SouscrireAbonnementHandler))
-	http.HandleFunc("POST /users/{id}/abonnement/resilier", self(app.ResilierAbonnementHandler))
+	http.HandleFunc("GET /abonnements", app.GetAllAbonnementsHandler)
+	http.HandleFunc("GET /abonnements/{id}", app.GetTypeAbonnementByIDHandler)
+	http.HandleFunc("GET /users/{id}/abonnement", app.GetAbonnementHandler)
+	http.HandleFunc("POST /users/{id}/abonnement/souscrire", app.SouscrireAbonnementHandler)
+	http.HandleFunc("POST /users/{id}/abonnement/resilier", app.ResilierAbonnementHandler)
 
 	//Matériaux recherchés (prestataires)
 	http.HandleFunc("GET /materiaux/stats", app.GetMateriauxStatsHandler)

@@ -56,7 +56,7 @@
                             </span>
                         </td>
                         <td>
-                            <span :class="form.statut === 'Ouvert' ? 'status-valid' : 'status-neutral'">
+                            <span :class="form.statut === 'Ouvert' ? 'status-valid' : (form.statut === 'Annule' ? 'status-refused' : 'status-neutral')">
                                 {{ form.statut || "En attente" }}
                             </span>
                         </td>
@@ -86,6 +86,14 @@
                                 @click="goToModifyFormation(form.id)"
                             >
                                 Modifier
+                            </button>
+                            <button
+                                v-if="form.statut !== 'Annule'"
+                                class="btn-cancel"
+                                type="button"
+                                @click="annulerFormation(form.id)"
+                            >
+                                Annuler
                             </button>
                             <button
                                 class="btn-remove"
@@ -174,6 +182,35 @@ const removeFormation = async (id) => {
         console.error("Erreur réseau :", e);
         alert("Impossible de joindre le serveur.");
     }
+};
+
+const annulerFormation = async (formationId) => {
+  if (!confirm("Voulez-vous vraiment annuler cette formation ? Tous les participants seront désinscrits et notifiés de l'annulation (ainsi que du remboursement).")) return;
+
+  try {
+    const res = await fetch(`${API_URL}/formations/${formationId}/annuler`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getItem("userToken") || ""}`
+      },
+      body: JSON.stringify({ user_id: currentUserId.value })
+    });
+
+    if (res.ok) {
+      alert("Formation annulée avec succès. Les notifications ont été envoyées.");
+      const index = formations.value.findIndex(f => f.id === formationId);
+      if (index !== -1) {
+          formations.value[index].statut = 'Annule';
+      }
+    } else {
+      const errMsg = await res.text();
+      alert("Erreur lors de l'annulation : " + errMsg);
+    }
+  } catch (error) {
+    console.error("Erreur réseau:", error);
+    alert("Impossible de joindre le serveur.");
+  }
 };
 
 onMounted(async () => {
@@ -341,7 +378,23 @@ onMounted(async () => {
 .actions-cell {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
+
+.btn-cancel {
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+
+.btn-cancel { background: #fff4e6; color: #cc6600; border: 1px solid #ffe8cc; } 
+
+.btn-cancel:hover { background: #ffe8cc; }
 
 .empty-state {
   text-align: center;

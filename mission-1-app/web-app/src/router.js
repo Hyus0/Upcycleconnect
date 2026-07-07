@@ -20,7 +20,7 @@ import Abonnement from "./pages/Abonnement.vue";
 import Paiement from "./pages/Paiement.vue";
 
 const routes = [
-  { path: "/", component: Home },
+  { path: "/front", component: Home },
   { path: "/inscription", component: Register },
   { path: "/connexion", component: Login },
   { path: "/messages", component: Messages },
@@ -34,7 +34,10 @@ const routes = [
   { path: "/paiement", component: Paiement },
   { path: "/abonnement-dm", component: AbonnementDM },
   { path: "/abonnement", component: Abonnement },
-
+  { 
+    path: '/:pathMatch(.*)*', 
+    redirect: '/front' 
+  },
   {
     path: '/annonce/:id',
     name: 'annonce-detail',
@@ -170,6 +173,12 @@ const routes = [
         meta: { requiresRole: "Particulier" }
       },
       {
+        path: "projet-favoris",
+        name: "projet-favoris",
+        component: () => import('./pages/profilpagesParticulier/ProjetLikes.vue'),
+        meta: { requiresRole: "Particulier" }
+      },
+      {
         path: "modifyAnnonce/:id",
         name: "modification-annonce",
         component: () => import('./pages/profilpagesParticulier/modifyAnnonce.vue'),
@@ -292,38 +301,41 @@ router.beforeEach(async (to, from, next) => {
   const id = sessionStorage.getItem("userId");
   const userRole = sessionStorage.getItem("userRole");
 
-  if (to.matched.some((record) => record.meta.requiresAuth)) {
-    if (!id || !token) {
-      return next("/connexion");
-    }
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  const requiredRole = to.matched.find((record) => record.meta.requiresRole)?.meta.requiresRole;
+  const isProtected = requiresAuth || requiredRole;
 
-    try {
-      const response = await fetch(
-        `/go/check-session?id=${id}`,
-        {
-          headers: { Authorization: token },
-        }
-      );
-      const data = await response.json();
-
-      if (!data.isValid) {
-        sessionStorage.clear();
-        return next("/connexion");
-      }
-    } catch (error) {
-      return next("/");
-    }
+  if (!isProtected) {
+    return next();
   }
 
-  const requiredRole = to.matched.find(record => record.meta.requiresRole)?.meta.requiresRole;
-  
+  if (!id || !token) {
+    sessionStorage.clear(); 
+    return next("/connexion");
+  }
+
+  try {
+    const response = await fetch(`/go/check-session?id=${id}`, {
+      headers: { Authorization: token },
+    });
+    const data = await response.json();
+
+    if (!data.isValid) {
+      sessionStorage.clear();
+      return next("/connexion");
+    }
+  } catch (error) {
+    console.error("Erreur de vérification de session:", error);
+    return next("/front");
+  }
+
   if (requiredRole && userRole !== requiredRole) {
     console.warn(`Accès refusé ! Rôle attendu : ${requiredRole}, Rôle actuel : ${userRole}`);
     
     if (userRole === "Prestataire" || userRole === "Salarie" || userRole === "Particulier") {
       return next("/profil"); 
     } else {
-      return next("/"); 
+      return next("/front"); 
     }
   }
 

@@ -176,8 +176,8 @@
                     <input type="checkbox" id="cgu" v-model="cguAccepte" />
                     <label for="cgu">
                         {{ t.IAcceptThe || "J'accepte les" }}
-                        <router-link to="/" class="register-right__link">{{ t.TOS || 'CGU' }}</router-link> {{ t.AndThe || 'et la' }}
-                        <router-link to="/" class="register-right__link"
+                        <router-link to="/front" class="register-right__link">{{ t.TOS || 'CGU' }}</router-link> {{ t.AndThe || 'et la' }}
+                        <router-link to="/front" class="register-right__link"
                             >{{ t.PrivacyPolicy || 'politique de confidentialité' }}</router-link
                         >
                     </label>

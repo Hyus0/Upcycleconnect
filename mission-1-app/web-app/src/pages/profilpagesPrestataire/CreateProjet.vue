@@ -134,6 +134,26 @@
                                 </label>
                             </div>
                         </div>
+                        
+                    </div>
+                    <div class="form-divider">Mise en vente</div>
+                    
+                    <div class="form-group">
+                        <label class="radio-label" style="margin-bottom: 0.5rem;">
+                            <input type="checkbox" v-model="form.en_vente" style="width: 1.2rem; height: 1.2rem; accent-color: #2d7a4f;" />
+                            Mettre en vente mon produit
+                        </label>
+                    
+                        <div v-if="form.en_vente" class="price-input-wrapper" style="margin-top: 0.6rem;">
+                            <input
+                                v-model.number="form.prix"
+                                type="number"
+                                step="0.5"
+                                min="0"
+                                placeholder="Prix de vente"
+                            />
+                            <span class="currency-symbol">€</span>
+                        </div>
                     </div>
                 </div>
 
@@ -276,6 +296,8 @@ const form = ref({
     image_url: "",
     co2_evite_kg: 0,
     visible_public: true,
+    en_vente: false,     
+    prix: 0,
     etapes: [],
 });
 
@@ -364,6 +386,7 @@ const handleSubmit = async () => {
         co2_evite_kg: parseFloat(form.value.co2_evite_kg) || 0,
         visible_public: form.value.visible_public,
         score_impact: (parseFloat(form.value.co2_evite_kg) || 0) * 10,
+        prix: form.value.en_vente ? parseFloat(form.value.prix) || 0 : null,
         etapes: form.value.etapes.map((etape, index) => ({
             numero_ordre: index + 1,
             titre: etape.titre,

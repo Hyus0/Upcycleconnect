@@ -276,8 +276,19 @@
             </div>
             <div class="modal-content">
                 <p class="info-text">
-                    Présentez ce code unique au niveau du conteneur sécurisé :
+                    Présentez ce QR Code ou le code unique au niveau du conteneur sécurisé :
                 </p>
+            
+                <div class="qr-wrapper">
+                    <QrcodeVue
+                        :value="selectedToken"
+                        :size="180"
+                        level="H"
+                        background="#ffffff"
+                        foreground="#1d3528"
+                    />
+                </div>
+    
                 <div class="token-box">
                     {{ selectedToken }}
                 </div>
@@ -295,6 +306,7 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
+import QrcodeVue from "qrcode.vue";
 
 const router = useRouter();
 const annonces = ref([]);
@@ -489,6 +501,21 @@ onMounted(() => {
     padding: 4px 10px;
     border-radius: 6px;
     letter-spacing: 1px;
+}
+
+.qr-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ece9;
+}
+
+.qr-wrapper canvas,
+.qr-wrapper svg {
+    border-radius: 10px;
 }
 
 .status-pill {

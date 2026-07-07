@@ -2,61 +2,61 @@
   <div class="page-container">
     <header class="content-header">
       <div class="header-left">
-        <p class="sidebar__category2">ACCUEIL > MES FAVORIS</p>
-        <h1 class="hero-title1">ANNONCES LIKÉES</h1>
+        <p class="sidebar__category2">ACCUEIL > MES PROJETS LIKÉS</p>
+        <h1 class="hero-title1">PROJETS LIKÉS</h1>
         <p class="classic-text">
-          Retrouvez ici tous les matériaux et objets que vous avez sauvegardés pour vos futurs projets.
+          Retrouvez ici toutes les créations de la communauté que vous avez aimées et soutenues.
         </p>
       </div>
-      <button class="btn-secondary-back" @click="$router.push('/catalogue')">
-        🠔 Retour au catalogue
+      <button class="btn-secondary-back" @click="$router.push('/projets')">
+        🠔 Retour à la galerie
       </button>
     </header>
 
     <div class="section-container">
       <div v-if="loading" class="state-card">
-        Chargement de vos favoris...
+        Chargement de vos projets favoris...
       </div>
       
-      <div v-else-if="favoris.length === 0" class="empty-state">
-        <p>Aucun favori pour le moment. Parcourez le catalogue et cliquez sur le cœur pour sauvegarder des annonces ici.</p>
-        <router-link to="/catalogue" class="btn-main-action" style="text-decoration: none">
-          Découvrir le catalogue
+      <div v-else-if="projetsLikes.length === 0" class="empty-state">
+        <p>Aucun projet liké pour le moment. Parcourez la galerie et cliquez sur le cœur pour soutenir des créations.</p>
+        <router-link to="/projets" class="btn-main-action" style="text-decoration: none">
+          Découvrir les projets
         </router-link>
       </div>
 
       <div v-else class="annonces-grid">
-        <article v-for="annonce in favoris" :key="annonce.id" class="annonce-card">
-          <div class="annonce-card__image-wrapper" @click="goToAnnonce(annonce.id)">
+        <article v-for="projet in projetsLikes" :key="projet.id" class="annonce-card">
+          <div class="annonce-card__image-wrapper" @click="goToProjet(projet.id)">
             <img 
-                :src="(annonce.image && annonce.image.trim() !== '') ? annonce.image : imageParDefaut" 
-                alt="Image de l'annonce" 
+                :src="resolveImageUrl(projet.image_url || projet.ImageUrl)" 
+                alt="Image du projet" 
                 class="annonce-card__image" 
             />
             <div class="annonce-card__badges">
-              <span :class="annonce.type === 'Vente' ? 'badge badge--orange' : 'badge badge--green'">
-                {{ (annonce.type || "N/A").toUpperCase() }}
+              <span class="badge badge--green">
+                PROJET UPCYCLING
               </span>
             </div>
-            <div class="favorite-indicator" title="Retirer des favoris" @click.stop="retirerFavori(annonce.id)">❤️</div>
+            <div class="favorite-indicator" title="Ne plus aimer" @click.stop="toggleLike(projet.id)">❤️</div>
           </div>
           
-          <div class="annonce-card__content" @click="goToAnnonce(annonce.id)">
+          <div class="annonce-card__content" @click="goToProjet(projet.id)">
             <div class="annonce-card__header">
-              <h3 class="annonce-card__title">{{ annonce.titre || "Sans titre" }}</h3>
-              <p class="annonce-card__price">{{ formatPrice(annonce.prix, annonce.type) }}</p>
+              <h3 class="annonce-card__title">{{ projet.titre || "Sans titre" }}</h3>
             </div>
                       
-            <div class="annonce-card__meta">
-              <span>📍 {{ annonce.ville || "N/A" }}</span>
+            <div class="annonce-card__meta" style="display: flex; flex-direction: column; gap: 4px;">
+              <span>🍃 {{ projet.co2_evite_kg || 0 }} kg CO2 évités</span>
+              <span>👁️ {{ projet.nb_vues || 0 }} vues</span>
             </div>
           </div>
 
           <div class="annonce-card__footer">
-            <button class="btn-view" type="button" @click="goToAnnonce(annonce.id)">
+            <button class="btn-view" type="button" @click="goToProjet(projet.id)">
               Voir
             </button>
-            <button class="btn-remove" type="button" @click.stop="retirerFavori(annonce.id)">
+            <button class="btn-remove" type="button" @click.stop="toggleLike(projet.id)">
               Retirer
             </button>
           </div>
@@ -75,59 +75,69 @@ const router = useRouter();
 const API_URL = "/go";
 
 const loading = ref(true);
-const favoris = ref([]);
+const projetsLikes = ref([]);
 
 const currentUserId = computed(() => {
   const storedId = sessionStorage.getItem("id") || sessionStorage.getItem("userId");
   return Number(storedId) || 0;
 });
 
-const fetchFavoris = async () => {
+const resolveImageUrl = (url) => {
+    if (!url) return imageParDefaut;
+    if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) {
+        return url;
+    }
+    if (url.startsWith("uploads/")) {
+        return `${API_URL}/img/${url.replace('uploads/', '')}`;
+    }
+    if (!url.includes("/")) {
+        return `${API_URL}/img/projets/${url}`;
+    }
+    if (url.startsWith("/")) {
+        return `${API_URL}${url}`;
+    }
+    return `${API_URL}/${url}`;
+};
+
+const fetchProjetsLikes = async () => {
   if (currentUserId.value === 0) return;
-  
+
   loading.value = true;
   try {
-    const res = await fetch(`${API_URL}/users/${currentUserId.value}/favoris`);
+    const res = await fetch(`${API_URL}/users/${currentUserId.value}/projets-likes`);
     if (res.ok) {
-      favoris.value = await res.json();
+      const data = await res.json();
+      projetsLikes.value = Array.isArray(data) ? data : [];
     } else {
       console.error("Erreur HTTP:", res.status);
     }
   } catch (error) {
-    console.error("Erreur lors de la récupération des favoris :", error);
+    console.error("Erreur lors de la récupération des projets likés :", error);
   } finally {
     loading.value = false;
   }
 };
 
-const retirerFavori = async (annonceId) => {
+
+const toggleLike = async (projetId) => {
   try {
-    const res = await fetch(`${API_URL}/annonces/${annonceId}/favori/${currentUserId.value}`, {
+    const res = await fetch(`${API_URL}/projets/${projetId}/like/${currentUserId.value}`, {
       method: "POST"
     });
     
     if (res.ok) {
-      favoris.value = favoris.value.filter(a => a.id !== annonceId);
+      projetsLikes.value = projetsLikes.value.filter(p => p.id !== projetId);
     }
   } catch (error) {
-    console.error("Erreur suppression favori", error);
+    console.error("Erreur lors de la modification du like", error);
   }
 };
 
-function formatPrice(value, type) {
-  if (value === null || value === undefined || value === "") return "N/A";
-  if ((type || "").toLowerCase() === "don" || Number(value) === 0) return "Gratuit";
-  
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency", currency: "EUR"
-  }).format(Number(value));
+function goToProjet(id) {
+  router.push({ name: 'projet-detail', params: { id: id } }); 
 }
 
-function goToAnnonce(id) {
-  router.push(`/annonce/${id}`); 
-}
-
-onMounted(fetchFavoris);
+onMounted(fetchProjetsLikes);
 </script>
 
 <style scoped>
@@ -316,23 +326,6 @@ onMounted(fetchFavoris);
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: #1a1a1a;
-}
-
-.annonce-card__price {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #2c7e4f;
-  margin: 0;
-}
-
-.annonce-card__desc {
-  font-size: 0.85rem;
-  color: #6d7b72;
-  margin: 0 0 16px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .annonce-card__meta {

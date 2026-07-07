@@ -126,28 +126,49 @@
                         <h2 class="card-title-side">Impact Écologique</h2>
                         <div class="data-row">
                             <span class="data-label">CO2 Évité :</span>
-                            <span class="text-success"
-                                >{{ projet.co2_evite_kg }} kg</span
-                            >
+                            <span class="text-success">{{ projet.co2_evite_kg }} kg</span>
                         </div>
                         <div class="data-row">
                             <span class="data-label">Score d'impact :</span>
-                            <span class="status-badge"
-                                >{{ projet.score_impact }} / 100</span
-                            >
+                            <span class="status-badge">{{ projet.score_impact }} / 100</span>
                         </div>
                     </div>
 
-                    <div class="form-actions-card">
+                    <div class="form-actions-card flex-actions">
                         <button
                             @click="toggleLike"
-                            class="btn-save"
-                            :class="{ 'btn-liked-active': isLiked }"
+                            class="btn-like-icon"
+                            :class="{ 'is-liked': isLiked }"
+                            title="Liker ce projet"
                         >
-                            <span v-if="isLiked">Projet liké</span>
-                            <span v-else>Liker la création</span>
+                            <Heart :fill="isLiked ? '#ef4444' : 'none'" :color="isLiked ? '#ef4444' : '#666'" :size="24" />
+                        </button>
+
+                        <button
+                            v-if="!isOwner"
+                            @click="contactCreateur"
+                            class="btn-main-action flex-grow"
+                            :class="{ 'btn-disabled': !projet.prix || projet.prix <= 0 || projet.statut !== 'Disponible' }"
+                            :disabled="!projet.prix || projet.prix <= 0 || projet.statut !== 'Disponible'"
+                        >
+                            <span v-if="projet.prix > 0 && projet.statut === 'Disponible'">
+                                Contacter pour acheter ({{ projet.prix }} €)
+                            </span>
+                            <span v-else-if="projet.prix > 0 && projet.statut !== 'Disponible'">
+                                Objet déjà vendu
+                            </span>
+                            <span v-else>
+                                Objet pas encore en vente
+                            </span>
+                        </button>
+                        <button v-else class="btn-main-action flex-grow"
+                        @click="goToModify(projet.id)">
+                            <span>
+                                Modifier mon projet
+                            </span>
                         </button>
                     </div>
+
                 </div>
             </div>
         </main>
@@ -160,6 +181,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
+import { Heart } from "lucide-vue-next";
 
 const route = useRoute();
 const router = useRouter();
@@ -247,6 +269,29 @@ const toggleLike = async () => {
     }
 };
 
+const isOwner = computed(() =>
+    projet.value?.id_createur === parseInt(sessionStorage.getItem("userId") || "0")
+);
+
+const goToModify = (id) => {
+  router.push({ name: "modify-projet", params: { id: id } });
+};
+
+const contactCreateur = () => {
+    if (!isLoggedIn.value) {
+        router.push("/connexion");
+        return;
+    }
+    router.push({
+        path: "/messages",
+        query: {
+            user: projet.value.id_createur,
+            projet: projet.value.id,
+        },
+    });
+};
+
+
 const viewProfile = (id) => {
     if (id) {
         router.push(`/user/${id}`);
@@ -269,6 +314,69 @@ onMounted(fetchDetail);
 
 .page-container {
     padding: 0 20px;
+}
+
+.flex-actions {
+    display: flex;
+    flex-direction: row !important; 
+    align-items: center;
+    gap: 12px;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.btn-like-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background-color: white;
+    border: 2px solid #eee;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-like-icon:hover {
+    border-color: #ffcccc;
+    background-color: #fff5f5;
+}
+
+.btn-like-icon.is-liked {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+}
+
+.flex-grow {
+    flex-grow: 1;
+}
+
+.btn-main-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #2d7a4f;
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    height: 50px; 
+}
+
+.btn-main-action:hover:not(:disabled) {
+    background-color: #246343;
+}
+
+.btn-disabled {
+    background-color: #e5e7eb !important;
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
 }
 
 .content-header {

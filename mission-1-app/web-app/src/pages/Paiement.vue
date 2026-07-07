@@ -26,7 +26,7 @@
 
             <div v-if="paymentMode" class="checkout-grid">
                 <div class="checkout-form card">
-                    <h2 class="section-title">Moyen de paiement</h2>
+                    <h2 class="section-title">Moyen de paiement (MODE TEST)</h2>
 
                     <div class="stripe-card-wrapper">
                         <div class="cc-header">
@@ -36,35 +36,47 @@
                             <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" class="card-logo" />
                         </div>
 
-                        <div v-if="stripeError" class="stripe-error">
+                        <div class="form-group mt-4">
+                            <label>Nom sur la carte</label>
+                            <input type="text" value="Jean Testeur" class="form-input" />
+                        </div>
+                        
+                        <div class="form-group mt-3">
+                            <label>Numéro de carte</label>
+                            <input type="text" value="4242 4242 4242 4242" class="form-input font-mono" maxlength="19" />
+                        </div>
+                        
+                        <div class="grid-2 mt-3">
+                            <div class="form-group">
+                                <label>Date d'expiration</label>
+                                <input type="text" value="12/26" class="form-input" />
+                            </div>
+                            <div class="form-group">
+                                <label>CVC / Code Confidentiel</label>
+                                <input type="text" value="123" class="form-input" maxlength="3" />
+                            </div>
+                        </div>
+
+                        <div v-if="stripeError" class="stripe-error mt-4">
                             <i class="ti ti-alert-circle"></i> {{ stripeError }}
-                        </div>
-
-                        <div v-if="!stripeReady" class="stripe-loading">
-                            <span>Chargement du formulaire sécurisé...</span>
-                        </div>
-
-                        <div class="stripe-element-container">
-                            <label class="stripe-label">Informations de carte</label>
-                            <div id="stripe-card-element" class="stripe-element"></div>
                         </div>
                     </div>
 
                     <button
                         class="btn-main-action btn-pay w-full mt-6"
-                        :disabled="isProcessing || !stripeReady"
-                        @click="validerPaiement"
+                        :disabled="isProcessing"
+                        @click="validerPaiementTest"
                     >
                         <i class="ti ti-lock" style="margin-right: 8px"></i>
                         {{
                             isProcessing
                                 ? "Traitement en cours..."
-                                : `Payer ${totalAmount.toFixed(2)} €`
+                                : `Payer ${totalAmount.toFixed(2)} € (TEST)`
                         }}
                     </button>
                     <p class="text-center text-xs mt-3 text-gray-500">
                         <i class="ti ti-shield-check" style="color: #2d7a4f; margin-right:4px"></i>
-                        Paiement chiffré SSL par Stripe. Vos données bancaires ne transitent pas par nos serveurs.
+                        Mode Test activé. Aucune vraie transaction ne sera effectuée.
                     </p>
                 </div>
 
@@ -82,7 +94,7 @@
                     </div>
 
                     <div
-                        v-if="paymentMode === 'annonce'"
+                        v-if="paymentMode === 'annonce' || paymentMode === 'projet'"
                         class="summary-item mt-3"
                     >
                         <div class="item-info">
@@ -148,22 +160,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { loadStripe } from "@stripe/stripe-js";
 import SiteNavbar from "../components/SiteNavbar.vue";
 import SiteFooter from "../components/SiteFooter.vue";
 
-// ─── CONFIG ────────────────────────────────────────────────────────────────────
-// Remplacez par votre clé publique Stripe (pk_test_... ou pk_live_...)
-const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || "pk_test_REMPLACEZ_PAR_VOTRE_CLE_STRIPE";
 const API_URL = "/go";
 
-// ─── ROUTE & ROUTER ────────────────────────────────────────────────────────────
 const route = useRoute();
 const router = useRouter();
 
-// ─── AUTH ──────────────────────────────────────────────────────────────────────
 const isLoggedIn = computed(() => !!sessionStorage.getItem("userToken"));
 const userName = computed(() => sessionStorage.getItem("userPrenom") || "Utilisateur");
 const currentUserId = computed(
@@ -174,6 +180,7 @@ const currentUserId = computed(
 const paymentMode = computed(() => {
     if (route.query.plan_id) return "subscription";
     if (route.query.annonce_id) return "annonce";
+    if (route.query.projet_id) return "projet"; // AJOUT DU PROJET
     if (route.query.source === "panier") return "panier";
     return null;
 });
@@ -183,6 +190,7 @@ const displayLabel = computed(() => {
         case "subscription": return `Abonnement ${route.query.nom_plan || "Pro"}`;
         case "panier":       return "Commande globale";
         case "annonce":      return "Paiement annonce";
+        case "projet":       return "Achat de création Upcycling"; 
         default:             return "Transaction";
     }
 });
@@ -190,76 +198,21 @@ const displayLabel = computed(() => {
 const title = computed(() => route.query.title || route.query.nom_plan || "Article");
 const rawAmount = computed(() => route.query.amount || route.query.prix || "0");
 const baseAmount = computed(() => parseFloat(rawAmount.value) || 0);
-const commissionAmount = computed(() => paymentMode.value === "annonce" ? baseAmount.value * 0.05 : 0);
+
+const commissionAmount = computed(() => 
+    (paymentMode.value === "annonce" || paymentMode.value === "projet") 
+    ? baseAmount.value * 0.05 
+    : 0
+);
 const totalAmount = computed(() => baseAmount.value + commissionAmount.value);
 
-// ─── STRIPE ────────────────────────────────────────────────────────────────────
-const stripeReady = ref(false);
 const stripeError = ref("");
 const isProcessing = ref(false);
 
-let stripe = null;
-let cardElement = null;
-
-onMounted(async () => {
-    if (!paymentMode.value) return;
-
-    try {
-        stripe = await loadStripe(STRIPE_PUBLIC_KEY);
-        if (!stripe) throw new Error("Impossible de charger Stripe.");
-
-        const elements = stripe.elements({
-            locale: "fr",
-            appearance: {
-                theme: "stripe",
-                variables: {
-                    colorPrimary: "#2d7a4f",
-                    colorText: "#1a1a1a",
-                    colorDanger: "#df1b41",
-                    fontFamily: "inherit",
-                    borderRadius: "8px",
-                },
-            },
-        });
-
-        cardElement = elements.create("card", {
-            style: {
-                base: {
-                    fontSize: "15px",
-                    color: "#1a1a1a",
-                    "::placeholder": { color: "#aab7c4" },
-                },
-                invalid: { color: "#df1b41" },
-            },
-            hidePostalCode: true,
-        });
-
-        cardElement.mount("#stripe-card-element");
-
-        cardElement.on("ready", () => { stripeReady.value = true; });
-        cardElement.on("change", (event) => {
-            stripeError.value = event.error ? event.error.message : "";
-        });
-    } catch (err) {
-        stripeError.value = "Erreur lors du chargement du module de paiement.";
-        console.error(err);
-    }
-});
-
-onUnmounted(() => {
-    if (cardElement) cardElement.destroy();
-});
-
-// ─── PAYMENT FLOW ──────────────────────────────────────────────────────────────
-const validerPaiement = async () => {
+const validerPaiementTest = async () => {
     if (!currentUserId.value) {
         alert("Veuillez vous reconnecter.");
         router.push("/connexion");
-        return;
-    }
-
-    if (!stripe || !cardElement) {
-        stripeError.value = "Le module de paiement n'est pas prêt. Veuillez patienter.";
         return;
     }
 
@@ -267,51 +220,18 @@ const validerPaiement = async () => {
     stripeError.value = "";
 
     try {
-        // 1. Demander un PaymentIntent au backend
-        const intentRes = await fetch(`${API_URL}/paiement/intent`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${sessionStorage.getItem("userToken") || ""}`,
-            },
-            body: JSON.stringify({
-                montant: Math.round(totalAmount.value * 100), // en centimes
-                mode: paymentMode.value,
-                plan_id: parseInt(route.query.plan_id, 10) || 0,
-                annonce_id: parseInt(route.query.annonce_id, 10) || 0,
-                user_id: currentUserId.value,
-            }),
-        });
+        await new Promise(resolve => setTimeout(resolve, 1200));
 
-        if (!intentRes.ok) {
-            const msg = await intentRes.text();
-            throw new Error(msg || `Erreur serveur (${intentRes.status})`);
-        }
+        const mockStripeId = "tok_test_bypass_" + Date.now();
 
-        const { client_secret } = await intentRes.json();
+        await finaliserCommande(mockStripeId);
 
-        // 2. Confirmer le paiement côté Stripe
-        const { error: stripeConfirmError, paymentIntent } = await stripe.confirmCardPayment(
-            client_secret,
-            { payment_method: { card: cardElement } }
-        );
-
-        if (stripeConfirmError) {
-            throw new Error(stripeConfirmError.message);
-        }
-
-        if (paymentIntent.status !== "succeeded") {
-            throw new Error(`Statut inattendu : ${paymentIntent.status}`);
-        }
-
-        // 3. Notifier le backend pour finaliser la commande
-        await finaliserCommande(paymentIntent.id);
-
-        router.push("/profil?paiement=success");
+        alert("Paiement TEST réussi ! La facture a été générée.");
+        router.push("/profil/factures");
 
     } catch (err) {
-        stripeError.value = err.message || "Une erreur est survenue lors du paiement.";
-        console.error("Erreur paiement:", err);
+        stripeError.value = err.message || "Une erreur est survenue lors du paiement test.";
+        console.error("Erreur paiement test:", err);
     } finally {
         isProcessing.value = false;
     }
@@ -320,12 +240,16 @@ const validerPaiement = async () => {
 const finaliserCommande = async (stripePaymentId) => {
     const planId    = parseInt(route.query.plan_id, 10) || 0;
     const annonceId = parseInt(route.query.annonce_id, 10) || 0;
+    const projetId  = parseInt(route.query.projet_id, 10) || 0;
 
     let endpoint = "";
     let body = {};
 
     if (paymentMode.value === "annonce") {
         endpoint = `/annonces/${annonceId}/acheter`;
+        body = { id_acheteur: currentUserId.value, montant_paye: baseAmount.value, stripe_payment_id: stripePaymentId };
+    } else if (paymentMode.value === "projet") {
+        endpoint = `/projets/${projetId}/acheter`;
         body = { id_acheteur: currentUserId.value, montant_paye: baseAmount.value, stripe_payment_id: stripePaymentId };
     } else if (paymentMode.value === "subscription") {
         endpoint = `/users/${currentUserId.value}/abonnement/souscrire`;
@@ -460,7 +384,6 @@ const finaliserCommande = async (stripePaymentId) => {
     padding-bottom: 10px;
 }
 
-/* ── Stripe wrapper ── */
 .stripe-card-wrapper {
     background: #fafdfb;
     border: 1px solid #e5ede7;
@@ -479,31 +402,13 @@ const finaliserCommande = async (stripePaymentId) => {
     height: 20px;
     margin-left: 4px;
 }
-.stripe-label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #555;
-    margin-bottom: 8px;
-}
-.stripe-element {
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: white;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-.stripe-element:focus-within {
-    border-color: #2d7a4f;
-    box-shadow: 0 0 0 3px rgba(45, 122, 79, 0.1);
-}
-.stripe-loading {
-    text-align: center;
-    color: #999;
-    font-size: 0.9rem;
-    padding: 12px;
-}
-.hidden { display: none; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 0.85rem; font-weight: 600; color: #555; }
+.form-input { padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95rem; }
+.form-input:focus { outline: none; border-color: #2d7a4f; box-shadow: 0 0 0 3px rgba(45, 122, 79, 0.1); }
+.font-mono { font-family: monospace; letter-spacing: 1px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
 .stripe-error {
     background: #fff0f0;
@@ -523,7 +428,6 @@ const finaliserCommande = async (stripePaymentId) => {
     padding: 14px;
 }
 
-/* ── Summary ── */
 .summary-item {
     display: flex;
     justify-content: space-between;
@@ -585,7 +489,6 @@ const finaliserCommande = async (stripePaymentId) => {
     height: auto;
 }
 
-/* ── Empty state ── */
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;

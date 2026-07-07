@@ -2,11 +2,11 @@
     <div class="layout-wrapper planning-page">
         <header class="content-header">
             <div class="header-left">
-                <p class="sidebar__category2">{{t.Home}} > {{t.MySchedule}}</p>
-                <h1 class="hero-title1">{{t.Calendrier}}</h1>
+                <p class="sidebar__category2">ACCUEIL > MON PLANNING</p>
+                <h1 class="hero-title1">Calendrier d'inscriptions</h1>
             </div>
             <router-link to="/profil" class="btn-secondary" style="text-decoration: none"
-                >🠔 {{t.BackToDashboard}}</router-link
+                >🠔 Retour au tableau de bord</router-link
             >
         </header>
 
@@ -14,24 +14,24 @@
             <div class="planning-toolbar">
                 <div class="toolbar-left">
                     <button class="btn-icon" @click="previousMonth">
-                        ❮ {{t.Precedent}}
+                        ❮ Précédent
                     </button>
                     <button class="btn-today" @click="goToToday">
-                        {{t.Today}}
+                        Aujourd'hui
                     </button>
                     <button class="btn-icon" @click="nextMonth">
-                        {{t.Suivant}} ❯
+                        Suivant ❯
                     </button>
                 </div>
                 <h2 class="planning-month">{{ currentMonthLabel }}</h2>
                 <div class="planning-legend">
                     <span class="planning-legend__item"
                         ><i class="planning-dot planning-dot--formation"></i>
-                        {{t.Formation}}</span
+                        Formation</span
                     >
                     <span class="planning-legend__item"
                         ><i class="planning-dot planning-dot--event"></i>
-                        {{t.Evenement}}</span
+                        Événement</span
                     >
                 </div>
             </div>
@@ -88,7 +88,7 @@
                 <div class="detail-header">
                     <span class="tag-type" :class="`tag-${selectedEntry.kind}`">
                         {{
-                            selectedEntry.kind === "formation"
+                            selectedEntry.kind.includes("formation")
                                 ? "FORMATION"
                                 : "ÉVÉNEMENT"
                         }}
@@ -98,16 +98,14 @@
 
                 <div class="detail-body">
                     <div class="detail-row">
-                        <span class="icon">📅</span>
                         <div>
                             <strong>Date :</strong>
                             <p>{{ selectedEntry.dateLabelLong }}</p>
                         </div>
                     </div>
                     <div class="detail-row">
-                        <span class="icon">⏰</span>
                         <div>
-                            <strong>Heure :</strong>
+                            <strong>Horaires :</strong>
                             <p>{{ selectedEntry.timeLabel }}</p>
                         </div>
                     </div>
@@ -117,10 +115,10 @@
                     class="btn-main-action-full"
                     @click="goToEntryRoute(selectedEntry)"
                 >
-                    Voir la page de l'{{
-                        selectedEntry.kind === "formation"
-                            ? "formation"
-                            : "événement"
+                    Voir la page de {{
+                        selectedEntry.kind.includes("formation")
+                            ? "la formation"
+                            : "l'événement"
                     }}
                 </button>
             </div>
@@ -132,9 +130,6 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import { useTraduction } from "../../composables/useTraduction";
-const { t, currentLangCode } = useTraduction();
-
 const router = useRouter();
 const API_URL = "/go";
 
@@ -142,17 +137,7 @@ const calendarEntries = ref([]);
 const currentMonth = ref(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
 );
-
-const weekDays = computed(() => [
-    t.Lundi || "LUN",
-    t.Mardi || "MAR",
-    t.Mercredi || "MER",
-    t.Jeudi || "JEU",
-    t.Vendredi || "VEN",
-    t.Samedi || "SAM",
-    t.Dimanche || "DIM"
-]);
-
+const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const selectedEntry = ref(null);
 
 const getLocalISODate = (date) => {
@@ -164,9 +149,7 @@ const getLocalISODate = (date) => {
 };
 
 const currentMonthLabel = computed(() => {
-    const localeStr = currentLangCode.value === 'en' ? 'en-US' : (currentLangCode.value === 'es' ? 'es-ES' : 'fr-FR');
-    
-    const label = currentMonth.value.toLocaleDateString(localeStr, {
+    const label = currentMonth.value.toLocaleDateString("fr-FR", {
         month: "long",
         year: "numeric",
     });
@@ -228,43 +211,105 @@ const closeEntryDetail = () => (selectedEntry.value = null);
 
 const goToEntryRoute = (entry) => {
     closeEntryDetail();
-    if (entry.kind === "formation") {
+    if (entry.kind.includes("formation")) {
         router.push({
-            name: "FormationDetail",
+            name: "formation-detail", 
             params: { id: entry.originalId },
         });
-    } else if (entry.kind === "event") {
+    } else if (entry.kind.includes("event")) {
         router.push({
-            name: "EvenementDetail",
+            name: "evenement-detail", 
             params: { id: entry.originalId },
         });
     }
 };
 
-const toCalendarEntry = (item, kind, title, dateValue) => {
-    if (!dateValue) return null;
-    const parsed = new Date(dateValue);
-    if (Number.isNaN(parsed.getTime())) return null;
+const toCalendarEntry = (item, kind, title, dateDebut, dateFin) => {
+    if (!dateDebut) return null;
+    const parsedStart = new Date(dateDebut);
+    if (Number.isNaN(parsedStart.getTime())) return null;
 
-    const localeStr = currentLangCode.value === 'en' ? 'en-US' : (currentLangCode.value === 'es' ? 'es-ES' : 'fr-FR');
+    const itemId = item.id || item.ID;
 
+    let timeLabel = parsedStart.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+    }).replace(":", "h");
+
+    if (dateFin) {
+        const parsedEnd = new Date(dateFin);
+        if (!Number.isNaN(parsedEnd.getTime())) {
+            const endStr = parsedEnd.toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+            }).replace(":", "h");
+            timeLabel += ` - ${endStr}`;
+        }
+    }
+
+    let dateLabelLong = parsedStart.toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+    
+    if (dateFin) {
+        const parsedEnd = new Date(dateFin);
+    
+        if (!Number.isNaN(parsedEnd.getTime())) {
+            const sameDay =
+                parsedStart.toDateString() === parsedEnd.toDateString();
+    
+            if (!sameDay) {
+                dateLabelLong +=
+                    " → " +
+                    parsedEnd.toLocaleDateString("fr-FR", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                    });
+            }
+        }
+    }
+    
     return {
-        id: `${kind}-${item.id ?? title}-${parsed.getTime()}`,
-        originalId: item.id,
+        id: `${kind}-${itemId ?? title}-${parsedStart.getTime()}`,
+        originalId: itemId,
         kind,
         title,
-        date: getLocalISODate(parsed),
-        dateLabelLong: parsed.toLocaleDateString(localeStr, {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-        }),
-        timeLabel: parsed.toLocaleTimeString(localeStr, {
-            hour: "2-digit",
-            minute: "2-digit",
-        }),
+        date: getLocalISODate(parsedStart),
+        dateLabelLong,
+        timeLabel,
     };
+};
+
+const parseFormations = (formationsArray, kindClass) => {
+    const results = [];
+    for (const f of formationsArray) {
+        const rawSessions = f.sessions || f.Sessions || [];
+        
+        if (rawSessions.length > 0) {
+            for (const s of rawSessions) {
+                const sessionName = s.nom || s.Nom || 'Session';
+                const sessionDateDebut = s.date_debut || s.DateDebut;
+                const sessionDateFin = s.date_fin || s.DateFin;
+                const title = `${f.titre || f.Titre} - ${sessionName}`;
+                
+                const entry = toCalendarEntry(f, kindClass, title, sessionDateDebut, sessionDateFin);
+                if (entry) results.push(entry);
+            }
+        } else {
+            const title = f.titre || f.Titre;
+            const fallbackDateDebut = f.date_debut || f.Date_debut;
+            const fallbackDateFin = f.date_fin || f.Date_fin;
+            
+            const entry = toCalendarEntry(f, kindClass, title, fallbackDateDebut, fallbackDateFin);
+            if (entry) results.push(entry);
+        }
+    }
+    return results;
 };
 
 const loadCalendarEntries = async (id) => {
@@ -281,12 +326,12 @@ const loadCalendarEntries = async (id) => {
         let entries = [];
 
         if (data && !Array.isArray(data)) {
-            const formations = (data.formations || []).map((f) =>
-                toCalendarEntry(f, "formation", f.titre, f.date_debut),
-            );
+            const formations = parseFormations(data.formations || [], "formation");
+            
             const evenements = (data.evenements || []).map((e) =>
-                toCalendarEntry(e, "event", e.titre, e.date_evenement),
+                toCalendarEntry(e, "event", e.titre || e.Titre, e.date_evenement || e.Date_evenement, e.date_fin || e.Date_fin,),
             );
+            
             entries = [...formations, ...evenements].filter(Boolean);
         }
 
@@ -317,7 +362,6 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 2rem;
 }
-
 
 .section-container {
     background: white;
@@ -522,5 +566,8 @@ onMounted(() => {
     border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
+}
+.btn-main-action-full:hover {
+    background: #246343;
 }
 </style>

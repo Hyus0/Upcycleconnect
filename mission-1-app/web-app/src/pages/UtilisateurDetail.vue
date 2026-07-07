@@ -151,8 +151,12 @@
                                 @click="goToAnnonce(ann.id)"
                             >
                                 <img
-                                    :src="ann.imageUrl || imageParDefaut"
-                                    alt="Image annonce"
+                                    :src="
+                                        ann.image && ann.image.trim() !== ''
+                                            ? ann.image
+                                            : imageParDefaut
+                                    "
+                                    alt="Image de l'annonce"
                                     class="annonce-card__image"
                                 />
                                 <div class="annonce-card__badges">
@@ -774,18 +778,26 @@ watch(() => route.params.id, loadProfile);
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(44, 126, 79, 0.06);
 }
+
 .annonce-card__image-wrapper {
     position: relative;
     width: 100%;
     aspect-ratio: 4/3;
     background-color: #f0f4f1;
+    overflow: hidden;
     cursor: pointer;
 }
+
 .annonce-card__image {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
 }
+
 .annonce-card__badges {
     position: absolute;
     top: 12px;

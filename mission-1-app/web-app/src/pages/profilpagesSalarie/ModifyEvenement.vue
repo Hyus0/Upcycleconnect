@@ -78,11 +78,20 @@
                                     <option value="Echange">Échange</option>
                                 </select>
                             </div>
-
+                        </div>
+                        <div class="form-row">
                             <div class="form-group">
                                 <label>Date de l'événement</label>
                                 <input
                                     v-model="form.date_evenement"
+                                    type="datetime-local"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label>Date de fin</label>
+                                <input
+                                    v-model="form.date_fin"
                                     type="datetime-local"
                                     required
                                 />
@@ -173,6 +182,7 @@ const form = ref({
     description: "",
     type: "",
     date_evenement: "",
+    date_fin: "",
     adresse: "",
     ville: "",
     code_postal: "",
@@ -198,6 +208,7 @@ const fetchEvtData = async () => {
                 description: data.description || "",
                 type: data.type || "",
                 date_evenement: formatDateForInput(data.date_evenement),
+                date_fin: formatDateForInput(data.date_fin),
                 adresse: data.adresse || "",
                 ville: data.ville || "",
                 code_postal: data.code_postal || "",
@@ -244,7 +255,9 @@ const handleSubmit = async () => {
             },
             body: JSON.stringify({
                 ...form.value,
-                date_evenement: new Date(form.value.date_evenement).toISOString(),
+              date_evenement: new Date(form.value.date_evenement).toISOString(),
+              date_fin: new Date(form.value.date_fin).toISOString(),
+
             }),
         });
 

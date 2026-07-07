@@ -102,17 +102,21 @@
 
                 <div class="detail-body">
                     <div class="detail-row">
-                        <span class="icon">📅</span>
                         <div>
                             <strong>Date :</strong>
                             <p>{{ selectedEntry.dateLabelLong }}</p>
                         </div>
                     </div>
+                
                     <div class="detail-row">
-                        <span class="icon">⏰</span>
                         <div>
-                            <strong>Heure :</strong>
-                            <p>{{ selectedEntry.timeLabel }}</p>
+                            <strong>Horaires :</strong>
+                            <p>
+                                {{ selectedEntry.timeLabel }}
+                                <template v-if="selectedEntry.endTimeLabel">
+                                    - {{ selectedEntry.endTimeLabel }}
+                                </template>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -219,7 +223,7 @@ const goToEntryRoute = (entry) => {
     closeEntryDetail();
     if (entry.kind === "formation" || entry.kind === "my-formation") {
         router.push({
-            name: "FormationDetail",
+            name: "formation-detail",
             params: { id: entry.originalId },
         });
     } else if (entry.kind === "event" || entry.kind === "my-event") {
@@ -230,27 +234,50 @@ const goToEntryRoute = (entry) => {
     }
 };
 
-const toCalendarEntry = (item, kind, title, dateValue) => {
-    if (!dateValue) return null;
-    const parsed = new Date(dateValue);
-    if (Number.isNaN(parsed.getTime())) return null;
+const toCalendarEntry = (item, kind, title, dateDebut, dateFin = null) => {
+    if (!dateDebut) return null;
+
+    const debut = new Date(dateDebut);
+    if (Number.isNaN(debut.getTime())) return null;
+
+    const fin = dateFin ? new Date(dateFin) : null;
 
     return {
-        id: `${kind}-${item.id ?? title}-${parsed.getTime()}`,
+        id: `${kind}-${item.id ?? title}-${debut.getTime()}`,
         originalId: item.id,
         kind,
         title,
-        date: getLocalISODate(parsed),
-        dateLabelLong: parsed.toLocaleDateString("fr-FR", {
+        date: getLocalISODate(debut),
+
+        dateLabelLong: debut.toLocaleDateString("fr-FR", {
             weekday: "long",
             day: "numeric",
             month: "long",
             year: "numeric",
         }),
-        timeLabel: parsed.toLocaleTimeString("fr-FR", {
+
+        endDateLabelLong:
+            fin && !Number.isNaN(fin.getTime())
+                ? fin.toLocaleDateString("fr-FR", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                  })
+                : null,
+
+        timeLabel: debut.toLocaleTimeString("fr-FR", {
             hour: "2-digit",
             minute: "2-digit",
         }),
+
+        endTimeLabel:
+            fin && !Number.isNaN(fin.getTime())
+                ? fin.toLocaleTimeString("fr-FR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                  })
+                : null,
     };
 };
 
@@ -263,29 +290,73 @@ const loadCalendarEntries = async (id) => {
 
         const resF = await fetch(`${API_URL}/formations`);
         const allFormations = resF.ok ? await resF.json() : [];
-        const mesFormationsCreees = allFormations.filter(f => String(f.id_utilisateur) === String(id));
+        const mesFormationsCreees = allFormations.filter(f => String(f.id_formateur) === String(id));
 
         const resE = await fetch(`${API_URL}/evenements`);
         const allEvenements = resE.ok ? await resE.json() : [];
-        const mesEvenementsCrees = allEvenements.filter(e => String(e.id_utilisateur) === String(id));
+        const mesEvenementsCrees = allEvenements.filter(e => String(e.id_createur) === String(id));
 
         let entries = [];
 
         if (dataPlanning && !Array.isArray(dataPlanning)) {
             const inscrFormations = (dataPlanning.formations || []).map((f) =>
-                toCalendarEntry(f, "formation", f.titre, f.date_debut),
+              toCalendarEntry(
+                  f,
+                  "formation",
+                  f.titre,
+                  f.date_debut,
+                  f.date_fin
+              ),
             );
             const inscrEvenements = (dataPlanning.evenements || []).map((e) =>
-                toCalendarEntry(e, "event", e.titre, e.date_evenement),
+              toCalendarEntry(
+                  e,
+                  "event",
+                  e.titre,
+                  e.date_evenement,
+                  e.date_fin
+              ),
             );
             entries = [...inscrFormations, ...inscrEvenements];
         }
 
-        const creaFormations = mesFormationsCreees.map((f) =>
-            toCalendarEntry(f, "my-formation", + f.titre, f.date_debut),
-        );
+        const creaFormations = mesFormationsCreees.flatMap((f) => {
+            if (!f.sessions || f.sessions.length === 0) {
+              return [
+                  toCalendarEntry(
+                      f,
+                      "my-formation",
+                      f.titre,
+                      f.date_debut,
+                      f.date_fin
+                  ),
+              ].filter(Boolean);
+            }
+        
+            return f.sessions
+                .map((session) =>
+                    toCalendarEntry(
+                        {
+                            ...f,
+                            id: `${f.id}`,
+                        },
+                        "my-formation",
+                        `${f.titre} - ${session.nom}`,
+                      session.date_debut,
+                      session.date_fin
+
+                    ),
+                )
+                .filter(Boolean);
+        });
         const creaEvenements = mesEvenementsCrees.map((e) =>
-            toCalendarEntry(e, "my-event", + e.titre, e.date_evenement),
+            toCalendarEntry(
+                e,
+                "my-event",
+                e.titre,
+                e.date_evenement,
+                e.date_fin
+            ),
         );
 
         const allEntries = [...entries, ...creaFormations, ...creaEvenements].filter(Boolean);

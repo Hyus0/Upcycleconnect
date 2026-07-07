@@ -6,10 +6,10 @@ import (
 )
 
 type CheckoutResult struct {
-	CommandeID    int    `json:"commande_id"`
-	TransactionID int    `json:"transaction_id"`
-	FactureID     int    `json:"facture_id"`
-	NumeroFacture string `json:"numero_facture"`
+    CommandeID    int  `json:"commande_id"`
+    TransactionID int  `json:"transaction_id"`
+    FactureID     int  `json:"facture_id"`
+    NumeroFacture string `json:"numero_facture"`
 }
 
 func GetPanierByUserId(userID int) ([]models.PanierItem, error) {
@@ -77,89 +77,117 @@ func Checkout(userID int, stripePaymentID string) (*CheckoutResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer tx.Rollback() 
 
 	rows, err := tx.Query("SELECT id, type_item, reference_id, prix_unitaire FROM PANIER_ITEM WHERE id_utilisateur = ?", userID)
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
 	var items []models.PanierItem
-	var montantTotal float64
+	var montantTotalTTC float64
 
 	for rows.Next() {
 		var item models.PanierItem
 		if err := rows.Scan(&item.ID, &item.TypeItem, &item.ReferenceID, &item.PrixUnitaire); err == nil {
 			items = append(items, item)
-			montantTotal += item.PrixUnitaire
+			
+			prixTTC := item.PrixUnitaire
+			if item.TypeItem == "Annonce" || item.TypeItem == "Projet" {
+				prixTTC += item.PrixUnitaire * 0.05
+			}
+			montantTotalTTC += prixTTC
 		}
 	}
 	rows.Close()
 
 	if len(items) == 0 {
-		tx.Rollback()
 		return nil, fmt.Errorf("le panier est vide")
 	}
 
-	res, err := tx.Exec("INSERT INTO COMMANDE (id_utilisateur, montant_total, statut) VALUES (?, ?, 'Payee')", userID, montantTotal)
+	res, err := tx.Exec("INSERT INTO COMMANDE (id_utilisateur, montant_total, statut, date_commande) VALUES (?, ?, 'Payee', NOW())", userID, montantTotalTTC)
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 	commandeID, _ := res.LastInsertId()
 
 	for _, item := range items {
 		var commission float64
-		if item.TypeItem == "Annonce" {
-			commission = item.PrixUnitaire * 0.10
+		if item.TypeItem == "Annonce" || item.TypeItem == "Projet" {
+			commission = item.PrixUnitaire * 0.05
 		}
 
-		_, err = tx.Exec(`INSERT INTO LIGNE_COMMANDE (id_commande, type_item, reference_id, prix_unitaire, commission_upc)
-		                  VALUES (?, ?, ?, ?, ?)`, commandeID, item.TypeItem, item.ReferenceID, item.PrixUnitaire, commission)
+		_, err = tx.Exec(`
+			INSERT INTO LIGNE_COMMANDE (id_commande, type_item, reference_id, prix_unitaire, commission_upc)
+			VALUES (?, ?, ?, ?, ?)`, 
+			commandeID, item.TypeItem, item.ReferenceID, item.PrixUnitaire, commission)
 		if err != nil {
-			tx.Rollback()
 			return nil, err
 		}
 
 		if item.TypeItem == "Formation" {
 			_, err = tx.Exec("INSERT IGNORE INTO FORMATION_INSCRIPTION (id_utilisateur, id_formation) VALUES (?, ?)", userID, item.ReferenceID)
 			if err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("erreur lors de l'inscription a la formation : %v", err)
+				return nil, fmt.Errorf("erreur lors de l'inscription à la formation : %v", err)
 			}
 		}
 
 		if item.TypeItem == "Abonnement" {
 			_, err = tx.Exec(`
 				INSERT INTO ABONNEMENT (id_acheteur, id_type_abonnement, date_debut, date_fin, statut, stripe_subscription_id)
-				SELECT ?, id, NOW(), DATE_ADD(NOW(), INTERVAL duree_mois MONTH), 'Actif', 'local-checkout'
+				SELECT ?, id, NOW(), DATE_ADD(NOW(), INTERVAL duree_mois MONTH), 'Actif', ?
 				FROM TYPE_ABONNEMENT
 				WHERE nom = 'DM Plus'
-			`, userID)
+			`, userID, stripePaymentID)
 			if err != nil {
-				tx.Rollback()
 				return nil, fmt.Errorf("erreur lors de l'activation de l'abonnement : %v", err)
+			}
+		}
+
+		if item.TypeItem == "Projet" {
+			_, err = tx.Exec(`
+				UPDATE PROJET_UPCYCLING 
+				SET statut = 'Vendu', id_acheteur = ?, date_achat = NOW() 
+				WHERE id = ?`, userID, item.ReferenceID)
+			if err == nil {
+				_, err = tx.Exec("UPDATE DM_SALE SET status = 'Payee' WHERE id_projet = ? AND id_buyer = ?", item.ReferenceID, userID)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("erreur lors de la validation du projet : %v", err)
+			}
+		}
+
+		if item.TypeItem == "Annonce" {
+			_, err = tx.Exec(`
+				UPDATE ANNONCE 
+				SET statut = 'Paye', id_acheteur = ?, date_achat = NOW() 
+				WHERE id = ?`, userID, item.ReferenceID)
+			if err == nil {
+				_, err = tx.Exec("UPDATE DM_SALE SET status = 'Payee' WHERE id_annonce = ? AND id_buyer = ?", item.ReferenceID, userID)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("erreur lors de la validation de l'annonce : %v", err)
 			}
 		}
 	}
 
-	transactionRes, err := tx.Exec(`INSERT INTO `+"`TRANSACTION`"+` (id_acheteur, id_commande, montant_total, statut_paiement, stripe_payment_id)
-	                  VALUES (?, ?, ?, 'Valide', ?)`, userID, commandeID, montantTotal, stripePaymentID)
+	transactionRes, err := tx.Exec(`
+		INSERT INTO `+"`TRANSACTION`"+` (id_acheteur, id_commande, montant_total, statut_paiement, stripe_payment_id, date_transaction)
+		VALUES (?, ?, ?, 'Valide', ?, NOW())`, 
+		userID, commandeID, montantTotalTTC, stripePaymentID)
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 	transactionID, _ := transactionRes.LastInsertId()
 
 	factureID, numeroFacture, err := CreateFactureForTransaction(tx, transactionID)
+
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
 	_, err = tx.Exec("DELETE FROM PANIER_ITEM WHERE id_utilisateur = ?", userID)
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -168,9 +196,9 @@ func Checkout(userID int, stripePaymentID string) (*CheckoutResult, error) {
 	}
 
 	return &CheckoutResult{
-		CommandeID:    int(commandeID),
-		TransactionID: int(transactionID),
-		FactureID:     factureID,
+		CommandeID:    int(commandeID),    
+		TransactionID: int(transactionID), 
+		FactureID:     factureID,          	
 		NumeroFacture: numeroFacture,
 	}, nil
 }

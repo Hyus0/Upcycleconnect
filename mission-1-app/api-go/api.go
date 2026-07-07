@@ -216,7 +216,7 @@ func main() {
 	http.HandleFunc("DELETE /users/{id}/panier/{itemId}", self(app.RemoveFromPanierHandler))
 	http.HandleFunc("POST /users/{id}/checkout", self(app.CheckoutWithInvoiceHandler))
 	http.HandleFunc("GET /users/{id}/factures", self(app.GetFacturesHandler))
-	http.HandleFunc("GET /users/{id}/factures/{factureId}/download", self(app.DownloadFactureHandler))
+	http.HandleFunc("GET /users/{id}/factures/{factureId}/download", app.DownloadFactureHandler)
 	http.HandleFunc("POST /users/{id}/factures/{factureId}/send", self(app.SendFactureByMailHandler))
 
 	//Abonnement

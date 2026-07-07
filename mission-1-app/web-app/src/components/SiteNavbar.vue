@@ -142,6 +142,7 @@ const API_URL = "/go";
 const langues = ref([]);
 const currentLangCode = ref(localStorage.getItem("langCode") || "fr");
 const t = ref({});
+const userScore = ref(Number(sessionStorage.getItem("userScore")) || 0);
 
 const fetchLangues = async () => {
   try {
@@ -186,9 +187,37 @@ const changerLangue = async (langue) => {
   }
 };
 
+const fetchUserScore = async () => {
+  const userId = sessionStorage.getItem("userId");
+  const token = sessionStorage.getItem("userToken");
+
+  if (!userId || !token) return;
+
+  try {
+    const res = await fetch(`${API_URL}/users/${userId}/stats`, {
+      headers: {
+        Authorization: token,
+      },
+    });
+
+    if (!res.ok) return;
+
+    const stats = await res.json();
+
+    userScore.value = stats.total_points;
+    sessionStorage.setItem("userScore", stats.total_points);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 onMounted(() => {
   fetchLangues();
   fetchTraductions(currentLangCode.value);
+
+  if (props.isAuthenticated) {
+    fetchUserScore();
+  }
 });
 
 const props = defineProps({
@@ -203,10 +232,6 @@ const props = defineProps({
   userRole: {
     type: String,
     default: "Particulier"
-  },
-  userScore: {
-    type: [String, Number],
-    default: () => sessionStorage.getItem("userScore") || 0
   },
   isAuthenticated: {
     type: Boolean,

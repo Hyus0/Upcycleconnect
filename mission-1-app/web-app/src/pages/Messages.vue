@@ -458,10 +458,6 @@ const activeConversation = computed(() =>
     conversations.value.find((c) => Number(c.id) === Number(activeConversationId.value)),
 );
 
-// ─── Généralisation annonce/projet ────────────────────────────────────────────
-// Une conversation est liée SOIT à une annonce SOIT à un projet, jamais
-// les deux. Ces computed déterminent automatiquement de quel type il
-// s'agit et exposent une interface unifiée pour le template.
 const itemType = computed(() => {
     if (!activeConversation.value) return null;
     if (activeConversation.value.annonce_id) return "annonce";
@@ -509,18 +505,12 @@ const itemLink = computed(() =>
     itemType.value === "annonce" ? `/annonce/${itemId.value}` : `/projets/${itemId.value}`,
 );
 
-// Statuts considérés comme "vendu" pour chaque type. Pour une annonce
-// c'est 'Paye', pour un projet c'est 'Vendu' (le projet ne passe pas
-// par un dépôt en casier, il est marqué vendu directement au checkout).
 const itemSoldStatus = computed(() => {
     if (itemType.value === "annonce") return itemStatut.value === "Paye";
     if (itemType.value === "projet") return itemStatut.value === "Vendu";
     return false;
 });
 
-// Bouton Négocier visible si : un item est lié, on n'est pas le
-// vendeur/créateur, l'item n'est pas déjà vendu, et aucune offre
-// n'est en attente de paiement.
 const canNegotiate = computed(() => {
     if (!itemId.value) return false;
     if (Number(itemSellerId.value) === currentUser.value) return false;
@@ -664,8 +654,6 @@ async function loadMessages() {
     }
 }
 
-// Redirige vers le paiement, en passant le bon paramètre (annonce_id
-// ou projet_id) selon le type d'item de la conversation active.
 async function payerOffre(sale) {
     const title = itemTitle.value;
     if (!itemId.value) return;

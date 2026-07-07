@@ -7,7 +7,9 @@ import (
 )
 
 func GetEcoStats(userID int) (*models.EcoStats, error) {
-	stats := &models.EcoStats{CO2ParMois: []models.CO2ParMois{}}
+	stats := &models.EcoStats{
+		CO2ParMois: []models.CO2ParMois{},
+	}
 
 	err := Conn.QueryRow(`
 		SELECT COALESCE(SUM(co2_evite_kg), 0)
@@ -19,23 +21,24 @@ func GetEcoStats(userID int) (*models.EcoStats, error) {
 	}
 
 	var co2MoisActuel, co2MoisPrecedent float64
+
 	err = Conn.QueryRow(`
-		SELECT COALESCE(SUM(co2_evite_kg), 0)
+		SELECT COALESCE(SUM(co2_evite_kg),0)
 		FROM PROJET
 		WHERE id_createur = ?
-		  AND YEAR(date_creation) = YEAR(CURDATE())
-		  AND MONTH(date_creation) = MONTH(CURDATE())
+		AND YEAR(date_creation)=YEAR(CURDATE())
+		AND MONTH(date_creation)=MONTH(CURDATE())
 	`, userID).Scan(&co2MoisActuel)
 	if err != nil {
 		return nil, fmt.Errorf("GetEcoStats co2_mois_actuel: %v", err)
 	}
 
 	err = Conn.QueryRow(`
-		SELECT COALESCE(SUM(co2_evite_kg), 0)
+		SELECT COALESCE(SUM(co2_evite_kg),0)
 		FROM PROJET
 		WHERE id_createur = ?
-		  AND YEAR(date_creation) = YEAR(CURDATE() - INTERVAL 1 MONTH)
-		  AND MONTH(date_creation) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+		AND YEAR(date_creation)=YEAR(CURDATE()-INTERVAL 1 MONTH)
+		AND MONTH(date_creation)=MONTH(CURDATE()-INTERVAL 1 MONTH)
 	`, userID).Scan(&co2MoisPrecedent)
 	if err != nil {
 		return nil, fmt.Errorf("GetEcoStats co2_mois_precedent: %v", err)
@@ -59,7 +62,7 @@ func GetEcoStats(userID int) (*models.EcoStats, error) {
 	}
 
 	err = Conn.QueryRow(`
-		SELECT COALESCE(AVG(score_impact), 0)
+		SELECT COALESCE(AVG(score_impact),0)
 		FROM PROJET
 		WHERE id_createur = ?
 	`, userID).Scan(&stats.ScoreImpactMoyen)
@@ -69,13 +72,13 @@ func GetEcoStats(userID int) (*models.EcoStats, error) {
 
 	rows, err := Conn.Query(`
 		SELECT
-			DATE_FORMAT(date_creation, '%b %Y') AS mois,
-			COALESCE(SUM(co2_evite_kg), 0) AS total
+			DATE_FORMAT(date_creation,'%b %Y') AS mois,
+			COALESCE(SUM(co2_evite_kg),0) AS total
 		FROM PROJET
 		WHERE id_createur = ?
-		  AND date_creation >= CURDATE() - INTERVAL 6 MONTH
+		AND date_creation >= CURDATE() - INTERVAL 6 MONTH
 		GROUP BY YEAR(date_creation), MONTH(date_creation)
-		ORDER BY YEAR(date_creation) ASC, MONTH(date_creation) ASC
+		ORDER BY YEAR(date_creation), MONTH(date_creation)
 	`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("GetEcoStats co2_par_mois: %v", err)
@@ -232,6 +235,11 @@ func GetAlertesPrioritaires(userID int) ([]models.AlertePrioritaire, error) {
 
 	return alertes, nil
 }
+
+const eauEconomisee = computed(() =>
+    Math.round((stats.value.co2_total_evite_kg || 0) * 80)
+);
+
 
 func splitKeywords(raw string) []string {
 	raw = strings.ReplaceAll(raw, ",", " ")

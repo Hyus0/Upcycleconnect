@@ -194,7 +194,7 @@
                                     @click="telechargerFacture(item.id)"
                                     title="Télécharger la facture PDF"
                                 >
-                                    📥 PDF
+                                    Télécharger PDF
                                 </button>
                             </td>
                         </tr>
@@ -259,12 +259,22 @@
                 </div>
                 <div class="modal-content">
                     <p class="info-text">
-                        Saisissez ce code sur la borne pour déverrouiller le
-                        casier :
+                        Présentez ce QR Code ou le code unique au niveau du conteneur sécurisé pour déverrouiller le
+                        casier : :
                     </p>
-                    <div class="token-box">
-                        {{ selectedToken }}
+                
+                    <div class="qr-wrapper">
+                        <QrcodeVue
+                            :value="selectedToken"
+                            :size="180"
+                            level="H"
+                            background="#ffffff"
+                            foreground="#1d3528"
+                        />
                     </div>
+                </div>
+                <div class="token-box">
+                    {{ selectedToken }}
                 </div>
                 <button
                     class="btn-main-action modal-close-btn"
@@ -280,6 +290,7 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
+import QrcodeVue from "qrcode.vue";
 
 const router = useRouter();
 
@@ -409,6 +420,21 @@ onMounted(() => {
 .header-left {
     display: flex;
     flex-direction: column;
+}
+
+.qr-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ece9;
+}
+
+.qr-wrapper canvas,
+.qr-wrapper svg {
+    border-radius: 10px;
 }
 
 .sidebar__category2 {

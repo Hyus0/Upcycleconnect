@@ -2412,21 +2412,21 @@ func ResilierAbonnementHandler(w http.ResponseWriter, r *http.Request) {
 // Premium Prestataire
 func GetEcoStatsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	dummyStats := map[string]interface{}{
-		"co2_total":           1250,
-		"co2_trend":           15,
-		"eau_economisee":      4500,
-		"materiaux_valorises": 34,
-		"score_impact_moyen":  85,
-		"co2_par_mois": []map[string]interface{}{
-			{"mois": "Jan", "valeur": 100},
-			{"mois": "Fév", "valeur": 250},
-			{"mois": "Mar", "valeur": 200},
-			{"mois": "Avr", "valeur": 400},
-			{"mois": "Mai", "valeur": 300},
-		},
+
+	userIDStr := r.PathValue("id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
 	}
-	json.NewEncoder(w).Encode(dummyStats)
+
+	stats, err := db.GetEcoStats(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(stats)
 }
 
 func GetMateriauxStatsHandler(w http.ResponseWriter, r *http.Request) {

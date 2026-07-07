@@ -53,7 +53,8 @@ const adminItems = [
   { name: "events", label: "Evenements", to: { name: "events" }, icon: "05" },
   { name: "moderation", label: "Moderation", to: { name: "moderation" }, icon: "06" },
   { name: "finance", label: "Finances", to: { name: "finance" }, icon: "07" },
-  { name: "notifications", label: "Notifications", to: { name: "notifications" }, icon: "08" }
+  { name: "notifications", label: "Notifications", to: { name: "notifications" }, icon: "08" },
+  { name: "resources", label: "Ressources", to: { name: "resources" }, icon: "09" }
 ];
 
 const currentRouteName = computed(() => route.name);

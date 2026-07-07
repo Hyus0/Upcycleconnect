@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -11,7 +12,17 @@ import (
 
 var Conn *sql.DB
 
-func getEnv(key, fallback string) string {
+const driver = "mysql"
+
+const (
+	defaultHost     = "127.0.0.1"
+	defaultPort     = "3306"
+	defaultUser     = "root"
+	defaultPassword = "password"
+	defaultName     = "upcycletest"
+)
+
+func getenv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
@@ -19,31 +30,40 @@ func getEnv(key, fallback string) string {
 }
 
 func NewDB() *sql.DB {
-	host := getEnv("DB_HOST", "localhost")
-	port := getEnv("DB_PORT", "3306")
-	user := getEnv("DB_USER", "root")
-	password := getEnv("DB_PASSWORD", "password")
-	dbname := getEnv("DB_NAME", "upcycletest")
+	host := getenv("DB_HOST", defaultHost)
+	port := getenv("DB_PORT", defaultPort)
+	user := getenv("DB_USER", defaultUser)
+	password := getenv("DB_PASSWORD", defaultPassword)
+	name := getenv("DB_NAME", defaultName)
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
-		user, password, host, port, dbname)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&loc=Local",
+		user, password, host, port, name)
 
-	var conn *sql.DB
-	var err error
+	conn, err := sql.Open(driver, dsn)
+	if err != nil {
+		fmt.Printf("[db] invalid DSN (%s@%s:%s/%s): %v\n", user, host, port, name, err)
+		return nil
+	}
 
-	for i := 0; i < 10; i++ {
-		conn, err = sql.Open("mysql", dsn)
-		
+	conn.SetMaxOpenConns(25)
+	conn.SetMaxIdleConns(10)
+	conn.SetConnMaxLifetime(5 * time.Minute)
+	conn.SetConnMaxIdleTime(2 * time.Minute)
+
+	for attempt := 1; attempt <= 30; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err := conn.PingContext(ctx)
+		cancel()
 		if err == nil {
-			if err = conn.Ping(); err == nil {
-				fmt.Printf("Connecté à la base de données via : %s\n", host)
-				return conn
-			}
+			fmt.Printf("[db] connected to MySQL %s@%s:%s/%s\n", user, host, port, name)
+			return conn
 		}
-
-		fmt.Printf("Tentative %d/10 : En attente de la base de données, nouvelle tentative dans 2s...\n", i+1)
+		fmt.Printf("[db] waiting for MySQL %s@%s:%s/%s (attempt %d/30): %v\n",
+			user, host, port, name, attempt, err)
 		time.Sleep(2 * time.Second)
 	}
 
-	panic(fmt.Sprintf("Impossible de se connecter à la base après 10 tentatives : %v", err))
+	fmt.Printf("[db] unavailable database after retries (%s@%s:%s/%s)\n", user, host, port, name)
+	_ = conn.Close()
+	return nil
 }

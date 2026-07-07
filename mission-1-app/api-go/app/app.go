@@ -1396,25 +1396,26 @@ func JoinFormationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		UserID    int `json:"id_utilisateur"`
-		SessionID int `json:"id_session"` 
+		UserID int `json:"id_utilisateur"`
 	}
+	
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
 		return
 	}
 
-	if body.UserID <= 0 || body.SessionID <= 0 {
-		http.Error(w, "ID utilisateur ou ID session manquant", http.StatusBadRequest)
+	if body.UserID <= 0 {
+		http.Error(w, "ID utilisateur manquant", http.StatusBadRequest)
 		return
 	}
 
-	err = db.JoinFormation(body.UserID, formationID, body.SessionID)
+	err = db.JoinFormation(body.UserID, formationID)
 	if err != nil {
 		if strings.Contains(err.Error(), "complète") {
 			http.Error(w, err.Error(), http.StatusConflict)
 			return
 		}
+		fmt.Println("Erreur JoinFormation:", err)
 		http.Error(w, "Erreur lors de l'inscription: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -1423,7 +1424,7 @@ func JoinFormationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Inscription enregistrée avec succès"))
 }
 
-func QuitFormation(w http.ResponseWriter, r *http.Request) {
+func QuitFormationHandler(w http.ResponseWriter, r *http.Request) {
 	formationID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || formationID <= 0 {
 		http.Error(w, "ID de formation invalide", http.StatusBadRequest)
@@ -1435,6 +1436,11 @@ func QuitFormation(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	if body.UserID <= 0 {
+		http.Error(w, "ID utilisateur manquant", http.StatusBadRequest)
 		return
 	}
 
@@ -1505,6 +1511,33 @@ func AnnulerFormationHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "La formation a été annulée avec succès",
 	})
+}
+
+func GetUserPlanningHandler(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	formations, err := db.GetUserFormations(userID)
+	if err != nil {
+		formations = []models.GetFormation{} 
+	}
+
+	evenements, err := db.GetUserEvenements(userID)
+	if err != nil {
+		evenements = []models.Evenement{} 
+	}
+
+	response := map[string]interface{}{
+		"formations": formations,
+		"evenements": evenements,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // Logistique
@@ -1749,6 +1782,23 @@ func CheckLikeStatusHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"liked": liked})
 }
 
+func GetUserProjetsLikeHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || userID <= 0 {
+		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
+		return
+	}
+
+	projets, err := db.GetUserProjetsLike(userID)
+	if err != nil {
+		http.Error(w, "Erreur serveur : "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(projets)
+}
+
 func GetProjetsByUserHandler(w http.ResponseWriter, r *http.Request) {
 	userID, _ := strconv.Atoi(r.PathValue("id"))
 	projets, err := db.GetProjetsByUserId(userID)
@@ -1904,6 +1954,40 @@ func UploadProjetImageHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func PayerProjetHandler(w http.ResponseWriter, r *http.Request) {
+	projetIDStr := r.PathValue("id")
+	projetID, err := strconv.Atoi(projetIDStr)
+	if err != nil || projetID <= 0 {
+		http.Error(w, "ID de projet invalide", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		IdAcheteur      int     `json:"id_acheteur"`
+		MontantPaye     float64 `json:"montant_paye"`
+		StripePaymentID string  `json:"stripe_payment_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Appel à la base de données
+	factureID, numFacture, err := db.AcheterProjet(projetID, req.IdAcheteur, req.MontantPaye, req.StripePaymentID)
+	if err != nil {
+		fmt.Println("Erreur Achat Projet:", err)
+		http.Error(w, "Erreur lors de l'achat du projet: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":        "Projet acheté avec succès",
+		"facture_id":     factureID,
+		"numero_facture": numFacture,
+	})
+}
 //Tips
 
 func GetTipByRoleHandler(w http.ResponseWriter, r *http.Request) {
@@ -2446,19 +2530,16 @@ func GetSubscriptionStatusHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
 		return
 	}
-
 	isSubscriber, err := db.HasActiveDMSubscription(userID)
 	if err != nil {
 		http.Error(w, "Erreur abonnement", http.StatusInternalServerError)
 		return
 	}
-
-	used, err := db.CountDistinctAnnonceVendorsContacted(userID)
+	used, err := db.CountDistinctVendorsContacted(userID) 
 	if err != nil {
 		http.Error(w, "Erreur compteur messagerie", http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"is_subscriber": isSubscriber,
@@ -2467,6 +2548,7 @@ func GetSubscriptionStatusHandler(w http.ResponseWriter, r *http.Request) {
 		"price":         2.99,
 	})
 }
+
 
 func GetConversationsHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(r.PathValue("id"))
@@ -2486,32 +2568,28 @@ func GetConversationsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func StartConversationHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil || userID <= 0 {
-		http.Error(w, "ID utilisateur invalide", http.StatusBadRequest)
-		return
-	}
+    userID, _ := strconv.Atoi(r.PathValue("id"))
 
-	var req struct {
-		TargetUserID int  `json:"target_user_id"`
-		AnnonceID    *int `json:"annonce_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Requete invalide", http.StatusBadRequest)
-		return
-	}
+    var body struct {
+        TargetUserID int  `json:"target_user_id"`
+        AnnonceID    *int `json:"annonce_id,omitempty"`
+        ProjetID     *int `json:"projet_id,omitempty"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+        http.Error(w, "Format JSON invalide", http.StatusBadRequest)
+        return
+    }
 
-	result, err := db.StartConversation(userID, req.TargetUserID, req.AnnonceID)
-	if err != nil {
-		http.Error(w, "Erreur creation conversation", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if !result.Allowed {
-		w.WriteHeader(http.StatusPaymentRequired)
-	}
-	json.NewEncoder(w).Encode(result)
+    result, err := db.StartConversation(userID, body.TargetUserID, body.AnnonceID, body.ProjetID)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    if !result.Allowed {
+        w.WriteHeader(http.StatusPaymentRequired) 
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(result)
 }
 
 func GetConversationMessagesHandler(w http.ResponseWriter, r *http.Request) {
@@ -2929,18 +3007,15 @@ func AddToPanierHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveFromPanierHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("🗑️ Requête de suppression reçue !")
 
 	userIDStr := r.PathValue("id")
 	itemIDStr := r.PathValue("itemId")
 
-	fmt.Printf("Données URL -> UserID: %s | ItemID: %s\n", userIDStr, itemIDStr)
 
 	userID, err1 := strconv.Atoi(userIDStr)
 	itemID, err2 := strconv.Atoi(itemIDStr)
 
 	if err1 != nil || err2 != nil {
-		fmt.Println("❌ Erreur : ID invalide dans l'URL")
 		http.Error(w, "ID invalide", http.StatusBadRequest)
 		return
 	}

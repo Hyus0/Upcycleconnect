@@ -193,28 +193,21 @@
 
                     <div class="form-actions-card">
                         <button
-                            @click="handleInscription"
-                            class="btn-save"
-                            :class="{ 'btn-liked-active': isRegistered }"
-                            :disabled="isRegistering"
-                        >
-                            <span v-if="isRegistered"
-                                >Inscrit à l'événement</span
-                            >
-                            <span v-else>Participer à l'événement</span>
-                        </button>
-
-                        <button
                             v-if="!isRegistered"
-                            @click="handleInscription"
-                            class="btn-test"
-                            :disabled="isRegistering"
+                            @click="handleMainAction"
+                            class="btn-save"
+                            :disabled="isRegistering || isAddingToCart"
                         >
-                            Inscription TEST
+                            <template v-if="evenement.prix_unitaire > 0">
+                                Ajouter au panier
+                            </template>
+                            <template v-else>
+                                Participer à l'événement
+                            </template>
                         </button>
-
+                        
                         <button
-                            v-if="isRegistered"
+                            v-else
                             @click="handleQuit"
                             class="btn-quit"
                             :disabled="isLeaving"
@@ -271,6 +264,60 @@ const fetchCreateur = async (id) => {
         if (res.ok) createur.value = await res.json();
     } catch (error) {
         console.error("Erreur créateur: ", error);
+    }
+};
+
+const handleAddToCart = async () => {
+    const token = sessionStorage.getItem("userToken");
+    const userId = sessionStorage.getItem("userId");
+
+    if (!token || !userId) {
+        router.push("/connexion");
+        return;
+    }
+
+    isAddingToCart.value = true;
+
+    try {
+        const res = await fetch(
+            `/go/users/${userId}/panier`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    type_item: "Evenement",
+                    reference_id: evenement.value.id,
+                    prix_unitaire: parseFloat(
+                        evenement.value.prix_unitaire || 0,
+                    ),
+                }),
+            },
+        );
+
+        if (res.ok) {
+            alert("Événement ajouté au panier !");
+        } else {
+            const errorMsg = await res.text();
+            alert("Erreur lors de l'ajout au panier : " + errorMsg);
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Impossible de joindre le serveur.");
+    } finally {
+        isAddingToCart.value = false;
+    }
+};
+
+const handleMainAction = () => {
+    const prix = evenement.value.prix_unitaire || 0;
+
+    if (prix > 0) {
+        handleAddToCart();
+    } else {
+        handleInscription();
     }
 };
 

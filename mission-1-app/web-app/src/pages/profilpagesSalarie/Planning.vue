@@ -102,14 +102,12 @@
 
                 <div class="detail-body">
                     <div class="detail-row">
-                        <span class="icon">📅</span>
                         <div>
                             <strong>Date :</strong>
                             <p>{{ selectedEntry.dateLabelLong }}</p>
                         </div>
                     </div>
                     <div class="detail-row">
-                        <span class="icon">⏰</span>
                         <div>
                             <strong>Heure :</strong>
                             <p>{{ selectedEntry.timeLabel }}</p>
@@ -281,9 +279,32 @@ const loadCalendarEntries = async (id) => {
             entries = [...inscrFormations, ...inscrEvenements];
         }
 
-        const creaFormations = mesFormationsCreees.map((f) =>
-            toCalendarEntry(f, "my-formation", f.titre, f.date_debut),
-        );
+        const creaFormations = mesFormationsCreees.flatMap((f) => {
+            if (!f.sessions || f.sessions.length === 0) {
+                return [
+                    toCalendarEntry(
+                        f,
+                        "my-formation",
+                        f.titre,
+                        f.date_debut
+                    ),
+                ].filter(Boolean);
+            }
+        
+            return f.sessions
+                .map((session) =>
+                    toCalendarEntry(
+                        {
+                            ...f,
+                            id: `${f.id}`,
+                        },
+                        "my-formation",
+                        `${f.titre} - ${session.nom}`,
+                        session.date_debut,
+                    ),
+                )
+                .filter(Boolean);
+        });
         const creaEvenements = mesEvenementsCrees.map((e) =>
             toCalendarEntry(e, "my-event", e.titre, e.date_evenement),
         );

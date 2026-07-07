@@ -52,6 +52,19 @@ func GetAllFormations() ([]models.GetFormation, error) {
 		formations = append(formations, f)
 	}
 
+	for i := range formations {
+		sessionRows, err := Conn.Query("SELECT id, nom, date_debut, date_fin, statut FROM FORMATION_SESSION WHERE id_formation = ?", formations[i].ID)
+		if err == nil {
+			for sessionRows.Next() {
+				var s models.FormationSession
+				if err := sessionRows.Scan(&s.ID, &s.Nom, &s.DateDebut, &s.DateFin, &s.Statut); err == nil {
+					formations[i].Sessions = append(formations[i].Sessions, s)
+				}
+			}
+			sessionRows.Close()
+		}
+	}
+
 	return formations, nil
 }
 
@@ -237,66 +250,72 @@ func DeleteFormation(id int) error {
 	return nil
 }
 
-func JoinFormation(userID int, formationID int, sessionID int) error {
+func JoinFormation(userID int, formationID int) error {
 	if Conn == nil {
 		return fmt.Errorf("connexion DB non initialisee")
 	}
 
 	var capaciteMax int
 	var nbInscrits int
-	queryCheck := `
+	
+	err := Conn.QueryRow(`
 		SELECT f.capacite_max, COUNT(fi.id_utilisateur)
 		FROM FORMATION f
-		LEFT JOIN FORMATION_INSCRIPTION fi ON fi.id_session = ?
+		LEFT JOIN FORMATION_INSCRIPTION fi ON f.id = fi.id_formation
 		WHERE f.id = ?
 		GROUP BY f.id, f.capacite_max
-	`
-	err := Conn.QueryRow(queryCheck, sessionID, formationID).Scan(&capaciteMax, &nbInscrits)
-	if err == sql.ErrNoRows {
-		return fmt.Errorf("formation ou session introuvable")
-	}
+	`, formationID).Scan(&capaciteMax, &nbInscrits)
+	
 	if err != nil {
-		return fmt.Errorf("verification capacite formation: %v", err)
+		return fmt.Errorf("formation introuvable ou erreur: %v", err)
 	}
 
 	if nbInscrits >= capaciteMax {
-		return fmt.Errorf("cette session est complète")
+		return fmt.Errorf("cette formation est complète")
 	}
 
-	queryInsert := "INSERT INTO FORMATION_INSCRIPTION (id_utilisateur, id_formation, id_session) VALUES (?, ?, ?)"
-	if _, err := Conn.Exec(queryInsert, userID, formationID, sessionID); err != nil {
-		return fmt.Errorf("insertion FORMATION_INSCRIPTION: %v", err)
+	_, err = Conn.Exec(
+		"INSERT IGNORE INTO FORMATION_INSCRIPTION (id_utilisateur, id_formation) VALUES (?, ?)",
+		userID, formationID,
+	)
+	if err != nil {
+		return fmt.Errorf("erreur lors de l'inscription: %v", err)
 	}
 
 	return nil
 }
 
-func QuitFormation(userID int, sessionID int) error {
+func QuitFormation(userID int, formationID int) error {
 	if Conn == nil {
 		return fmt.Errorf("connexion DB non initialisee")
 	}
 
-	query := "DELETE FROM FORMATION_INSCRIPTION WHERE id_utilisateur = ? AND id_session = ?"
-	result, err := Conn.Exec(query, userID, sessionID)
+	result, err := Conn.Exec(`
+		DELETE FROM FORMATION_INSCRIPTION
+		WHERE id_utilisateur = ? AND id_formation = ?
+	`, userID, formationID)
 	if err != nil {
 		return fmt.Errorf("erreur lors de la désinscription: %v", err)
 	}
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return fmt.Errorf("aucune inscription trouvée pour cet utilisateur à cette session")
+		return fmt.Errorf("aucune inscription trouvée pour cette formation")
 	}
 
 	return nil
 }
 
 func GetUserFormations(userID int) ([]models.GetFormation, error) {
+	if Conn == nil {
+		return nil, fmt.Errorf("connexion DB non initialisee")
+	}
+
 	query := `
 		SELECT f.id, f.id_formateur, f.type, f.titre, f.description, f.capacite_max,
-		       fs.date_debut, fs.date_fin, f.statut, f.prix_unitaire, f.adresse, f.ville, f.code_postal
+		       f.statut, f.prix_unitaire, f.adresse, f.ville, f.code_postal
 		FROM FORMATION f
 		INNER JOIN FORMATION_INSCRIPTION fi ON f.id = fi.id_formation
-		INNER JOIN FORMATION_SESSION fs ON fi.id_session = fs.id
 		WHERE fi.id_utilisateur = ?`
 
 	rows, err := Conn.Query(query, userID)
@@ -308,9 +327,30 @@ func GetUserFormations(userID int) ([]models.GetFormation, error) {
 	var formations []models.GetFormation
 	for rows.Next() {
 		var f models.GetFormation
-		rows.Scan(&f.ID, &f.ID_formateur, &f.Type, &f.Titre, &f.Description, &f.Capacite_max,
-			&f.Date_debut, &f.Date_fin, &f.Statut, &f.Prix_unitaire, &f.Adresse, &f.Ville, &f.CodePostal)
+		err := rows.Scan(
+			&f.ID, &f.ID_formateur, &f.Type, &f.Titre, &f.Description, &f.Capacite_max,
+			&f.Statut, &f.Prix_unitaire, &f.Adresse, &f.Ville, &f.CodePostal,
+		)
+		if err != nil {
+			continue
+		}
+		
 		f.IsRegistered = true
+
+		sessionRows, err := Conn.Query(
+			"SELECT id, nom, date_debut, date_fin, statut FROM FORMATION_SESSION WHERE id_formation = ?", 
+			f.ID,
+		)
+		if err == nil {
+			for sessionRows.Next() {
+				var s models.FormationSession
+				if err := sessionRows.Scan(&s.ID, &s.Nom, &s.DateDebut, &s.DateFin, &s.Statut); err == nil {
+					f.Sessions = append(f.Sessions, s)
+				}
+			}
+			sessionRows.Close()
+		}
+		
 		formations = append(formations, f)
 	}
 	return formations, nil

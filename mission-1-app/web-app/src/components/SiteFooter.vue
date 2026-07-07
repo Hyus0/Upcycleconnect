@@ -3,7 +3,7 @@
     <div class="footer-container">
       <div class="footer-main-content">
         <div class="footer-brand">
-          <div class="logo-text" @click="$router.push('/')">
+          <div class="logo-text" @click="$router.push('/front')">
             Upcycle<span class="navbar__logo--accent">Connect</span>
           </div>
           <p class="footer-description">
@@ -13,31 +13,33 @@
 
         <div class="footer-links-wrapper">
           <div class="footer-column">
-            <h4>{{ t.FooterCol1 || 'PLATEFORME' }}</h4>
+            <h4>{{ t.FooterCol1 || 'DÉCOUVERTE' }}</h4>
             <ul>
-              <li><router-link to="/#processus">{{ t.FooterHowItWorks || 'Comment ça marche' }}</router-link></li>
-              <li><router-link to="/annonces">{{ t.FooterAds || 'Annonces' }}</router-link></li>
+              <li><router-link to="/catalogue">{{ t.FooterAds || 'Catalogue Annonces' }}</router-link></li>
+              <li><router-link to="/projets">{{ t.FooterProjects || 'Galerie Projets' }}</router-link></li>
+              <li><router-link to="/formations">{{ t.FooterFormations || 'Formations & Ateliers' }}</router-link></li>
+              <li><router-link to="/evenements">{{ t.FooterEvents || 'Événements' }}</router-link></li>
+              <li><router-link to="/forums">{{ t.FooterForums || 'Forums' }}</router-link></li>
+            </ul>
+          </div>
+
+          <div class="footer-column">
+            <h4>{{ t.FooterCol2 || 'MON ESPACE' }}</h4>
+            <ul>
               <li><router-link to="/profil">{{ t.FooterDashboard || 'Tableau de bord' }}</router-link></li>
-              <li><router-link to="/profil/annonces">{{ t.FooterMyAds || 'Mes annonces' }}</router-link></li>
+              <li><router-link to="/messages">{{ t.FooterMessages || 'Messagerie' }}</router-link></li>
+              <li><router-link to="/profil/createAnnonce">{{ t.FooterCreateAd || 'Déposer une annonce' }}</router-link></li>
+              <li><router-link to="/profil/projet-favoris">{{ t.FooterFavorites || 'Mes Favoris' }}</router-link></li>
+              <li><router-link to="/panier">{{ t.FooterCart || 'Mon Panier' }}</router-link></li>
             </ul>
           </div>
 
           <div class="footer-column">
-            <h4>{{ t.FooterCol2 || 'PROFESSIONNELS' }}</h4>
+            <h4>{{ t.FooterCol3 || 'PROFESSIONNELS & INFOS' }}</h4>
             <ul>
-              <li><router-link to="/inscription">{{ t.FooterSubOffers || "Offres d'abonnement" }}</router-link></li>
-              <li><router-link to="/profil/depots">{{ t.FooterContainers || 'Conteneurs' }}</router-link></li>
-              <li><router-link to="/profil/annonces">{{ t.FooterProjects || 'Projets upcycling' }}</router-link></li>
-              <li><router-link to="/inscription">{{ t.FooterAdvertising || 'Publicité' }}</router-link></li>
-            </ul>
-          </div>
-
-          <div class="footer-column">
-            <h4>{{ t.FooterCol3 || 'ENTREPRISE' }}</h4>
-            <ul>
+              <li><router-link to="/abonnement">{{ t.FooterSubOffers || "Offres Pro & Abonnements" }}</router-link></li>
+              <li><router-link to="/conseils">{{ t.FooterTips || 'Conseils & Astuces' }}</router-link></li>
               <li><router-link to="/front">{{ t.FooterAbout || 'À propos' }}</router-link></li>
-              <li><router-link to="/front">{{ t.FooterLocations || 'Nos sites' }}</router-link></li>
-              <li><router-link to="/front">{{ t.FooterBlog || 'Blog' }}</router-link></li>
               <li><router-link to="/connexion">{{ t.FooterContact || 'Contact' }}</router-link></li>
             </ul>
           </div>
@@ -64,7 +66,6 @@ const { t } = useTraduction();
 </script>
 
 <style scoped>
-
 .footer-class {
   background-color: #0b0f0e;
   padding: 80px 5% 40px 5%;

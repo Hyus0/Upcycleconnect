@@ -4,74 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"upcycleconnect/api-go/models"
 )
-
-type DMConversation struct {
-	ID               int     `json:"id"`
-	OtherUserID      int     `json:"other_user_id"`
-	OtherUserName    string  `json:"other_user_name"`
-	OtherUserRole    string  `json:"other_user_role"`
-	OtherUserAvatar  string  `json:"other_user_avatar"`
-	OtherUserPremium bool    `json:"other_user_premium"`
-	AnnonceID        *int    `json:"annonce_id,omitempty"`
-	AnnonceTitle     string  `json:"annonce_title"`
-	AnnoncePrice     float64 `json:"annonce_price"`
-	AnnonceSellerID  *int    `json:"annonce_seller_id,omitempty"`
-	AnnonceStatut    string  `json:"annonce_statut"`
-	AnnonceBuyerID   *int    `json:"annonce_acheteur_id,omitempty"`
-	LastMessage      string  `json:"last_message"`
-	LastMessageAt    string  `json:"last_message_at"`
-	UnreadCount      int     `json:"unread_count"`
-	UpdatedAt        string  `json:"updated_at"`
-}
-
-type DMMessage struct {
-	ID             int    `json:"id"`
-	ConversationID int    `json:"conversation_id"`
-	SenderID       int    `json:"sender_id"`
-	Content        string `json:"content"`
-	Read           bool   `json:"read"`
-	CreatedAt      string `json:"created_at"`
-}
-
-type DMStartResult struct {
-	ConversationID int    `json:"conversation_id"`
-	Allowed        bool   `json:"allowed"`
-	IsSubscriber   bool   `json:"is_subscriber"`
-	Used           int    `json:"used"`
-	Limit          int    `json:"limit"`
-	Message        string `json:"message"`
-}
-
-type DMOffer struct {
-	ID             int     `json:"id"`
-	ConversationID int     `json:"conversation_id"`
-	AnnonceID      *int    `json:"annonce_id,omitempty"`
-	BuyerID        int     `json:"buyer_id"`
-	SellerID       int     `json:"seller_id"`
-	Amount         float64 `json:"amount"`
-	Status         string  `json:"status"`
-	CreatedAt      string  `json:"created_at"`
-	UpdatedAt      string  `json:"updated_at"`
-}
-
-type DMSale struct {
-	ID             int     `json:"id"`
-	OfferID        int     `json:"offer_id"`
-	ConversationID int     `json:"conversation_id"`
-	AnnonceID      *int    `json:"annonce_id,omitempty"`
-	BuyerID        int     `json:"buyer_id"`
-	SellerID       int     `json:"seller_id"`
-	Amount         float64 `json:"amount"`
-	Status         string  `json:"status"`
-	ReceivedAt     string  `json:"received_at"`
-	ReviewedAt     string  `json:"reviewed_at"`
-}
-
-type DMThreadState struct {
-	Offers []DMOffer `json:"offers"`
-	Sales  []DMSale  `json:"sales"`
-}
 
 const freeDMVendorLimit = 5
 
@@ -89,19 +23,8 @@ func HasActiveDMSubscription(userID int) (bool, error) {
 	return count > 0, err
 }
 
-func EnsureDMSubscription(userID int) error {
-	_, err := Conn.Exec(`
-		INSERT INTO ABONNEMENT (id_acheteur, id_type_abonnement, date_debut, date_fin, statut, stripe_subscription_id)
-		SELECT ?, id, NOW(), DATE_ADD(NOW(), INTERVAL duree_mois MONTH), 'Actif', 'local-checkout'
-		FROM TYPE_ABONNEMENT
-		WHERE nom = 'DM Plus'
-		ON DUPLICATE KEY UPDATE statut = statut
-	`, userID)
-	return err
-}
-
-func StartConversation(currentUserID int, targetUserID int, annonceID *int) (DMStartResult, error) {
-	result := DMStartResult{Allowed: false, Limit: freeDMVendorLimit}
+func StartConversation(currentUserID int, targetUserID int, annonceID *int, projetID *int) (models.DMStartResult, error) {
+	result := models.DMStartResult{Allowed: false, Limit: freeDMVendorLimit}
 	if currentUserID <= 0 {
 		result.Message = "Vous devez etre connecte pour contacter un membre."
 		return result, nil
@@ -113,21 +36,31 @@ func StartConversation(currentUserID int, targetUserID int, annonceID *int) (DMS
 
 	var existingID int
 	var existingErr error
-	if annonceID != nil {
+
+	switch {
+	case annonceID != nil:
 		existingErr = Conn.QueryRow(`
 			SELECT id FROM DM_CONVERSATION
 			WHERE ((id_user_one = ? AND id_user_two = ?) OR (id_user_one = ? AND id_user_two = ?))
 			  AND id_annonce = ?
 			LIMIT 1
 		`, currentUserID, targetUserID, targetUserID, currentUserID, *annonceID).Scan(&existingID)
-	} else {
+	case projetID != nil:
 		existingErr = Conn.QueryRow(`
 			SELECT id FROM DM_CONVERSATION
 			WHERE ((id_user_one = ? AND id_user_two = ?) OR (id_user_one = ? AND id_user_two = ?))
-			  AND id_annonce IS NULL
+			  AND id_projet = ?
+			LIMIT 1
+		`, currentUserID, targetUserID, targetUserID, currentUserID, *projetID).Scan(&existingID)
+	default:
+		existingErr = Conn.QueryRow(`
+			SELECT id FROM DM_CONVERSATION
+			WHERE ((id_user_one = ? AND id_user_two = ?) OR (id_user_one = ? AND id_user_two = ?))
+			  AND id_annonce IS NULL AND id_projet IS NULL
 			LIMIT 1
 		`, currentUserID, targetUserID, targetUserID, currentUserID).Scan(&existingID)
 	}
+
 	if existingErr == nil {
 		result.Allowed = true
 		result.ConversationID = existingID
@@ -144,26 +77,29 @@ func StartConversation(currentUserID int, targetUserID int, annonceID *int) (DMS
 	}
 	result.IsSubscriber = isSubscriber
 
-	if annonceID == nil && !isSubscriber {
+	isLinkedToItem := annonceID != nil || projetID != nil
+
+	if !isLinkedToItem && !isSubscriber {
 		result.Message = "L'abonnement DM Plus est requis pour contacter directement n'importe quel membre."
 		return result, nil
 	}
 
-	used, err := CountDistinctAnnonceVendorsContacted(currentUserID)
-	if err != nil {
-		return result, err
-	}
-	result.Used = used
-
-	if !isSubscriber && used >= freeDMVendorLimit {
-		result.Message = "Limite gratuite atteinte : vous pouvez contacter 5 vendeurs via des annonces. Passez a DM Plus pour continuer."
-		return result, nil
+	if isLinkedToItem && !isSubscriber {
+		used, err := CountDistinctVendorsContacted(currentUserID)
+		if err != nil {
+			return result, err
+		}
+		result.Used = used
+		if used >= freeDMVendorLimit {
+			result.Message = "Limite gratuite atteinte : vous pouvez contacter 5 vendeurs via annonces/projets. Passez a DM Plus pour continuer."
+			return result, nil
+		}
 	}
 
 	res, err := Conn.Exec(`
-		INSERT INTO DM_CONVERSATION (id_user_one, id_user_two, id_annonce, initiator_id)
-		VALUES (?, ?, ?, ?)
-	`, currentUserID, targetUserID, annonceID, currentUserID)
+		INSERT INTO DM_CONVERSATION (id_user_one, id_user_two, id_annonce, id_projet, initiator_id)
+		VALUES (?, ?, ?, ?, ?)
+	`, currentUserID, targetUserID, annonceID, projetID, currentUserID)
 	if err != nil {
 		return result, err
 	}
@@ -174,7 +110,7 @@ func StartConversation(currentUserID int, targetUserID int, annonceID *int) (DMS
 	return result, nil
 }
 
-func CountDistinctAnnonceVendorsContacted(userID int) (int, error) {
+func CountDistinctVendorsContacted(userID int) (int, error) {
 	var count int
 	err := Conn.QueryRow(`
 		SELECT COUNT(DISTINCT CASE
@@ -183,12 +119,12 @@ func CountDistinctAnnonceVendorsContacted(userID int) (int, error) {
 		END)
 		FROM DM_CONVERSATION
 		WHERE initiator_id = ?
-		  AND id_annonce IS NOT NULL
+		  AND (id_annonce IS NOT NULL OR id_projet IS NOT NULL)
 	`, userID, userID).Scan(&count)
 	return count, err
 }
 
-func ListConversations(userID int) ([]DMConversation, error) {
+func ListConversations(userID int) ([]models.DMConversation, error) {
 	rows, err := Conn.Query(`
 		SELECT
 			c.id,
@@ -202,12 +138,13 @@ func ListConversations(userID int) ([]DMConversation, error) {
 				  AND (ab.date_fin IS NULL OR ab.date_fin >= NOW())
 				  AND tab.nom = 'DM Plus'
 			) AS other_premium,
-			c.id_annonce,
-			COALESCE(a.titre, 'Discussion directe') AS annonce_title,
-			COALESCE(a.prix, 0) AS annonce_price,
-			a.id_vendeur,
-			COALESCE(a.statut, 'Disponible') AS annonce_statut,
-			a.id_acheteur,
+ 
+			c.id_annonce, COALESCE(a.titre, ''), COALESCE(a.prix, 0), a.id_vendeur,
+			a.statut, a.id_acheteur,
+ 
+			c.id_projet, COALESCE(p.titre, ''), COALESCE(p.prix, 0), p.id_createur,
+			p.statut, p.id_acheteur,
+ 
 			COALESCE(last_msg.contenu, '') AS last_message,
 			COALESCE(DATE_FORMAT(last_msg.created_at, '%Y-%m-%dT%H:%i:%sZ'), '') AS last_message_at,
 			COALESCE(unread.total, 0) AS unread_count,
@@ -215,6 +152,7 @@ func ListConversations(userID int) ([]DMConversation, error) {
 		FROM DM_CONVERSATION c
 		JOIN UTILISATEUR u ON u.id = CASE WHEN c.id_user_one = ? THEN c.id_user_two ELSE c.id_user_one END
 		LEFT JOIN ANNONCE a ON a.id = c.id_annonce
+		LEFT JOIN PROJET_UPCYCLING p ON p.id = c.id_projet
 		LEFT JOIN DM_MESSAGE last_msg ON last_msg.id = (
 			SELECT m.id FROM DM_MESSAGE m WHERE m.id_conversation = c.id ORDER BY m.created_at DESC, m.id DESC LIMIT 1
 		)
@@ -231,37 +169,87 @@ func ListConversations(userID int) ([]DMConversation, error) {
 		return nil, err
 	}
 	defer rows.Close()
-
-	conversations := []DMConversation{}
+ 
+	conversations := []models.DMConversation{}
 	for rows.Next() {
-		var c DMConversation
+		var c models.DMConversation
 		var prenom, nom string
-		var sellerID sql.NullInt64
-		var buyerID sql.NullInt64
-
-		if err := rows.Scan(&c.ID, &c.OtherUserID, &prenom, &nom, &c.OtherUserRole, &c.OtherUserAvatar, &c.OtherUserPremium, &c.AnnonceID, &c.AnnonceTitle, &c.AnnoncePrice, &sellerID, &c.AnnonceStatut, &buyerID, &c.LastMessage, &c.LastMessageAt, &c.UnreadCount, &c.UpdatedAt); err != nil {
+ 
+		var annonceID sql.NullInt64
+		var annonceTitle string
+		var annoncePrix float64
+		var annonceSellerID sql.NullInt64
+		var annonceStatut sql.NullString
+		var annonceBuyerID sql.NullInt64
+ 
+		var projetID sql.NullInt64
+		var projetTitle string
+		var projetPrix float64
+		var projetSellerID sql.NullInt64
+		var projetStatut sql.NullString
+		var projetBuyerID sql.NullInt64
+ 
+		if err := rows.Scan(
+			&c.ID, &c.OtherUserID, &prenom, &nom, &c.OtherUserRole, &c.OtherUserAvatar, &c.OtherUserPremium,
+ 
+			&annonceID, &annonceTitle, &annoncePrix, &annonceSellerID,
+			&annonceStatut, &annonceBuyerID,
+ 
+			&projetID, &projetTitle, &projetPrix, &projetSellerID,
+			&projetStatut, &projetBuyerID,
+ 
+			&c.LastMessage, &c.LastMessageAt, &c.UnreadCount, &c.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
+ 
 		c.OtherUserName = strings.TrimSpace(prenom + " " + nom)
 		if c.OtherUserName == "" {
 			c.OtherUserName = fmt.Sprintf("Utilisateur #%d", c.OtherUserID)
 		}
-
-		if sellerID.Valid {
-			val := int(sellerID.Int64)
-			c.AnnonceSellerID = &val
+ 
+		if annonceID.Valid {
+			val := int(annonceID.Int64)
+			c.AnnonceID = &val
+			c.AnnonceTitle = annonceTitle
+			c.AnnoncePrice = annoncePrix
+			if annonceSellerID.Valid {
+				s := int(annonceSellerID.Int64)
+				c.AnnonceSellerID = &s
+			}
+			if annonceStatut.Valid {
+				c.AnnonceStatut = annonceStatut.String
+			}
+			if annonceBuyerID.Valid {
+				b := int(annonceBuyerID.Int64)
+				c.AnnonceBuyerID = &b
+			}
 		}
-		if buyerID.Valid {
-			val := int(buyerID.Int64)
-			c.AnnonceBuyerID = &val
+ 
+		if projetID.Valid {
+			val := int(projetID.Int64)
+			c.ProjetID = &val
+			c.ProjetTitle = projetTitle
+			c.ProjetPrice = projetPrix
+			if projetSellerID.Valid {
+				s := int(projetSellerID.Int64)
+				c.ProjetSellerID = &s
+			}
+			if projetStatut.Valid {
+				c.ProjetStatut = projetStatut.String
+			}
+			if projetBuyerID.Valid {
+				b := int(projetBuyerID.Int64)
+				c.ProjetBuyerID = &b
+			}
 		}
-
+ 
 		conversations = append(conversations, c)
 	}
 	return conversations, nil
 }
 
-func GetConversationMessages(userID int, conversationID int) ([]DMMessage, error) {
+func GetConversationMessages(userID int, conversationID int) ([]models.DMMessage, error) {
 	var allowed int
 	if err := Conn.QueryRow(`
 		SELECT COUNT(*) FROM DM_CONVERSATION
@@ -270,13 +258,22 @@ func GetConversationMessages(userID int, conversationID int) ([]DMMessage, error
 		return nil, err
 	}
 	if allowed == 0 {
-		return nil, fmt.Errorf("conversation introuvable")
+		return nil, fmt.Errorf("conversation introuvable ou accès refusé")
 	}
 
-	_, _ = Conn.Exec("UPDATE DM_MESSAGE SET lu = TRUE WHERE id_conversation = ? AND id_sender <> ?", conversationID, userID)
+	_, err := Conn.Exec(`
+		UPDATE DM_MESSAGE 
+		SET lu = TRUE 
+		WHERE id_conversation = ? AND id_sender != ? AND lu = FALSE
+	`, conversationID, userID)
+	if err != nil {
+		return nil, err
+	}
 
 	rows, err := Conn.Query(`
-		SELECT id, id_conversation, id_sender, contenu, lu, DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ')
+		SELECT 
+			id, id_conversation, id_sender, contenu, lu, 
+			COALESCE(DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ'), '')
 		FROM DM_MESSAGE
 		WHERE id_conversation = ?
 		ORDER BY created_at ASC, id ASC
@@ -286,41 +283,42 @@ func GetConversationMessages(userID int, conversationID int) ([]DMMessage, error
 	}
 	defer rows.Close()
 
-	messages := []DMMessage{}
+	var messages []models.DMMessage
 	for rows.Next() {
-		var m DMMessage
+		var m models.DMMessage
 		if err := rows.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Content, &m.Read, &m.CreatedAt); err != nil {
 			return nil, err
 		}
 		messages = append(messages, m)
 	}
+
 	return messages, nil
 }
 
-func SendDMMessage(userID int, conversationID int, content string) (*DMMessage, error) {
+func SendDMMessage(userID int, conversationID int, content string) (*models.DMMessage, error) {
 	content = strings.TrimSpace(content)
 	if content == "" {
 		return nil, fmt.Errorf("message vide")
 	}
 
 	var allowed int
-	var annonceID sql.NullInt64
+	var annonceID, projetID sql.NullInt64
 	if err := Conn.QueryRow(`
-		SELECT COUNT(*), MAX(id_annonce) FROM DM_CONVERSATION
+		SELECT COUNT(*), MAX(id_annonce), MAX(id_projet) FROM DM_CONVERSATION
 		WHERE id = ? AND (id_user_one = ? OR id_user_two = ?)
-	`, conversationID, userID, userID).Scan(&allowed, &annonceID); err != nil {
+	`, conversationID, userID, userID).Scan(&allowed, &annonceID, &projetID); err != nil {
 		return nil, err
 	}
 	if allowed == 0 {
 		return nil, fmt.Errorf("conversation introuvable")
 	}
-	if !annonceID.Valid {
+	if !annonceID.Valid && !projetID.Valid {
 		isSubscriber, err := HasActiveDMSubscription(userID)
 		if err != nil {
 			return nil, err
 		}
 		if !isSubscriber {
-			return nil, fmt.Errorf("DM Plus est requis pour envoyer un message direct hors annonce")
+			return nil, fmt.Errorf("DM Plus est requis pour envoyer un message direct hors annonce/projet")
 		}
 	}
 
@@ -334,35 +332,27 @@ func SendDMMessage(userID int, conversationID int, content string) (*DMMessage, 
 	id, _ := res.LastInsertId()
 	_, _ = Conn.Exec("UPDATE DM_CONVERSATION SET updated_at = NOW() WHERE id = ?", conversationID)
 
-	message := &DMMessage{ID: int(id), ConversationID: conversationID, SenderID: userID, Content: content, Read: false}
+	message := &models.DMMessage{ID: int(id), ConversationID: conversationID, SenderID: userID, Content: content, Read: false}
 	_ = Conn.QueryRow("SELECT DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') FROM DM_MESSAGE WHERE id = ?", id).Scan(&message.CreatedAt)
 	return message, nil
 }
 
-func CreateDMOffer(userID int, conversationID int, amount float64) (*DMOffer, error) {
+func CreateDMOffer(userID int, conversationID int, amount float64) (*models.DMOffer, error) {
 	if amount <= 0 {
 		return nil, fmt.Errorf("montant invalide")
 	}
 
 	var userOne, userTwo int
-	var annonceID sql.NullInt64
+	var annonceID, projetID sql.NullInt64
 	if err := Conn.QueryRow(`
-		SELECT id_user_one, id_user_two, id_annonce
+		SELECT id_user_one, id_user_two, id_annonce, id_projet
 		FROM DM_CONVERSATION
 		WHERE id = ? AND (id_user_one = ? OR id_user_two = ?)
-	`, conversationID, userID, userID).Scan(&userOne, &userTwo, &annonceID); err != nil {
+	`, conversationID, userID, userID).Scan(&userOne, &userTwo, &annonceID, &projetID); err != nil {
 		return nil, fmt.Errorf("conversation introuvable")
 	}
-	if !annonceID.Valid {
-		return nil, fmt.Errorf("la negociation de prix est reservee aux conversations liees a une annonce")
-	}
-
-	var sellerID int
-	if err := Conn.QueryRow("SELECT id_vendeur FROM ANNONCE WHERE id = ?", annonceID.Int64).Scan(&sellerID); err != nil {
-		return nil, err
-	}
-	if sellerID == userID {
-		return nil, fmt.Errorf("le vendeur ne peut pas proposer une offre sur sa propre annonce")
+	if !annonceID.Valid && !projetID.Valid {
+		return nil, fmt.Errorf("la negociation de prix est reservee aux conversations liees a une annonce ou un projet")
 	}
 
 	buyerID := userID
@@ -370,14 +360,38 @@ func CreateDMOffer(userID int, conversationID int, amount float64) (*DMOffer, er
 	if userOne == userID {
 		otherID = userTwo
 	}
-	if otherID != sellerID {
-		return nil, fmt.Errorf("offre impossible : le vendeur de l'annonce n'est pas dans cette conversation")
+
+	var sellerID int
+	var insertQuery string
+	var insertArgs []interface{}
+
+	if annonceID.Valid {
+		if err := Conn.QueryRow("SELECT id_vendeur FROM ANNONCE WHERE id = ?", annonceID.Int64).Scan(&sellerID); err != nil {
+			return nil, err
+		}
+		if sellerID == userID {
+			return nil, fmt.Errorf("le vendeur ne peut pas proposer une offre sur sa propre annonce")
+		}
+		if otherID != sellerID {
+			return nil, fmt.Errorf("offre impossible : le vendeur de l'annonce n'est pas dans cette conversation")
+		}
+		insertQuery = `INSERT INTO DM_OFFER (id_conversation, id_annonce, id_buyer, id_seller, amount, status) VALUES (?, ?, ?, ?, ?, 'En attente')`
+		insertArgs = []interface{}{conversationID, annonceID.Int64, buyerID, sellerID, amount}
+	} else {
+		if err := Conn.QueryRow("SELECT id_createur FROM PROJET_UPCYCLING WHERE id = ?", projetID.Int64).Scan(&sellerID); err != nil {
+			return nil, err
+		}
+		if sellerID == userID {
+			return nil, fmt.Errorf("le createur ne peut pas proposer une offre sur son propre projet")
+		}
+		if otherID != sellerID {
+			return nil, fmt.Errorf("offre impossible : le createur du projet n'est pas dans cette conversation")
+		}
+		insertQuery = `INSERT INTO DM_OFFER (id_conversation, id_projet, id_buyer, id_seller, amount, status) VALUES (?, ?, ?, ?, ?, 'En attente')`
+		insertArgs = []interface{}{conversationID, projetID.Int64, buyerID, sellerID, amount}
 	}
 
-	res, err := Conn.Exec(`
-		INSERT INTO DM_OFFER (id_conversation, id_annonce, id_buyer, id_seller, amount, status)
-		VALUES (?, ?, ?, ?, ?, 'En attente')
-	`, conversationID, annonceID.Int64, buyerID, sellerID, amount)
+	res, err := Conn.Exec(insertQuery, insertArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -388,26 +402,30 @@ func CreateDMOffer(userID int, conversationID int, amount float64) (*DMOffer, er
 	return GetDMOfferByID(int(id))
 }
 
-func GetDMOfferByID(id int) (*DMOffer, error) {
-	var offer DMOffer
-	var annonce sql.NullInt64
+func GetDMOfferByID(id int) (*models.DMOffer, error) {
+	var offer models.DMOffer
+	var annonce, projet sql.NullInt64
 	err := Conn.QueryRow(`
-		SELECT id, id_conversation, id_annonce, id_buyer, id_seller, amount, status,
+		SELECT id, id_conversation, id_annonce, id_projet, id_buyer, id_seller, amount, status,
 		       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ'),
 		       DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ')
 		FROM DM_OFFER WHERE id = ?
-	`, id).Scan(&offer.ID, &offer.ConversationID, &annonce, &offer.BuyerID, &offer.SellerID, &offer.Amount, &offer.Status, &offer.CreatedAt, &offer.UpdatedAt)
+	`, id).Scan(&offer.ID, &offer.ConversationID, &annonce, &projet, &offer.BuyerID, &offer.SellerID, &offer.Amount, &offer.Status, &offer.CreatedAt, &offer.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	if annonce.Valid {
-		value := int(annonce.Int64)
-		offer.AnnonceID = &value
+		v := int(annonce.Int64)
+		offer.AnnonceID = &v
+	}
+	if projet.Valid {
+		v := int(projet.Int64)
+		offer.ProjetID = &v
 	}
 	return &offer, nil
 }
 
-func RespondDMOffer(userID int, offerID int, action string) (*DMOffer, *DMSale, error) {
+func RespondDMOffer(userID int, offerID int, action string) (*models.DMOffer, *models.DMSale, error) {
 	offer, err := GetDMOfferByID(offerID)
 	if err != nil {
 		return nil, nil, err
@@ -437,17 +455,24 @@ func RespondDMOffer(userID int, offerID int, action string) (*DMOffer, *DMSale, 
 		return nil, nil, err
 	}
 
-	var sale *DMSale
+	var sale *models.DMSale
 	if status == "Acceptee" {
-		var annonceValue any
+		var annonceValue, projetValue interface{}
 		if offer.AnnonceID != nil {
 			annonceValue = *offer.AnnonceID
 		}
+		if offer.ProjetID != nil {
+			projetValue = *offer.ProjetID
+			_, _ = Conn.Exec("UPDATE PROJET_UPCYCLING SET statut = 'Reserve', id_acheteur = ? WHERE id = ?", offer.BuyerID, *offer.ProjetID)
+		} else if offer.AnnonceID != nil {
+			_, _ = Conn.Exec("UPDATE ANNONCE SET statut = 'Reserve' WHERE id = ?", *offer.AnnonceID)
+		}
+
 		res, err := Conn.Exec(`
-			INSERT INTO DM_SALE (id_offer, id_conversation, id_annonce, id_buyer, id_seller, amount, status)
-			VALUES (?, ?, ?, ?, ?, ?, 'Offre acceptee')
+			INSERT INTO DM_SALE (id_offer, id_conversation, id_annonce, id_projet, id_buyer, id_seller, amount, status)
+			VALUES (?, ?, ?, ?, ?, ?, ?, 'Offre acceptee')
 			ON DUPLICATE KEY UPDATE status = status
-		`, offer.ID, offer.ConversationID, annonceValue, offer.BuyerID, offer.SellerID, offer.Amount)
+		`, offer.ID, offer.ConversationID, annonceValue, projetValue, offer.BuyerID, offer.SellerID, offer.Amount)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -462,7 +487,7 @@ func RespondDMOffer(userID int, offerID int, action string) (*DMOffer, *DMSale, 
 	return updated, sale, nil
 }
 
-func GetDMSaleByOffer(offerID int) (*DMSale, error) {
+func GetDMSaleByOffer(offerID int) (*models.DMSale, error) {
 	var id int
 	if err := Conn.QueryRow("SELECT id FROM DM_SALE WHERE id_offer = ?", offerID).Scan(&id); err != nil {
 		return nil, err
@@ -470,29 +495,33 @@ func GetDMSaleByOffer(offerID int) (*DMSale, error) {
 	return GetDMSaleByID(id)
 }
 
-func GetDMSaleByID(id int) (*DMSale, error) {
-	var sale DMSale
-	var annonce sql.NullInt64
+func GetDMSaleByID(id int) (*models.DMSale, error) {
+	var sale models.DMSale
+	var annonce, projet sql.NullInt64
 	var received, reviewed sql.NullString
 	err := Conn.QueryRow(`
-		SELECT id, id_offer, id_conversation, id_annonce, id_buyer, id_seller, amount, status,
+		SELECT id, id_offer, id_conversation, id_annonce, id_projet, id_buyer, id_seller, amount, status,
 		       COALESCE(DATE_FORMAT(received_at, '%Y-%m-%dT%H:%i:%sZ'), ''),
 		       COALESCE(DATE_FORMAT(reviewed_at, '%Y-%m-%dT%H:%i:%sZ'), '')
 		FROM DM_SALE WHERE id = ?
-	`, id).Scan(&sale.ID, &sale.OfferID, &sale.ConversationID, &annonce, &sale.BuyerID, &sale.SellerID, &sale.Amount, &sale.Status, &received, &reviewed)
+	`, id).Scan(&sale.ID, &sale.OfferID, &sale.ConversationID, &annonce, &projet, &sale.BuyerID, &sale.SellerID, &sale.Amount, &sale.Status, &received, &reviewed)
 	if err != nil {
 		return nil, err
 	}
 	if annonce.Valid {
-		value := int(annonce.Int64)
-		sale.AnnonceID = &value
+		v := int(annonce.Int64)
+		sale.AnnonceID = &v
+	}
+	if projet.Valid {
+		v := int(projet.Int64)
+		sale.ProjetID = &v
 	}
 	sale.ReceivedAt = received.String
 	sale.ReviewedAt = reviewed.String
 	return &sale, nil
 }
 
-func ConfirmDMSaleReception(userID int, saleID int) (*DMSale, error) {
+func ConfirmDMSaleReception(userID int, saleID int) (*models.DMSale, error) {
 	sale, err := GetDMSaleByID(saleID)
 	if err != nil {
 		return nil, err
@@ -512,7 +541,7 @@ func ConfirmDMSaleReception(userID int, saleID int) (*DMSale, error) {
 	return GetDMSaleByID(saleID)
 }
 
-func ReviewDMSale(userID int, saleID int, note int, commentaire string) (*DMSale, error) {
+func ReviewDMSale(userID int, saleID int, note int, commentaire string) (*models.DMSale, error) {
 	if note < 1 || note > 5 {
 		return nil, fmt.Errorf("note invalide")
 	}
@@ -523,8 +552,8 @@ func ReviewDMSale(userID int, saleID int, note int, commentaire string) (*DMSale
 	if sale.BuyerID != userID {
 		return nil, fmt.Errorf("seul l'acheteur peut noter cette vente")
 	}
-	if sale.Status != "Recue" {
-		return nil, fmt.Errorf("confirmez la reception avant de noter la vente")
+	if sale.Status != "Recue" && sale.Status != "Payee" {
+		return nil, fmt.Errorf("confirmez la reception (ou le paiement pour un projet) avant de noter la vente")
 	}
 
 	if err := CreateAvis(userID, sale.SellerID, note, commentaire); err != nil {
@@ -538,7 +567,7 @@ func ReviewDMSale(userID int, saleID int, note int, commentaire string) (*DMSale
 	return GetDMSaleByID(saleID)
 }
 
-func GetDMThreadState(userID int, conversationID int) (*DMThreadState, error) {
+func GetDMThreadState(userID int, conversationID int) (*models.DMThreadState, error) {
 	var allowed int
 	if err := Conn.QueryRow(`
 		SELECT COUNT(*) FROM DM_CONVERSATION
@@ -558,18 +587,16 @@ func GetDMThreadState(userID int, conversationID int) (*DMThreadState, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DMThreadState{Offers: offers, Sales: sales}, nil
+	return &models.DMThreadState{Offers: offers, Sales: sales}, nil
 }
 
-func ListDMOffers(conversationID int) ([]DMOffer, error) {
-	rows, err := Conn.Query(`
-		SELECT id FROM DM_OFFER WHERE id_conversation = ? ORDER BY created_at DESC, id DESC
-	`, conversationID)
+func ListDMOffers(conversationID int) ([]models.DMOffer, error) {
+	rows, err := Conn.Query(`SELECT id FROM DM_OFFER WHERE id_conversation = ? ORDER BY created_at DESC, id DESC`, conversationID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	offers := []DMOffer{}
+	offers := []models.DMOffer{}
 	for rows.Next() {
 		var id int
 		if err := rows.Scan(&id); err != nil {
@@ -584,15 +611,13 @@ func ListDMOffers(conversationID int) ([]DMOffer, error) {
 	return offers, rows.Err()
 }
 
-func ListDMSales(conversationID int) ([]DMSale, error) {
-	rows, err := Conn.Query(`
-		SELECT id FROM DM_SALE WHERE id_conversation = ? ORDER BY created_at DESC, id DESC
-	`, conversationID)
+func ListDMSales(conversationID int) ([]models.DMSale, error) {
+	rows, err := Conn.Query(`SELECT id FROM DM_SALE WHERE id_conversation = ? ORDER BY created_at DESC, id DESC`, conversationID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	sales := []DMSale{}
+	sales := []models.DMSale{}
 	for rows.Next() {
 		var id int
 		if err := rows.Scan(&id); err != nil {

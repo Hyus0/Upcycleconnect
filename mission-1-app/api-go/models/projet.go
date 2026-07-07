@@ -13,6 +13,10 @@ type ProjetUpcycling struct {
 	VisiblePublic     bool          `json:"visible_public"`
 	DateCreation      string        `json:"date_creation"`
 	Etapes            []EtapeProjet `json:"etapes,omitempty"`
+	Prix        *float64 `json:"prix,omitempty"`
+	Statut      string   `json:"statut,omitempty"`
+	IdAcheteur  *int     `json:"id_acheteur,omitempty"`
+	EnVente     bool     `json:"en_vente"` 
 }
 
 type EtapeProjet struct {

@@ -236,6 +236,11 @@ const dashboardChildrenParticulier = [
     to: "/profil/depots",
     description: "Suivi des depots et collectes"
   },
+  {
+    label: "Mes projets likés",
+    to: "/profil/projet-favoris",
+    description: "Projets likés et sauvegardés"
+  },
 ];
 
 const dashboardChildrenPrestataire = [

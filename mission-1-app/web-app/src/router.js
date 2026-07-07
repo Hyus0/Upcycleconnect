@@ -173,6 +173,12 @@ const routes = [
         meta: { requiresRole: "Particulier" }
       },
       {
+        path: "projet-favoris",
+        name: "projet-favoris",
+        component: () => import('./pages/profilpagesParticulier/ProjetLikes.vue'),
+        meta: { requiresRole: "Particulier" }
+      },
+      {
         path: "modifyAnnonce/:id",
         name: "modification-annonce",
         component: () => import('./pages/profilpagesParticulier/modifyAnnonce.vue'),

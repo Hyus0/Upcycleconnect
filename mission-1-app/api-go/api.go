@@ -100,7 +100,7 @@ func main() {
 	http.HandleFunc("GET /check-session", app.CheckSession)
 	http.HandleFunc("PUT /users/{id}/password", app.ModifyUserPassword)
 	http.HandleFunc("GET /users/{id}/stats", app.GetUserStatsHandler)
-	http.HandleFunc("GET /user/planning/{id}", app.GetPlanningHandler)
+	http.HandleFunc("GET /user/planning/{id}", app.GetUserPlanningHandler)
 	http.HandleFunc("POST /users/{id}/images", app.UploadUserImages)
 	http.Handle("GET /img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./uploads"))))
 
@@ -150,7 +150,7 @@ func main() {
 	http.HandleFunc("PUT /formation/{id}", app.ModifyFormation)
 	http.HandleFunc("DELETE /formation/{id}", app.DeleteFormation)
 	http.HandleFunc("POST /api/formations/{id}/join", app.JoinFormationHandler)
-	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormation)
+	http.HandleFunc("POST /api/formations/{id}/quit", app.QuitFormationHandler)
 	http.HandleFunc("GET /api/formations/{id}/participants", app.GetFormationParticipantsHandler)
 	http.HandleFunc("POST /formations/{id}/annuler", app.AnnulerFormationHandler)
 
@@ -175,6 +175,8 @@ func main() {
 	http.HandleFunc("POST /projets", app.CreateProjetHandler)
 	http.HandleFunc("PUT /projets/{id}", app.UpdateProjetHandler)
 	http.HandleFunc("POST /projets/upload-image", app.UploadProjetImageHandler)
+	http.HandleFunc("POST /projets/{id}/acheter", app.PayerProjetHandler)
+	http.HandleFunc("GET /users/{id}/projets-likes", app.GetUserProjetsLikeHandler)
 
 	//tips
 	http.HandleFunc("GET /tips/role/{role}", app.GetTipByRoleHandler)

@@ -12,7 +12,7 @@
                 <h1 class="hero-title1">Discussions entre membres</h1>
                 <p class="classic-text">
                     Contacte les vendeurs, artisans et utilisateurs autour d'une
-                    annonce ou en direct.
+                    annonce, d'un projet ou en direct.
                 </p>
             </div>
             <RouterLink
@@ -21,11 +21,9 @@
                 to="/abonnement-dm"
             >
                 <span>DM Plus</span>
-
                 <strong>
                     {{ subscription.is_subscriber ? "Actif" : "2,99 € / mois" }}
                 </strong>
-
                 <small>{{ subscriptionLabel }}</small>
             </RouterLink>
         </header>
@@ -44,17 +42,12 @@
                 ×
             </button>
             <p class="sidebar__category2">LIMITE ATTEINTE</p>
-            <h2
-                style="
-                    font-family: &quot;Syne&quot;, sans-serif;
-                    margin: 10px 0;
-                "
-            >
+            <h2 style="font-family: &quot;Syne&quot;, sans-serif; margin: 10px 0;">
                 {{ limitPopup.message }}
             </h2>
             <p class="classic-text">
-                Les comptes gratuits peuvent contacter 5 vendeurs via annonce.
-                L'abonnement DM Plus debloque les messages illimites.
+                Les comptes gratuits peuvent contacter 5 vendeurs via annonce ou
+                projet. L'abonnement DM Plus debloque les messages illimites.
             </p>
             <div class="limit-popup__actions">
                 <RouterLink class="btn-main-action" to="/abonnement"
@@ -116,7 +109,11 @@
                         }}</span>
                         <span class="conversation-main">
                             <strong>{{ conversation.other_user_name }}</strong>
-                            <small>{{ conversation.annonce_title }}</small>
+                            <small>{{
+                                conversation.annonce_title ||
+                                conversation.projet_title ||
+                                "Discussion directe"
+                            }}</small>
                             <em>{{
                                 conversation.last_message ||
                                 "Nouvelle discussion"
@@ -134,140 +131,84 @@
             <section class="chat-panel">
                 <div v-if="!activeConversation" class="empty-chat">
                     <p class="sidebar__category2">SELECTION</p>
-                    <h2
-                        style="
-                            font-family: &quot;Syne&quot;, sans-serif;
-                            font-size: 1.5rem;
-                            margin: 10px 0;
-                        "
-                    >
+                    <h2 style="font-family: &quot;Syne&quot;, sans-serif; font-size: 1.5rem; margin: 10px 0;">
                         Choisis une conversation
                     </h2>
                     <p class="classic-text">
-                        Le fil de discussion apparaitra ici avec l'annonce liee
-                        et l'historique des messages.
+                        Le fil de discussion apparaitra ici avec l'annonce ou le
+                        projet lié et l'historique des messages.
                     </p>
                 </div>
 
                 <template v-else>
                     <header class="chat-header">
-                        <div
-                            style="
-                                display: flex;
-                                gap: 16px;
-                                align-items: center;
-                            "
-                        >
-                            <div
-                                class="conversation-avatar conversation-avatar--large"
-                            >
-                                {{
-                                    initials(activeConversation.other_user_name)
-                                }}
+                        <div style="display: flex; gap: 16px; align-items: center;">
+                            <div class="conversation-avatar conversation-avatar--large">
+                                {{ initials(activeConversation.other_user_name) }}
                             </div>
                             <div>
-                                <p
-                                    class="sidebar__category2"
-                                    style="color: #64766c; margin: 0"
-                                >
-                                    {{
-                                        activeConversation.other_user_role ||
-                                        "MEMBRE"
-                                    }}
+                                <p class="sidebar__category2" style="color: #64766c; margin: 0">
+                                    {{ activeConversation.other_user_role || "MEMBRE" }}
                                 </p>
-                                <h2
-                                    style="
-                                        margin: 4px 0;
-                                        font-family:
-                                            &quot;Syne&quot;, sans-serif;
-                                        font-size: 1.3rem;
-                                    "
-                                >
+                                <h2 style="margin: 4px 0; font-family: &quot;Syne&quot;, sans-serif; font-size: 1.3rem;">
                                     {{ activeConversation.other_user_name }}
                                     <span
-                                        v-if="
-                                            activeConversation.other_user_premium
-                                        "
+                                        v-if="activeConversation.other_user_premium"
                                         class="premium-check"
                                         title="Membre DM Plus"
                                     >
                                         <Check :size="12" :stroke-width="3" />
                                     </span>
                                 </h2>
-                                <p
-                                    class="classic-text"
-                                    style="margin: 0; font-weight: 600"
-                                >
-                                    {{ activeConversation.annonce_title }}
+                                <p class="classic-text" style="margin: 0; font-weight: 600">
+                                    {{ itemTitle || "Discussion directe" }}
                                 </p>
                             </div>
                         </div>
 
-                        <div
-                            v-if="activeConversation.annonce_id"
-                            class="header-actions-right"
-                        >
-                            <span class="annonce-price">{{
-                                formatPrice(activeConversation.annonce_price)
-                            }}</span>
+                        <div v-if="itemId" class="header-actions-right">
+                            <span class="annonce-price">{{ formatPrice(itemPrice) }}</span>
                             <RouterLink
                                 class="btn-secondary btn-small"
-                                :to="`/annonce/${activeConversation.annonce_id}`"
+                                :to="itemLink"
                             >
-                                Voir l'annonce ❯
+                                {{ itemType === "annonce" ? "Voir l'annonce" : "Voir le projet" }} ❯
                             </RouterLink>
                         </div>
                     </header>
 
-                    <template
-                        v-if="activeConversation.annonce_statut === 'Paye'"
-                    >
+                    <template v-if="itemSoldStatus">
                         <div
-                            v-if="
-                                Number(
-                                    activeConversation.annonce_acheteur_id,
-                                ) === currentUser
-                            "
+                            v-if="Number(itemBuyerId) === currentUser"
                             class="payment-banner payment-banner--success"
                         >
                             <div class="payment-banner-content">
-                                <strong
-                                    ><Check :size="12" :stroke-width="3" /> Déjà
-                                    acheté</strong
-                                >
-                                <p>
-                                    Vous avez validé et payé cette commande avec
-                                    succès.
-                                </p>
+                                <strong><Check :size="12" :stroke-width="3" /> Déjà acheté</strong>
+                                <p>Vous avez validé et payé cette commande avec succès.</p>
                             </div>
                         </div>
                         <div
-                            v-else-if="
-                                Number(activeConversation.annonce_seller_id) ===
-                                currentUser
-                            "
+                            v-else-if="Number(itemSellerId) === currentUser"
                             class="payment-banner payment-banner--success"
                         >
                             <div class="payment-banner-content">
-                                <strong
-                                    ><Check :size="12" :stroke-width="3" />
-                                    Article vendu</strong
-                                >
+                                <strong><Check :size="12" :stroke-width="3" /> Vendu</strong>
                                 <p>
-                                    Cet article a été payé par un acheteur.
-                                    Préparez-vous à le déposer.
+                                    {{
+                                        itemType === "annonce"
+                                            ? "Cet article a été payé par un acheteur. Préparez-vous à le déposer."
+                                            : "Ce projet a été payé par un acheteur. La transaction est finalisée."
+                                    }}
                                 </p>
                             </div>
                         </div>
-                        <div
-                            v-else
-                            class="payment-banner payment-banner--error"
-                        >
+                        <div v-else class="payment-banner payment-banner--error">
                             <div class="payment-banner-content">
                                 <strong>Objet indisponible</strong>
                                 <p>
-                                    La transaction pour cette annonce a été
-                                    payée par un autre utilisateur.
+                                    La transaction pour
+                                    {{ itemType === "annonce" ? "cette annonce" : "ce projet" }}
+                                    a été payée par un autre utilisateur.
                                 </p>
                             </div>
                         </div>
@@ -283,24 +224,20 @@
                                 }}</strong>
                                 <p>
                                     {{
-                                        pendingPaymentSale.buyer_id ===
-                                        currentUser
+                                        pendingPaymentSale.buyer_id === currentUser
                                             ? "Le vendeur a accepté votre proposition. Finalisez la commande."
                                             : "Vous avez accepté l'offre. L'acheteur doit finaliser le paiement."
                                     }}
                                 </p>
                             </div>
                             <button
-                                v-if="
-                                    pendingPaymentSale.buyer_id === currentUser
-                                "
+                                v-if="pendingPaymentSale.buyer_id === currentUser"
                                 class="btn-main-action"
                                 style="height: auto; padding: 12px 20px"
                                 type="button"
                                 @click="payerOffre(pendingPaymentSale)"
                             >
-                                Payer
-                                {{ formatPrice(pendingPaymentSale.amount) }}
+                                Payer {{ formatPrice(pendingPaymentSale.amount) }}
                             </button>
                         </div>
                     </template>
@@ -314,16 +251,11 @@
                             Chargement des messages...
                         </div>
 
-                        <template
-                            v-for="item in chatFeed"
-                            :key="item.type + item.id"
-                        >
+                        <template v-for="item in chatFeed" :key="item.type + item.id">
                             <article
                                 v-if="item.type === 'text'"
                                 class="message-bubble"
-                                :class="{
-                                    mine: item.sender_id === currentUser,
-                                }"
+                                :class="{ mine: item.sender_id === currentUser }"
                             >
                                 <p>{{ item.content }}</p>
                                 <span>{{ formatDate(item.created_at) }}</span>
@@ -335,17 +267,11 @@
                                 :class="{ mine: item.buyer_id === currentUser }"
                             >
                                 <h4 class="offer-title">
-                                    🤝 Offre de prix :
-                                    {{ formatPrice(item.amount) }}
+                                    🤝 Offre de prix : {{ formatPrice(item.amount) }}
                                 </h4>
 
                                 <span
-                                    v-if="
-                                        !(
-                                            item.status === 'En attente' &&
-                                            item.seller_id === currentUser
-                                        )
-                                    "
+                                    v-if="!(item.status === 'En attente' && item.seller_id === currentUser)"
                                     class="offer-badge"
                                     :class="getOfferBadgeClass(item.status)"
                                 >
@@ -353,41 +279,26 @@
                                 </span>
 
                                 <div
-                                    v-if="
-                                        item.status === 'En attente' &&
-                                        item.seller_id === currentUser
-                                    "
+                                    v-if="item.status === 'En attente' && item.seller_id === currentUser"
                                     class="offer-actions-row"
                                 >
                                     <button
                                         type="button"
                                         class="btn-offer-accept"
-                                        @click="
-                                            handleOfferResponse(
-                                                item.id,
-                                                'accept',
-                                            )
-                                        "
+                                        @click="handleOfferResponse(item.id, 'accept')"
                                     >
                                         Accepter
                                     </button>
                                     <button
                                         type="button"
                                         class="btn-offer-refuse"
-                                        @click="
-                                            handleOfferResponse(
-                                                item.id,
-                                                'refuse',
-                                            )
-                                        "
+                                        @click="handleOfferResponse(item.id, 'refuse')"
                                     >
                                         Refuser
                                     </button>
                                 </div>
 
-                                <span class="offer-date">{{
-                                    formatDate(item.created_at)
-                                }}</span>
+                                <span class="offer-date">{{ formatDate(item.created_at) }}</span>
                             </article>
                         </template>
                     </div>
@@ -402,22 +313,13 @@
                                 ×
                             </button>
                             <p class="flyout-eyebrow">NEGOCIATION</p>
-                            <h3 class="flyout-title">
-                                {{ activeConversation.annonce_title }}
-                            </h3>
+                            <h3 class="flyout-title">{{ itemTitle }}</h3>
                             <p class="flyout-price">
-                                Prix annonce :
-                                <strong>{{
-                                    formatPrice(
-                                        activeConversation.annonce_price,
-                                    )
-                                }}</strong>
+                                Prix {{ itemType === "annonce" ? "annonce" : "projet" }} :
+                                <strong>{{ formatPrice(itemPrice) }}</strong>
                             </p>
 
-                            <form
-                                class="flyout-form"
-                                @submit.prevent="submitOffer"
-                            >
+                            <form class="flyout-form" @submit.prevent="submitOffer">
                                 <input
                                     v-model="offerAmount"
                                     type="number"
@@ -438,15 +340,7 @@
 
                         <form class="composer" @submit.prevent="handleSend">
                             <button
-                                v-if="
-                                    activeConversation.annonce_id &&
-                                    activeConversation.annonce_seller_id !==
-                                        currentUser &&
-                                    activeConversation.annonce_statut !==
-                                        'Paye' &&
-                                    !isAlreadySoldBySomeoneElse &&
-                                    !pendingPaymentSale
-                                "
+                                v-if="canNegotiate"
                                 type="button"
                                 class="btn-composer btn-composer-neg"
                                 @click="showNegotiation = !showNegotiation"
@@ -454,10 +348,7 @@
                                 Négocier
                             </button>
 
-                            <textarea
-                                v-model="draft"
-                                placeholder="Ecris ton message..."
-                            />
+                            <textarea v-model="draft" placeholder="Ecris ton message..." />
 
                             <button
                                 class="btn-composer btn-composer-send"
@@ -491,78 +382,51 @@ const getHeaders = () => ({
 });
 
 async function fetchSubscriptionStatus(userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/subscription`, {
-        headers: getHeaders(),
-    });
+    const res = await fetch(`${API_URL}/users/${userId}/subscription`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function fetchConversations(userId) {
-    const res = await fetch(`${API_URL}/users/${userId}/messages`, {
-        headers: getHeaders(),
-    });
+    const res = await fetch(`${API_URL}/users/${userId}/messages`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function startConversation(payload) {
     const userId = currentUserId();
     const res = await fetch(`${API_URL}/users/${userId}/messages/start`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
+        method: "POST", headers: getHeaders(), body: JSON.stringify(payload),
     });
     if (!res.ok) throw await res.json();
     return await res.json();
 }
 async function fetchMessages(conversationId, userId) {
-    const res = await fetch(
-        `${API_URL}/users/${userId}/messages/${conversationId}`,
-        { headers: getHeaders() },
-    );
+    const res = await fetch(`${API_URL}/users/${userId}/messages/${conversationId}`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function sendMessage(conversationId, texteMessage, userId) {
-    const res = await fetch(
-        `${API_URL}/users/${userId}/messages/${conversationId}`,
-        {
-            method: "POST",
-            headers: getHeaders(),
-            body: JSON.stringify({ content: texteMessage }),
-        },
-    );
+    const res = await fetch(`${API_URL}/users/${userId}/messages/${conversationId}`, {
+        method: "POST", headers: getHeaders(), body: JSON.stringify({ content: texteMessage }),
+    });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function fetchConversationState(conversationId, userId) {
-    const res = await fetch(
-        `${API_URL}/users/${userId}/messages/${conversationId}/state`,
-        { headers: getHeaders() },
-    );
+    const res = await fetch(`${API_URL}/users/${userId}/messages/${conversationId}/state`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function createOffer(conversationId, amount, userId) {
-    const res = await fetch(
-        `${API_URL}/users/${userId}/messages/${conversationId}/offers`,
-        {
-            method: "POST",
-            headers: getHeaders(),
-            body: JSON.stringify({ amount: Number(amount) }),
-        },
-    );
+    const res = await fetch(`${API_URL}/users/${userId}/messages/${conversationId}/offers`, {
+        method: "POST", headers: getHeaders(), body: JSON.stringify({ amount: Number(amount) }),
+    });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
 async function respondOffer(offerId, action, userId) {
-    const res = await fetch(
-        `${API_URL}/users/${userId}/messages/offers/${offerId}`,
-        {
-            method: "PATCH",
-            headers: getHeaders(),
-            body: JSON.stringify({ action }),
-        },
-    );
+    const res = await fetch(`${API_URL}/users/${userId}/messages/offers/${offerId}`, {
+        method: "PATCH", headers: getHeaders(), body: JSON.stringify({ action }),
+    });
     if (!res.ok) throw new Error("Erreur");
     return await res.json();
 }
@@ -591,10 +455,79 @@ const userName = computed(() => {
 });
 
 const activeConversation = computed(() =>
-    conversations.value.find(
-        (c) => Number(c.id) === Number(activeConversationId.value),
-    ),
+    conversations.value.find((c) => Number(c.id) === Number(activeConversationId.value)),
 );
+
+// ─── Généralisation annonce/projet ────────────────────────────────────────────
+// Une conversation est liée SOIT à une annonce SOIT à un projet, jamais
+// les deux. Ces computed déterminent automatiquement de quel type il
+// s'agit et exposent une interface unifiée pour le template.
+const itemType = computed(() => {
+    if (!activeConversation.value) return null;
+    if (activeConversation.value.annonce_id) return "annonce";
+    if (activeConversation.value.projet_id) return "projet";
+    return null;
+});
+
+const itemId = computed(() =>
+    itemType.value === "annonce"
+        ? activeConversation.value?.annonce_id
+        : activeConversation.value?.projet_id,
+);
+
+const itemTitle = computed(() =>
+    itemType.value === "annonce"
+        ? activeConversation.value?.annonce_title
+        : activeConversation.value?.projet_title,
+);
+
+const itemPrice = computed(() =>
+    itemType.value === "annonce"
+        ? activeConversation.value?.annonce_price
+        : activeConversation.value?.projet_price,
+);
+
+const itemSellerId = computed(() =>
+    itemType.value === "annonce"
+        ? activeConversation.value?.annonce_seller_id
+        : activeConversation.value?.projet_seller_id,
+);
+
+const itemStatut = computed(() =>
+    itemType.value === "annonce"
+        ? activeConversation.value?.annonce_statut
+        : activeConversation.value?.projet_statut,
+);
+
+const itemBuyerId = computed(() =>
+    itemType.value === "annonce"
+        ? activeConversation.value?.annonce_acheteur_id
+        : activeConversation.value?.projet_acheteur_id,
+);
+
+const itemLink = computed(() =>
+    itemType.value === "annonce" ? `/annonce/${itemId.value}` : `/projets/${itemId.value}`,
+);
+
+// Statuts considérés comme "vendu" pour chaque type. Pour une annonce
+// c'est 'Paye', pour un projet c'est 'Vendu' (le projet ne passe pas
+// par un dépôt en casier, il est marqué vendu directement au checkout).
+const itemSoldStatus = computed(() => {
+    if (itemType.value === "annonce") return itemStatut.value === "Paye";
+    if (itemType.value === "projet") return itemStatut.value === "Vendu";
+    return false;
+});
+
+// Bouton Négocier visible si : un item est lié, on n'est pas le
+// vendeur/créateur, l'item n'est pas déjà vendu, et aucune offre
+// n'est en attente de paiement.
+const canNegotiate = computed(() => {
+    if (!itemId.value) return false;
+    if (Number(itemSellerId.value) === currentUser.value) return false;
+    if (itemSoldStatus.value) return false;
+    if (pendingPaymentSale.value) return false;
+    return true;
+});
 
 const subscriptionLabel = computed(() => {
     return subscription.value.is_subscriber
@@ -623,31 +556,18 @@ const chatFeed = computed(() => {
         ) {
             return;
         }
-        feed.push({
-            ...m,
-            type: "text",
-            timestamp: getSafeTimestamp(m.created_at),
-        });
+        feed.push({ ...m, type: "text", timestamp: getSafeTimestamp(m.created_at) });
     });
 
     threadState.value.offers.forEach((o) => {
-        feed.push({
-            ...o,
-            type: "offer",
-            timestamp: getSafeTimestamp(o.created_at) + 10,
-        });
+        feed.push({ ...o, type: "offer", timestamp: getSafeTimestamp(o.created_at) + 10 });
     });
 
     return feed.sort((a, b) => a.timestamp - b.timestamp);
 });
 
 function initials(name) {
-    return (name || "UC")
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join("");
+    return (name || "UC").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 }
 
 function formatDate(value) {
@@ -655,27 +575,20 @@ function formatDate(value) {
     const cleanDate = value.replace(/Z$/, "");
     const date = new Date(cleanDate);
     if (Number.isNaN(date.getTime())) return "";
-
     const day = date.getDate();
     const month = date.toLocaleString("fr-FR", { month: "long" });
-    const time = date
-        .toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-        .replace(":", "h");
+    const time = date.toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
     return `${day} ${month}, ${time}`;
 }
 
 function formatPrice(value) {
-    return new Intl.NumberFormat("fr-FR", {
-        style: "currency",
-        currency: "EUR",
-    }).format(Number(value) || 0);
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(Number(value) || 0);
 }
 
 function getOfferBadgeClass(status) {
     const s = (status || "").toLowerCase();
     if (s.includes("attente")) return "en-attente";
-    if (s.includes("accept") || s.includes("recue") || s.includes("evalue"))
-        return "acceptee";
+    if (s.includes("accept") || s.includes("recue") || s.includes("evalue")) return "acceptee";
     if (s.includes("refus") || s.includes("annul")) return "refusee";
     return "";
 }
@@ -683,17 +596,14 @@ function getOfferBadgeClass(status) {
 function scrollToBottom() {
     nextTick(() => {
         if (messagesContainer.value) {
-            messagesContainer.value.scrollTop =
-                messagesContainer.value.scrollHeight;
+            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
         }
     });
 }
 
 const pendingPaymentSale = computed(() => {
     if (!threadState.value || !threadState.value.sales) return null;
-    return threadState.value.sales.find(
-        (sale) => sale.status === "Offre acceptee",
-    );
+    return threadState.value.sales.find((sale) => sale.status === "Offre acceptee");
 });
 
 async function loadSubscription() {
@@ -705,7 +615,6 @@ async function loadSubscription() {
 
 async function loadConversations() {
     if (!currentUser.value) return router.push("/connexion");
-
     if (conversations.value.length === 0) loadingConversations.value = true;
     try {
         conversations.value = await fetchConversations(currentUser.value);
@@ -720,7 +629,6 @@ async function selectConversation(id) {
         await fetchOnlyMessages(id);
         return;
     }
-
     activeConversationId.value = id;
     showNegotiation.value = false;
 
@@ -746,14 +654,8 @@ async function loadMessages() {
     if (!activeConversationId.value) return;
     loadingMessages.value = true;
     try {
-        messages.value = await fetchMessages(
-            activeConversationId.value,
-            currentUser.value,
-        );
-        threadState.value = await fetchConversationState(
-            activeConversationId.value,
-            currentUser.value,
-        );
+        messages.value = await fetchMessages(activeConversationId.value, currentUser.value);
+        threadState.value = await fetchConversationState(activeConversationId.value, currentUser.value);
         conversations.value = await fetchConversations(currentUser.value);
         scrollToBottom();
     } catch (e) {
@@ -762,31 +664,27 @@ async function loadMessages() {
     }
 }
 
+// Redirige vers le paiement, en passant le bon paramètre (annonce_id
+// ou projet_id) selon le type d'item de la conversation active.
 async function payerOffre(sale) {
-    const annonceId = activeConversation.value.annonce_id;
-    const title = activeConversation.value.annonce_title;
+    const title = itemTitle.value;
+    if (!itemId.value) return;
 
-    if (!annonceId) return;
+    const query = { amount: sale.amount, title };
+    if (itemType.value === "annonce") {
+        query.annonce_id = itemId.value;
+    } else {
+        query.projet_id = itemId.value;
+    }
 
-    router.push({
-        path: "/paiement",
-        query: {
-            annonce_id: annonceId,
-            amount: sale.amount,
-            title: title,
-        },
-    });
+    router.push({ path: "/paiement", query });
 }
 
 async function submitOffer() {
     if (!activeConversationId.value || !offerAmount.value) return;
     creatingOffer.value = true;
     try {
-        await createOffer(
-            activeConversationId.value,
-            offerAmount.value,
-            currentUser.value,
-        );
+        await createOffer(activeConversationId.value, offerAmount.value, currentUser.value);
         offerAmount.value = "";
         showNegotiation.value = false;
         await fetchOnlyMessages(activeConversationId.value);
@@ -809,12 +707,14 @@ async function handleOfferResponse(offerId, action) {
 
 async function startFromQuery() {
     const target = Number(route.query.user);
-    const annonce = Number(route.query.annonce);
+    const annonce = Number(route.query.annonce) || null;
+    const projet = Number(route.query.projet) || null;
     if (!target) return;
     try {
         const result = await startConversation({
             target_user_id: target,
-            annonce_id: annonce || null,
+            annonce_id: annonce,
+            projet_id: projet,
         });
         activeConversationId.value = result.conversation_id;
         await selectConversation(result.conversation_id);
@@ -831,11 +731,7 @@ async function handleSend() {
     if (!draft.value.trim() || !activeConversationId.value) return;
     sending.value = true;
     try {
-        await sendMessage(
-            activeConversationId.value,
-            draft.value.trim(),
-            currentUser.value,
-        );
+        await sendMessage(activeConversationId.value, draft.value.trim(), currentUser.value);
         draft.value = "";
         await fetchOnlyMessages(activeConversationId.value);
     } catch (e) {
@@ -862,7 +758,7 @@ onMounted(async () => {
     await loadSubscription();
     await loadConversations();
 
-    if (route.query.user && route.query.annonce) {
+    if (route.query.user && (route.query.annonce || route.query.projet)) {
         await startFromQuery();
     } else if (activeConversationId.value) {
         await loadMessages();

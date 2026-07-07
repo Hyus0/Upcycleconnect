@@ -46,6 +46,15 @@ Creer le fichier `/opt/upcycleconnect/deploy/docker-compose/.env` :
 ```bash
 MYSQL_ROOT_PASSWORD=remplacer_par_un_mot_de_passe_fort
 MYSQL_DATABASE=upcycletest
+BIND_ADDRESS=127.0.0.1
+```
+
+Si le back tourne dans une CT separee derriere Proxmox et doit recevoir du trafic redirige depuis l'hote Proxmox, utiliser :
+
+```bash
+MYSQL_ROOT_PASSWORD=remplacer_par_un_mot_de_passe_fort
+MYSQL_DATABASE=upcycletest
+BIND_ADDRESS=0.0.0.0
 ```
 
 ## Lancer les services back
@@ -133,6 +142,50 @@ Depuis le navigateur :
 - `http://IP_DU_SERVEUR/health/api-go`
 - `http://IP_DU_SERVEUR/health/backoffice`
 - `http://IP_DU_SERVEUR/admin/` si l'admin est active
+
+## Cas Proxmox avec CT dediee
+
+Dans l'infrastructure actuelle, Proxmox utilise :
+
+- `vmbr0` : IP publique `95.216.9.170/26`, gateway `95.216.9.129`
+- `vmbr1` : reseau prive `192.168.100.1/24`
+
+La CT back doit etre connectee a `vmbr1`, par exemple :
+
+```txt
+Bridge: vmbr1
+IPv4/CIDR: 192.168.100.102/24
+Gateway: 192.168.100.1
+DNS: 1.1.1.1
+```
+
+Sur l'hote Proxmox, activer le NAT pour que la CT sorte sur Internet :
+
+```bash
+sysctl -w net.ipv4.ip_forward=1
+iptables -t nat -A POSTROUTING -s 192.168.100.0/24 -o vmbr0 -j MASQUERADE
+```
+
+Pour rendre le back accessible depuis Internet sur `95.216.9.170:8081` :
+
+```bash
+iptables -t nat -A PREROUTING -i vmbr0 -p tcp --dport 8081 -j DNAT --to-destination 192.168.100.102:8081
+iptables -A FORWARD -p tcp -d 192.168.100.102 --dport 8081 -j ACCEPT
+```
+
+Pour exposer aussi le backoffice PHP sur `95.216.9.170:8090` :
+
+```bash
+iptables -t nat -A PREROUTING -i vmbr0 -p tcp --dport 8090 -j DNAT --to-destination 192.168.100.102:8090
+iptables -A FORWARD -p tcp -d 192.168.100.102 --dport 8090 -j ACCEPT
+```
+
+Eviter d'exposer phpMyAdmin publiquement sauf besoin ponctuel. Si necessaire temporairement :
+
+```bash
+iptables -t nat -A PREROUTING -i vmbr0 -p tcp --dport 8089 -j DNAT --to-destination 192.168.100.102:8089
+iptables -A FORWARD -p tcp -d 192.168.100.102 --dport 8089 -j ACCEPT
+```
 
 ## Mise a jour
 

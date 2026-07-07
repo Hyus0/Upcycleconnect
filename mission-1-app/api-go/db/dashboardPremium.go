@@ -236,11 +236,6 @@ func GetAlertesPrioritaires(userID int) ([]models.AlertePrioritaire, error) {
 	return alertes, nil
 }
 
-const eauEconomisee = computed(() =>
-    Math.round((stats.value.co2_total_evite_kg || 0) * 80)
-);
-
-
 func splitKeywords(raw string) []string {
 	raw = strings.ReplaceAll(raw, ",", " ")
 	parts := strings.Fields(raw)

@@ -252,8 +252,6 @@ func adminResourceDefinitions() map[string]AdminResource {
 			field("montant_total", "Montant total", "decimal", false, false),
 			enumField("statut_paiement", "Statut paiement", []string{"En attente", "Valide", "Echoue"}),
 			field("stripe_payment_id", "Stripe payment", "text", false, false),
-			field("montant_ht", "Montant HT", "decimal", false, false),
-			enumField("type", "Type", []string{"Formation", "Annonce", "Abonnement"}),
 		}),
 		"dm_sales": resource("dm_sales", "Ventes DM", "DM_SALE", []string{"id"}, []AdminResourceField{
 			field("id", "ID", "number", false, true),

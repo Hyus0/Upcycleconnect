@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"upcycleconnect/api-go/app"
 	"upcycleconnect/api-go/db"
@@ -42,6 +43,9 @@ func enableCORS(next http.Handler) http.Handler {
 
 func main() {
 	db.Conn = db.NewDB()
+	if db.Conn == nil {
+		log.Fatal("[db] cannot start API without database connection")
+	}
 
 	http.HandleFunc("GET /", healthCheck)
 	http.HandleFunc("GET /health", healthCheck)

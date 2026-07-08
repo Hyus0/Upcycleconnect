@@ -187,7 +187,7 @@ func Checkout(userID int, stripePaymentID string) (*CheckoutResult, error) {
 	}
 	transactionID, _ := transactionRes.LastInsertId()
 
-	factureID, numeroFacture, err := CreateFactureForTransaction(tx, int(transactionID))
+	factureID, numeroFacture, err := CreateFactureForTransaction(tx, transactionID)
 	if err != nil {
 		return nil, err
 	}

@@ -235,14 +235,6 @@
                     </article>
                 </div>
 
-                <div class="center-btn">
-                    <button
-                        class="btn-secondary btn-more"
-                        @click="voirToutVendeur"
-                    >
-                        Voir toutes ses annonces
-                    </button>
-                </div>
             </section>
         </div>
     </main>
@@ -496,9 +488,6 @@ watch(
     },
 );
 
-const voirToutVendeur = () => {
-    alert(`Toutes les annonces de ${vendeur.value.prenom || "ce membre"}`);
-};
 
 onMounted(fetchAnnoncePrincipale);
 </script>

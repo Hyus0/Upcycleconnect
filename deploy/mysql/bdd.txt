@@ -177,6 +177,7 @@ CREATE TABLE EVENEMENT (
     code_postal VARCHAR(5),
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
     date_evenement DATETIME,
+    date_fin DATETIME,
     type ENUM('Atelier', 'Collecte', 'Conference', 'Echange'),
     FOREIGN KEY (id_createur) REFERENCES UTILISATEUR(id)
 );

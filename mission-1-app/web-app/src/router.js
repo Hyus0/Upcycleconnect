@@ -181,7 +181,7 @@ const routes = [
       {
         path: "modifyAnnonce/:id",
         name: "modification-annonce",
-        component: () => import('./pages/profilpagesParticulier/modifyAnnonce.vue'),
+        component: () => import('./pages/profilpagesParticulier/ModifyAnnonce.vue'),
         meta: { requiresRole: "Particulier" }
       },
       {

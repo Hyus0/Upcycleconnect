@@ -24,7 +24,7 @@ const (
 	port     = 3306
 	user     = "root"
 	password = ""
-	dbname   = "new_upcycle"
+	dbname   = "upcycletest"
 )
 
 func NewDB() *sql.DB {

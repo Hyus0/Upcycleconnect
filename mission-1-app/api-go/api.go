@@ -21,6 +21,7 @@ func enableCORS(next http.Handler) http.Handler {
 		"http://localhost:5174": true,
 		"http://localhost:5175": true,
 		"http://localhost:5176": true,
+		"http://95.216.9.170:8088": true,
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")

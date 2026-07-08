@@ -507,7 +507,7 @@ func UploadUserImages(w http.ResponseWriter, r *http.Request) {
 		if errCreate == nil {
 			defer out.Close()
 			io.Copy(out, fileProfil)
-			cheminProfilDB = fmt.Sprintf("http://localhost:8081/img/profil/user_%s_profil%s", userID, ext)
+			cheminProfilDB = fmt.Sprintf("/go/img/profil/user_%s_profil%s", userID, ext)
 		}
 	}
 
@@ -525,7 +525,7 @@ func UploadUserImages(w http.ResponseWriter, r *http.Request) {
 		if errCreate == nil {
 			defer out.Close()
 			io.Copy(out, fileBanniere)
-			cheminBanniereDB = fmt.Sprintf("http://localhost:8081/img/banniere/user_%s_banniere%s", userID, ext)
+			cheminBanniereDB = fmt.Sprintf("/go/img/banniere/user_%s_banniere%s", userID, ext)
 		}
 	}
 
@@ -855,7 +855,7 @@ func UploadAnnonceImage(w http.ResponseWriter, r *http.Request) {
 	defer out.Close()
 	io.Copy(out, fileImage)
 
-	cheminImageDB := fmt.Sprintf("http://localhost:8081/img/annonces/%s", nomFichier)
+	cheminImageDB := fmt.Sprintf("/go/img/annonces/%s", nomFichier)
 
 	_, errDb := db.Conn.Exec("UPDATE ANNONCE SET image = ? WHERE id = ?", cheminImageDB, annonceID)
 	if errDb != nil {
@@ -1946,7 +1946,7 @@ func UploadProjetImageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erreur lors de l'écriture", http.StatusInternalServerError)
 		return
 	}
-	urlImage := fmt.Sprintf("http://localhost:8081/img/projets/%s", nouveauNom)
+	urlImage := fmt.Sprintf("/go/img/projets/%s", nouveauNom)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{

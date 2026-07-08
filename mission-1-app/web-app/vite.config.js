@@ -8,11 +8,11 @@ export default defineConfig({
     port: 5174,
     proxy: {
       "/go": {
-        target: "http://localhost:8081",
+        target: "http://95.216.9.170:8081",
         rewrite: (path) => path.replace(/^\/go/, ""),
         changeOrigin: true,
       },
-      "/annonces": "http://localhost:8081"
+      "/annonces": "http://95.216.9.170:8081"
     }
   }
 });

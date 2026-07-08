@@ -230,7 +230,7 @@ const loading = ref(false);
 const errors = ref([]);
 const successMsg = ref("");
 
-const API_URL = "http://localhost:8081";
+const API_URL = "http://95.216.9.170:8081";
 
 const currentUserId = computed(() => {
     const storedId = sessionStorage.getItem("id") || sessionStorage.getItem("userId");

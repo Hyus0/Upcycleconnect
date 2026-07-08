@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -39,6 +40,18 @@ func NewDB() *sql.DB {
 		panic(fmt.Sprintf("Impossible de se connecter à la base : %v", err))
 	}
 
+	var conn *sql.DB
+		var err error
+		for i := 0; i < 10; i++ {
+			conn, err = sql.Open("mysql", dsn)
+			if err == nil && conn.Ping() == nil {
+				fmt.Println("Connecté à la base de données !")
+				return conn
+			}
+			fmt.Println("En attente de la base de données, nouvelle tentative dans 2s...")
+			time.Sleep(2 * time.Second)
+		}
+		panic("Impossible de se connecter à la base après 10 tentatives")
 	fmt.Println("Connecté à la base de données via :", host)
 	return conn
 }

@@ -19,32 +19,24 @@ var Conn *sql.DB
 // Valeurs par defaut. En production (Docker Compose) elles sont surchargees
 // par les variables d'environnement DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME.
 const (
-    driver   = "mysql"
-    host     = "localhost"
-    port     = 3306
-    user     = "root"
-    password = "MAxVl95;)!125Lv"
-    dbname   = "upcycletest"
+	driver   = "mysql"
+	host     = "localhost"
+	port     = 3306
+	user     = "root"
+	password = ""
+	dbname   = "new_upcycle"
 )
 
 func NewDB() *sql.DB {
-	sqlInfo := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
+	var sqlInfo = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
 		user, password, host, port, dbname)
-
 	conn, err := sql.Open(driver, sqlInfo)
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
-
-	err = conn.Ping()
-	if err != nil {
-		panic("Impossible de joindre MySQL : " + err.Error())
-	}
-
 	fmt.Println("Connected to database !")
 	return conn
 }
-
 // getenv retourne la variable d'environnement key ou fallback si vide.
 // func getenv(key, fallback string) string {
 // 	if value := os.Getenv(key); value != "" {

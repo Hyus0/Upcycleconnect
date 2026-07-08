@@ -13,13 +13,6 @@
 SET NAMES utf8mb4;
 START TRANSACTION;
 
--- ---------- LANGUES ----------
-INSERT INTO LANGUE (code, nom_langue)
-SELECT 'fr', 'Francais' WHERE NOT EXISTS (SELECT 1 FROM LANGUE WHERE code = 'fr');
-INSERT INTO LANGUE (code, nom_langue)
-SELECT 'en', 'English' WHERE NOT EXISTS (SELECT 1 FROM LANGUE WHERE code = 'en');
-SET @lang_fr = (SELECT id FROM LANGUE WHERE code = 'fr' LIMIT 1);
-
 -- ---------- UTILISATEURS (1 par role) ----------
 INSERT INTO UTILISATEUR (prenom, nom, password, mail, mail_valide, ville, code_postal, is_admin, role, statut, id_langue)
 SELECT 'Nina', 'Roux', '$2b$14$GjnYMjTrtwQ84RIEUOapOOVgOsVW4mulSI29RsuLwG4JtK0/rXYp.', 'admin@upcycleconnect.local', 1, 'Paris', '75011', 1, 'Admin', 'Actif', @lang_fr

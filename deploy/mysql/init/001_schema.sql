@@ -1,566 +1,550 @@
 -- 001_schema.sql
--- Schema complet UpcycleConnect, genere depuis la base reelle (upcycletest).
--- Genere le 2026-06-24. Source de verite du schema.
+-- Schema complet UpcycleConnect
+-- Correction des erreurs de syntaxe (points-virgules, doublons, ordre des colonnes)
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS `LANGUE`;
-CREATE TABLE `LANGUE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `code` CHAR(2),
-    `nom_langue` VARCHAR(100)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS LANGUE;
+CREATE TABLE LANGUE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code CHAR(2),
+    nom_langue VARCHAR(100)
+);
 
-DROP TABLE IF EXISTS `TYPE_ABONNEMENT`;
-CREATE TABLE `TYPE_ABONNEMENT` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `nom` VARCHAR(50) NOT NULL,
-    `description` TEXT,
-    `prix_ht` DECIMAL(10, 2) NOT NULL,
-    `duree_mois` INT NOT NULL,
-    `color` VARCHAR(6)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS TYPE_ABONNEMENT;
+CREATE TABLE TYPE_ABONNEMENT (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(50) NOT NULL,
+    description TEXT,
+    prix_ht DECIMAL(10, 2) NOT NULL,
+    duree_mois INT NOT NULL,
+    color VARCHAR(6)
+);
 
-DROP TABLE IF EXISTS `ABONNEMENT_AVANTAGE`;
-CREATE TABLE `ABONNEMENT_AVANTAGE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_type_abonnement` INT NOT NULL,
-    `nom` VARCHAR(255) NOT NULL,
-    `disponible` BOOLEAN DEFAULT TRUE, 
-    FOREIGN KEY (`id_type_abonnement`) REFERENCES `TYPE_ABONNEMENT`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS ABONNEMENT_AVANTAGE;
+CREATE TABLE ABONNEMENT_AVANTAGE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_type_abonnement INT NOT NULL,
+    nom VARCHAR(255) NOT NULL,
+    disponible BOOLEAN DEFAULT TRUE, 
+    FOREIGN KEY (id_type_abonnement) REFERENCES TYPE_ABONNEMENT(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `CATEGORIE`;
-CREATE TABLE `CATEGORIE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `nom` VARCHAR(100) NOT NULL,
-    `description` TEXT,
-    `id_parent` INT DEFAULT NULL,
-    `statut` ENUM('active', 'inactive') DEFAULT 'active',
-    `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_parent`) REFERENCES `CATEGORIE`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS CATEGORIE;
+CREATE TABLE CATEGORIE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    description TEXT,
+    id_parent INT DEFAULT NULL,
+    statut ENUM('active', 'inactive') DEFAULT 'active',
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_parent) REFERENCES CATEGORIE(id) ON DELETE SET NULL
+);
 
-DROP TABLE IF EXISTS `SITE`;
-CREATE TABLE `SITE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `nom` VARCHAR(50),
-    `ville` VARCHAR(50),
-    `code_postal` VARCHAR(5),
-    `adresse` VARCHAR(100),
-    `telephone` VARCHAR(10),
-    `type` ENUM('Decheterie', 'Point de collecte', 'Association'),
-    `actif` TINYINT(1) DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS SITE;
+CREATE TABLE SITE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(50),
+    ville VARCHAR(50),
+    code_postal VARCHAR(5),
+    adresse VARCHAR(100),
+    telephone VARCHAR(10),
+    type ENUM('Decheterie', 'Point de collecte', 'Association'),
+    actif TINYINT(1) DEFAULT 1
+);
 
-DROP TABLE IF EXISTS `UTILISATEUR`;
-CREATE TABLE `UTILISATEUR` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `prenom` VARCHAR(50),
-    `nom` VARCHAR(50),
-    `password` VARCHAR(255),
-    `image_profil` VARCHAR(255),
-    `siret` VARCHAR(14),
-    `siret_valide` BOOLEAN,
-    `mail_valide` BOOLEAN,
-    `banniere` VARCHAR(255),
-    `mail` VARCHAR(100) UNIQUE,
-    `adresse` VARCHAR(100),
-    `ville` VARCHAR(50),
-    `is_admin` TINYINT(1) DEFAULT 0,
-    `code_postal` VARCHAR(10),
-    `date_naissance` DATE,
-    `date_inscription` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `role` ENUM('Particulier', 'Prestataire', 'Admin', 'Salarie'),
-    `statut` ENUM('Actif', 'Inactif', 'Banni', 'En attente de validation') DEFAULT 'Actif',
-    `id_langue` INT,
-    `token` VARCHAR(255) UNIQUE,
-    `ban_forum` BOOLEAN DEFAULT FALSE,
-    `materiaux_recherches` VARCHAR(255) DEFAULT '',
-    `date_update_password` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_langue`) REFERENCES `LANGUE`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS UTILISATEUR;
+CREATE TABLE UTILISATEUR (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    prenom VARCHAR(50),
+    nom VARCHAR(50),
+    password VARCHAR(255),
+    image_profil VARCHAR(255),
+    siret VARCHAR(14),
+    siret_valide BOOLEAN,
+    mail_valide BOOLEAN,
+    banniere VARCHAR(255),
+    mail VARCHAR(100) UNIQUE,
+    adresse VARCHAR(100),
+    ville VARCHAR(50),
+    is_admin TINYINT(1) DEFAULT 0,
+    code_postal VARCHAR(10),
+    date_naissance DATE,
+    date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP,
+    role ENUM('Particulier', 'Prestataire', 'Admin', 'Salarie'),
+    statut ENUM('Actif', 'Inactif', 'Banni', 'En attente de validation') DEFAULT 'Actif',
+    id_langue INT,
+    token VARCHAR(255) UNIQUE,
+    ban_forum BOOLEAN DEFAULT FALSE,
+    materiaux_recherches VARCHAR(255) DEFAULT '',
+    date_update_password DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_langue) REFERENCES LANGUE(id)
+);
 
-DROP TABLE IF EXISTS `ABONNEMENT`;
-CREATE TABLE `ABONNEMENT` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_acheteur` INT NOT NULL,
-    `id_type_abonnement` INT NOT NULL,
-    `date_debut` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `date_fin` DATETIME,
-    `statut` ENUM('Actif', 'Expire', 'Resilie') DEFAULT 'Actif',
-    `stripe_subscription_id` VARCHAR(255),
-    FOREIGN KEY (`id_acheteur`) REFERENCES `UTILISATEUR`(`id`),
-    FOREIGN KEY (`id_type_abonnement`) REFERENCES `TYPE_ABONNEMENT`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS ABONNEMENT;
+CREATE TABLE ABONNEMENT (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_acheteur INT NOT NULL,
+    id_type_abonnement INT NOT NULL,
+    date_debut DATETIME DEFAULT CURRENT_TIMESTAMP,
+    date_fin DATETIME,
+    statut ENUM('Actif', 'Expire', 'Resilie') DEFAULT 'Actif',
+    stripe_subscription_id VARCHAR(255),
+    FOREIGN KEY (id_acheteur) REFERENCES UTILISATEUR(id),
+    FOREIGN KEY (id_type_abonnement) REFERENCES TYPE_ABONNEMENT(id)
+);
 
-DROP TABLE IF EXISTS `TRADUCTION`;
-CREATE TABLE `TRADUCTION` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_langue` INT,
-    `cle_traduction` TEXT,
-    `text_traduit` TEXT,
-    FOREIGN KEY (`id_langue`) REFERENCES `LANGUE`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS TRADUCTION;
+CREATE TABLE TRADUCTION (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_langue INT,
+    cle_traduction TEXT,
+    text_traduit TEXT,
+    FOREIGN KEY (id_langue) REFERENCES LANGUE(id)
+);
 
-DROP TABLE IF EXISTS `CONTENEUR`;
-CREATE TABLE `CONTENEUR` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_site` INT NOT NULL,
-    `type_dechet` ENUM('Verre', 'Plastique', 'Metal', 'Papier', 'Electronique'),
-    `statut` ENUM('Operationnel', 'Plein', 'Maintenance'),
-    `capacite_max_kg` DECIMAL(10,2),
-    `niveau_remplissage` DECIMAL(10,2) DEFAULT 0,
-    FOREIGN KEY (`id_site`) REFERENCES `SITE`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS CONTENEUR;
+CREATE TABLE CONTENEUR (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_site INT NOT NULL,
+    type_dechet ENUM('Verre', 'Plastique', 'Metal', 'Papier', 'Electronique'),
+    statut ENUM('Operationnel', 'Plein', 'Maintenance'),
+    capacite_max_kg DECIMAL(10,2),
+    niveau_remplissage DECIMAL(10,2) DEFAULT 0,
+    FOREIGN KEY (id_site) REFERENCES SITE(id)
+);
 
-DROP TABLE IF EXISTS `CASIER`;
-CREATE TABLE `CASIER` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_conteneur` INT NOT NULL,
-    `numero_casier` VARCHAR(10) NOT NULL,
-    `taille` ENUM('Petit', 'Moyen', 'Grand'), 
-    `statut` ENUM('Libre', 'Reserve', 'Occupe', 'Maintenance') DEFAULT 'Libre',
-    FOREIGN KEY (`id_conteneur`) REFERENCES `CONTENEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS CASIER;
+CREATE TABLE CASIER (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_conteneur INT NOT NULL,
+    numero_casier VARCHAR(10) NOT NULL,
+    taille ENUM('Petit', 'Moyen', 'Grand'), 
+    statut ENUM('Libre', 'Reserve', 'Occupe', 'Maintenance') DEFAULT 'Libre',
+    FOREIGN KEY (id_conteneur) REFERENCES CONTENEUR(id)
+);
 
-DROP TABLE IF EXISTS `ANNONCE`;
-CREATE TABLE `ANNONCE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_vendeur` INT NOT NULL,
-    `id_acheteur` INT,
-    `id_casier` INT,        
-    `id_categorie` INT,
-    `id_site` INT,      
-    `titre` VARCHAR(100),
-    `description` TEXT,
-    `image` VARCHAR(255),
-    `type_materiau` VARCHAR(50), 
-    `poids_estime_kg` DECIMAL(10,2),
-    `prix` DECIMAL(10,2),
-    `etat_objet` ENUM('Neuf', 'Bon etat', 'Usage'),
-    `statut` ENUM('Disponible', 'Reserve', 'Depose', 'Paye', 'Recupere', 'Annule'),    
-    `est_valide` ENUM('En attente', 'Valide', 'Refuse') DEFAULT 'En attente',
-    `code_barre_depot` VARCHAR(20),       
-    `code_barre_retrait` VARCHAR(20), 
-    `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `date_depot_effective` DATETIME,
-    `date_achat` DATETIME,
-    `date_recuperation_effective` DATETIME,
-    `type` ENUM('Don', 'Vente'),
-    `ville` VARCHAR(50),
-    `code_postal` VARCHAR(5),
-    `adresse` VARCHAR(100),
-    FOREIGN KEY (`id_vendeur`) REFERENCES `UTILISATEUR`(`id`),
-    FOREIGN KEY (`id_acheteur`) REFERENCES `UTILISATEUR`(`id`),
-    FOREIGN KEY (`id_casier`) REFERENCES `CASIER`(`id`),
-    FOREIGN KEY (`id_categorie`) REFERENCES `CATEGORIE`(`id`),
-    FOREIGN KEY (`id_site`) REFERENCES `SITE`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS ANNONCE;
+CREATE TABLE ANNONCE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_vendeur INT NOT NULL,
+    id_acheteur INT,
+    id_casier INT,        
+    id_categorie INT,
+    id_site INT,      
+    titre VARCHAR(100),
+    description TEXT,
+    image VARCHAR(255),
+    type_materiau VARCHAR(50), 
+    poids_estime_kg DECIMAL(10,2),
+    prix DECIMAL(10,2),
+    etat_objet ENUM('Neuf', 'Bon etat', 'Usage'),
+    statut ENUM('Disponible', 'Reserve', 'Depose', 'Paye', 'Recupere', 'Annule'),    
+    est_valide ENUM('En attente', 'Valide', 'Refuse') DEFAULT 'En attente',
+    code_barre_depot VARCHAR(20),       
+    code_barre_retrait VARCHAR(20), 
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    date_depot_effective DATETIME,
+    date_achat DATETIME,
+    date_recuperation_effective DATETIME,
+    type ENUM('Don', 'Vente'),
+    ville VARCHAR(50),
+    code_postal VARCHAR(5),
+    adresse VARCHAR(100),
+    FOREIGN KEY (id_vendeur) REFERENCES UTILISATEUR(id),
+    FOREIGN KEY (id_acheteur) REFERENCES UTILISATEUR(id),
+    FOREIGN KEY (id_casier) REFERENCES CASIER(id),
+    FOREIGN KEY (id_categorie) REFERENCES CATEGORIE(id),
+    FOREIGN KEY (id_site) REFERENCES SITE(id)
+);
 
-DROP TABLE IF EXISTS `FAVORIS`;
-CREATE TABLE `FAVORIS` (
-    `id_utilisateur` INT NOT NULL,
-    `id_annonce` INT NOT NULL,
-    `date_ajout` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id_utilisateur`, `id_annonce`),
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_annonce`) REFERENCES `ANNONCE`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS FAVORIS;
+CREATE TABLE FAVORIS (
+    id_utilisateur INT NOT NULL,
+    id_annonce INT NOT NULL,
+    date_ajout DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_utilisateur, id_annonce),
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_annonce) REFERENCES ANNONCE(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `FORMATION`;
-CREATE TABLE `FORMATION` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_formateur` INT NOT NULL,
-    `type` ENUM('Atelier', 'Cours', 'Webinaire'),
-    `titre` VARCHAR(255),
-    `description` TEXT,
-    `capacite_max` INT,
-    `est_valide` ENUM('En attente', 'Valide', 'Refuse') DEFAULT 'En attente',
-    `date_debut` DATETIME,
-    `date_fin` DATETIME,
-    `statut` ENUM('Ouvert', 'Complet', 'Termine', 'Annule'),
-    `prix_unitaire` DECIMAL(10,2),
-    `adresse` VARCHAR(100),
-    `ville` VARCHAR(50),
-    `code_postal` VARCHAR(5),
-    FOREIGN KEY (`id_formateur`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS FORMATION;
+CREATE TABLE FORMATION (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_formateur INT NOT NULL,
+    type ENUM('Atelier', 'Cours', 'Webinaire'),
+    titre VARCHAR(255),
+    description TEXT,
+    capacite_max INT,
+    est_valide ENUM('En attente', 'Valide', 'Refuse') DEFAULT 'En attente',
+    date_debut DATETIME,
+    date_fin DATETIME,
+    statut ENUM('Ouvert', 'Complet', 'Termine', 'Annule'),
+    prix_unitaire DECIMAL(10,2),
+    adresse VARCHAR(100),
+    ville VARCHAR(50),
+    code_postal VARCHAR(5),
+    FOREIGN KEY (id_formateur) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `EVENEMENT`;
-CREATE TABLE `EVENEMENT` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_createur` INT NOT NULL,
-    `titre` VARCHAR(100),
-    `description` TEXT,
-    `adresse` VARCHAR(100),
-    `ville` VARCHAR(50),
-    `code_postal` VARCHAR(5),
-    `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `date_evenement` DATETIME,
-    `date_fin` DATETIME,
-    `type` ENUM('Atelier', 'Collecte', 'Conference', 'Echange'),
-    FOREIGN KEY (`id_createur`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS EVENEMENT;
+CREATE TABLE EVENEMENT (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_createur INT NOT NULL,
+    titre VARCHAR(100),
+    description TEXT,
+    adresse VARCHAR(100),
+    ville VARCHAR(50),
+    code_postal VARCHAR(5),
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    date_evenement DATETIME,
+    date_fin DATETIME,
+    type ENUM('Atelier', 'Collecte', 'Conference', 'Echange'),
+    FOREIGN KEY (id_createur) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `FORMATION_SESSION`;
-CREATE TABLE `FORMATION_SESSION` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_formation` INT NOT NULL,
-    `nom` VARCHAR(100) NOT NULL,
-    `date_debut` DATETIME NOT NULL,
-    `date_fin` DATETIME NOT NULL,
-    `statut` ENUM('Ouvert', 'Complet', 'Termine', 'Annule') DEFAULT 'Ouvert',
-    FOREIGN KEY (`id_formation`) REFERENCES `FORMATION`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS FORMATION_SESSION;
+CREATE TABLE FORMATION_SESSION (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_formation INT NOT NULL,
+    nom VARCHAR(100) NOT NULL,
+    date_debut DATETIME NOT NULL,
+    date_fin DATETIME NOT NULL,
+    statut ENUM('Ouvert', 'Complet', 'Termine', 'Annule') DEFAULT 'Ouvert',
+    FOREIGN KEY (id_formation) REFERENCES FORMATION(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `FORMATION_INSCRIPTION`;
-CREATE TABLE `FORMATION_INSCRIPTION` (
-    `id_utilisateur` INT NOT NULL,
-    `id_formation` INT NOT NULL,    
-    `id_session` INT NOT NULL,  
-    `date_inscription` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id_utilisateur`, `id_session`),
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_formation`) REFERENCES `FORMATION`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_session`) REFERENCES `FORMATION_SESSION`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS FORMATION_INSCRIPTION;
+CREATE TABLE FORMATION_INSCRIPTION (
+    id_utilisateur INT NOT NULL,
+    id_formation INT NOT NULL,    
+    id_session INT NOT NULL,  
+    date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_utilisateur, id_session),
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_formation) REFERENCES FORMATION(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_session) REFERENCES FORMATION_SESSION(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `EVENEMENT_INSCRIPTION`;
-CREATE TABLE `EVENEMENT_INSCRIPTION` (
-    `id_utilisateur` INT NOT NULL,
-    `id_evenement` INT NOT NULL,
-    `date_inscription` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id_utilisateur`, `id_evenement`),
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_evenement`) REFERENCES `EVENEMENT`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS EVENEMENT_INSCRIPTION;
+CREATE TABLE EVENEMENT_INSCRIPTION (
+    id_utilisateur INT NOT NULL,
+    id_evenement INT NOT NULL,
+    date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_utilisateur, id_evenement),
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_evenement) REFERENCES EVENEMENT(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `PROJET_UPCYCLING`;
-CREATE TABLE `PROJET_UPCYCLING` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_createur` INT NOT NULL,
-    `image_url` VARCHAR(255) NOT NULL,
-    `titre` VARCHAR(100) NOT NULL,
-    `description_courte` VARCHAR(255),
-    `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `score_impact` DECIMAL(10,2),
-    `nb_vues` INT DEFAULT 0,
-    `nb_likes` INT DEFAULT 0,
-    `co2_evite_kg` DECIMAL(10,2),
-    `visible_public` TINYINT(1) DEFAULT 1,
-    `prix` DECIMAL(10,2) DEFAULT NULL,
-    `statut` ENUM('Disponible','Reserve','Vendu','Annule') DEFAULT 'Disponible',
-    `id_acheteur` INT NULL,
-    `date_achat` DATETIME,
-    FOREIGN KEY (`id_createur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_projet_acheteur` FOREIGN KEY (`id_acheteur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS PROJET_UPCYCLING;
+CREATE TABLE PROJET_UPCYCLING (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_createur INT NOT NULL,
+    image_url VARCHAR(255) NOT NULL,
+    titre VARCHAR(100) NOT NULL,
+    description_courte VARCHAR(255),
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    score_impact DECIMAL(10,2),
+    nb_vues INT DEFAULT 0,
+    nb_likes INT DEFAULT 0,
+    co2_evite_kg DECIMAL(10,2),
+    visible_public TINYINT(1) DEFAULT 1,
+    prix DECIMAL(10,2) DEFAULT NULL,
+    statut ENUM('Disponible','Reserve','Vendu','Annule') DEFAULT 'Disponible',
+    id_acheteur INT NULL,
+    date_achat DATETIME,
+    CONSTRAINT fk_projet_acheteur FOREIGN KEY (id_acheteur) REFERENCES UTILISATEUR(id) ON DELETE SET NULL,
+    FOREIGN KEY (id_createur) REFERENCES UTILISATEUR(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `ETAPE`;
-CREATE TABLE `ETAPE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_projet` INT NOT NULL,
-    `numero_ordre` INT NOT NULL,
-    `titre` VARCHAR(100),
-    `description` TEXT,
-    `image_url` VARCHAR(255),
-    FOREIGN KEY (`id_projet`) REFERENCES `PROJET_UPCYCLING`(`id`) ON DELETE CASCADE,
-    UNIQUE (`id_projet`, `numero_ordre`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS ETAPE;
+CREATE TABLE ETAPE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_projet INT NOT NULL,
+    numero_ordre INT NOT NULL,
+    titre VARCHAR(100),
+    description TEXT,
+    image_url VARCHAR(255),
+    FOREIGN KEY (id_projet) REFERENCES PROJET_UPCYCLING(id) ON DELETE CASCADE,
+    UNIQUE (id_projet, numero_ordre)
+);
 
-DROP TABLE IF EXISTS `PROJET_LIKE`;
-CREATE TABLE `PROJET_LIKE` (
-    `id_utilisateur` INT NOT NULL,
-    `id_projet` INT NOT NULL,
-    `date_like` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id_utilisateur`, `id_projet`),
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_projet`) REFERENCES `PROJET_UPCYCLING`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS PROJET_LIKE;
+CREATE TABLE PROJET_LIKE (
+    id_utilisateur INT NOT NULL,
+    id_projet INT NOT NULL,
+    date_like DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_utilisateur, id_projet),
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_projet) REFERENCES PROJET_UPCYCLING(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `PROJET_VUE`;
-CREATE TABLE `PROJET_VUE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_projet` INT NOT NULL,
-    `id_utilisateur` INT NULL, 
-    `ip_adresse` VARCHAR(45) NOT NULL,
-    `date_vue` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_projet`) REFERENCES `PROJET_UPCYCLING`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS PROJET_VUE;
+CREATE TABLE PROJET_VUE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_projet INT NOT NULL,
+    id_utilisateur INT NULL, 
+    ip_adresse VARCHAR(45) NOT NULL,
+    date_vue DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_projet) REFERENCES PROJET_UPCYCLING(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `PROJET_INSCRIPTION`;
-CREATE TABLE `PROJET_INSCRIPTION` (
-    `id_utilisateur` INT NOT NULL,
-    `id_projet` INT NOT NULL,
-    `date_inscription` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id_utilisateur`, `id_projet`),
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_projet`) REFERENCES `PROJET_UPCYCLING`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS PROJET_INSCRIPTION;
+CREATE TABLE PROJET_INSCRIPTION (
+    id_utilisateur INT NOT NULL,
+    id_projet INT NOT NULL,
+    date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_utilisateur, id_projet),
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_projet) REFERENCES PROJET_UPCYCLING(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `FORUM_SALON`;
-CREATE TABLE `FORUM_SALON` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `nom` VARCHAR(100) NOT NULL,
-    `description` TEXT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS FORUM_SALON;
+CREATE TABLE FORUM_SALON (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    description TEXT
+);
 
-DROP TABLE IF EXISTS `FORUM`;
-CREATE TABLE `FORUM` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_utilisateur` INT NOT NULL,
-    `id_salon` INT,
-    `titre` VARCHAR(200),
-    `sujet` TEXT,
-    `ouvert` BOOLEAN DEFAULT TRUE,
-    `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`),
-    FOREIGN KEY (`id_salon`) REFERENCES `FORUM_SALON`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS FORUM;
+CREATE TABLE FORUM (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_utilisateur INT NOT NULL,
+    id_salon INT,
+    titre VARCHAR(200),
+    sujet TEXT,
+    ouvert BOOLEAN DEFAULT TRUE,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id),
+    FOREIGN KEY (id_salon) REFERENCES FORUM_SALON(id)
+);
 
-DROP TABLE IF EXISTS `FORUM_MESSAGE`;
-CREATE TABLE `FORUM_MESSAGE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_utilisateur` INT NOT NULL,
-    `id_forum` INT NOT NULL,
-    `contenu` TEXT,
-    `date_envoi` DATETIME DEFAULT CURRENT_TIMESTAMP,    
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`),
-    FOREIGN KEY (`id_forum`) REFERENCES `FORUM`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS FORUM_MESSAGE;
+CREATE TABLE FORUM_MESSAGE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_utilisateur INT NOT NULL,
+    id_forum INT NOT NULL,
+    contenu TEXT,
+    date_envoi DATETIME DEFAULT CURRENT_TIMESTAMP,    
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id),
+    FOREIGN KEY (id_forum) REFERENCES FORUM(id)
+);
 
-DROP TABLE IF EXISTS `MESSAGE_SIGNALEMENT`;
-CREATE TABLE `MESSAGE_SIGNALEMENT` (
-    `id_message` INT NOT NULL,
-    `id_utilisateur` INT NOT NULL, 
-    `motif` VARCHAR(255),          
-    `date_signalement` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id_message`, `id_utilisateur`),
-    FOREIGN KEY (`id_message`) REFERENCES `FORUM_MESSAGE`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS MESSAGE_SIGNALEMENT;
+CREATE TABLE MESSAGE_SIGNALEMENT (
+    id_message INT NOT NULL,
+    id_utilisateur INT NOT NULL, 
+    motif VARCHAR(255),          
+    date_signalement DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_message, id_utilisateur),
+    FOREIGN KEY (id_message) REFERENCES FORUM_MESSAGE(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `TIPS`;
-CREATE TABLE `TIPS` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_createur` INT NOT NULL,    
-    `titre` VARCHAR(255) NOT NULL,
-    `description` TEXT NOT NULL,
-    `video_url` VARCHAR(255) DEFAULT '',
-    `role_cible` ENUM('Particulier', 'Prestataire', 'Admin', 'Salarie') NOT NULL,
-    `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `actif` TINYINT(1) DEFAULT 1,
-    FOREIGN KEY (`id_createur`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS TIPS;
+CREATE TABLE TIPS (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_createur INT NOT NULL,    
+    titre VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    video_url VARCHAR(255) DEFAULT '',
+    role_cible ENUM('Particulier', 'Prestataire', 'Admin', 'Salarie') NOT NULL,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    actif TINYINT(1) DEFAULT 1,
+    FOREIGN KEY (id_createur) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `COMMENTAIRE`;
-CREATE TABLE `COMMENTAIRE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_utilisateur` INT NOT NULL,
-    `description` TEXT NOT NULL,
-    `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS COMMENTAIRE;
+CREATE TABLE COMMENTAIRE (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    id_utilisateur INT NOT NULL,
+    description TEXT NOT NULL,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `NOTIFICATION`;
-CREATE TABLE `NOTIFICATION` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_utilisateur` INT NOT NULL,
-    `id_emetteur` INT DEFAULT 0,
-    `type` ENUM('Alerte', 'Message', 'Rappel', 'Casier', 'Like', 'Avis', 'Follow'),
-    `titre` VARCHAR(150),
-    `message` TEXT,
-    `lu` TINYINT(1) DEFAULT 0,
-    `date_envoi` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS NOTIFICATION;
+CREATE TABLE NOTIFICATION (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_utilisateur INT NOT NULL,
+    id_emetteur INT DEFAULT 0,
+    type ENUM('Alerte', 'Message', 'Rappel', 'Casier', 'Like', 'Avis', 'Follow'),
+    titre VARCHAR(150),
+    message TEXT,
+    lu TINYINT(1) DEFAULT 0,
+    date_envoi DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `AVIS`;
-CREATE TABLE `AVIS` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_auteur` INT NOT NULL,
-    `id_cible` INT NOT NULL,
-    `note` INT NOT NULL CHECK(`note` BETWEEN 1 AND 5),
-    `commentaire` TEXT,
-    `date_creation` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_auteur`) REFERENCES `UTILISATEUR`(`id`),
-    FOREIGN KEY (`id_cible`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS AVIS;
+CREATE TABLE AVIS (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_auteur INT NOT NULL,
+    id_cible INT NOT NULL,
+    note INT NOT NULL CHECK(note BETWEEN 1 AND 5),
+    commentaire TEXT,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_auteur) REFERENCES UTILISATEUR(id),
+    FOREIGN KEY (id_cible) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `ABONNEMENT_UTILISATEUR`;
-CREATE TABLE `ABONNEMENT_UTILISATEUR` (
-    `id_abonne` INT NOT NULL,     
-    `id_suivi` INT NOT NULL,   
-    `date_abonnement` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id_abonne`, `id_suivi`),
-    FOREIGN KEY (`id_abonne`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_suivi`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS ABONNEMENT_UTILISATEUR;
+CREATE TABLE ABONNEMENT_UTILISATEUR (
+    id_abonne INT NOT NULL,     
+    id_suivi INT NOT NULL,   
+    date_abonnement DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_abonne, id_suivi),
+    FOREIGN KEY (id_abonne) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_suivi) REFERENCES UTILISATEUR(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `UPCYCLING_SCORE`;
-CREATE TABLE `UPCYCLING_SCORE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_utilisateur` INT NOT NULL,
-    `ressources_economisees` DECIMAL(10,2),
-    `co2_total_evite_kg` DECIMAL(10,2),
-    `nb_objets_recycles` INT DEFAULT 0,
-    `total_points` INT DEFAULT 0,
-    `niveau` VARCHAR(50),
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS UPCYCLING_SCORE;
+CREATE TABLE UPCYCLING_SCORE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_utilisateur INT NOT NULL,
+    ressources_economisees DECIMAL(10,2),
+    co2_total_evite_kg DECIMAL(10,2),
+    nb_objets_recycles INT DEFAULT 0,
+    total_points INT DEFAULT 0,
+    niveau VARCHAR(50),
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `PANIER_ITEM`;
-CREATE TABLE `PANIER_ITEM` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_utilisateur` INT NOT NULL,
-    `type_item` ENUM('Formation', 'Annonce', 'Abonnement', 'Evenement', 'Projet') NOT NULL,
-    `reference_id` INT NOT NULL,
-    `prix_unitaire` DECIMAL(10,2) NOT NULL,
-    `date_ajout` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS PANIER_ITEM;
+CREATE TABLE PANIER_ITEM (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_utilisateur INT NOT NULL,
+    type_item ENUM('Formation', 'Annonce', 'Abonnement', 'Evenement', 'Projet') NOT NULL,
+    reference_id INT NOT NULL,
+    prix_unitaire DECIMAL(10,2) NOT NULL,
+    date_ajout DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `COMMANDE`;
-CREATE TABLE `COMMANDE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_utilisateur` INT NOT NULL,
-    `montant_total` DECIMAL(10,2) NOT NULL,
-    `statut` ENUM('En attente', 'Payee', 'Annulee') DEFAULT 'En attente',
-    `date_commande` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_utilisateur`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS COMMANDE;
+CREATE TABLE COMMANDE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_utilisateur INT NOT NULL,
+    montant_total DECIMAL(10,2) NOT NULL,
+    statut ENUM('En attente', 'Payee', 'Annulee') DEFAULT 'En attente',
+    date_commande DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `LIGNE_COMMANDE`;
-CREATE TABLE `LIGNE_COMMANDE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_commande` INT NOT NULL,
-    `id_vendeur` INT,
-    `type_item` ENUM('Formation', 'Annonce', 'Abonnement', 'Evenement', 'Projet') NOT NULL,
-    `reference_id` INT NOT NULL,
-    `prix_unitaire` DECIMAL(10,2) NOT NULL,
-    `commission_upc` DECIMAL(10,2) DEFAULT 0,
-    FOREIGN KEY (`id_commande`) REFERENCES `COMMANDE`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_vendeur`) REFERENCES `UTILISATEUR`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS LIGNE_COMMANDE;
+CREATE TABLE LIGNE_COMMANDE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_commande INT NOT NULL,
+    id_vendeur INT,
+    type_item ENUM('Formation', 'Annonce', 'Abonnement', 'Evenement', 'Projet') NOT NULL,
+    reference_id INT NOT NULL,
+    prix_unitaire DECIMAL(10,2) NOT NULL,
+    commission_upc DECIMAL(10,2) DEFAULT 0,
+    FOREIGN KEY (id_commande) REFERENCES COMMANDE(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_vendeur) REFERENCES UTILISATEUR(id)
+);
 
-DROP TABLE IF EXISTS `TRANSACTION`;
-CREATE TABLE `TRANSACTION` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_acheteur` INT NOT NULL,
-    `id_commande` INT NOT NULL,
-    `montant_total` DECIMAL(10,2),
-    `statut_paiement` ENUM('En attente', 'Valide', 'Echoue'),
-    `date_transaction` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `stripe_payment_id` VARCHAR(255),
-    FOREIGN KEY (`id_acheteur`) REFERENCES `UTILISATEUR`(`id`),
-    FOREIGN KEY (`id_commande`) REFERENCES `COMMANDE`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS TRANSACTION;
+CREATE TABLE TRANSACTION (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_acheteur INT NOT NULL,
+    id_commande INT NOT NULL,
+    montant_total DECIMAL(10,2),
+    statut_paiement ENUM('En attente', 'Valide', 'Echoue'),
+    date_transaction DATETIME DEFAULT CURRENT_TIMESTAMP,
+    stripe_payment_id VARCHAR(255),
+    FOREIGN KEY (id_acheteur) REFERENCES UTILISATEUR(id),
+    FOREIGN KEY (id_commande) REFERENCES COMMANDE(id)
+);
 
-DROP TABLE IF EXISTS `FACTURE`;
-CREATE TABLE `FACTURE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_transaction` INT NOT NULL,
-    `numero_facture` VARCHAR(50) UNIQUE,
-    `type_paiement` ENUM('Carte', 'Espece', 'Virement') DEFAULT 'Carte',
-    `date_emission` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_transaction`) REFERENCES `TRANSACTION`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS FACTURE;
+CREATE TABLE FACTURE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_transaction INT NOT NULL,
+    numero_facture VARCHAR(50) UNIQUE,
+    type_paiement ENUM('Carte', 'Espece', 'Virement') DEFAULT 'Carte',
+    date_emission DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_transaction) REFERENCES TRANSACTION(id)
+);
 
-DROP TABLE IF EXISTS `DM_CONVERSATION`;
-CREATE TABLE `DM_CONVERSATION` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_user_one` INT NOT NULL,
-    `id_user_two` INT NOT NULL,
-    `id_annonce` INT NULL,
-    `id_projet` INT NULL,
-    `initiator_id` INT NOT NULL,
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX `idx_dm_user_one` (`id_user_one`),
-    INDEX `idx_dm_user_two` (`id_user_two`),
-    INDEX `idx_dm_annonce` (`id_annonce`),
-    INDEX `idx_dm_conversation_projet` (`id_projet`),
-    CONSTRAINT `fk_dm_conversation_user_one` FOREIGN KEY (`id_user_one`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_conversation_user_two` FOREIGN KEY (`id_user_two`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_conversation_initiator` FOREIGN KEY (`initiator_id`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_conversation_projet` FOREIGN KEY (`id_projet`) REFERENCES `PROJET_UPCYCLING`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_dm_conversation_annonce` FOREIGN KEY (`id_annonce`) REFERENCES `ANNONCE`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS DM_CONVERSATION;
+CREATE TABLE DM_CONVERSATION (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_user_one INT NOT NULL,
+    id_user_two INT NOT NULL,
+    id_annonce INT NULL,
+    id_projet INT NULL,
+    initiator_id INT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_dm_user_one (id_user_one),
+    INDEX idx_dm_user_two (id_user_two),
+    INDEX idx_dm_annonce (id_annonce),
+    INDEX idx_dm_conversation_projet (id_projet),
+    CONSTRAINT fk_dm_conversation_user_one FOREIGN KEY (id_user_one) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_conversation_user_two FOREIGN KEY (id_user_two) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_conversation_initiator FOREIGN KEY (initiator_id) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_conversation_projet FOREIGN KEY (id_projet) REFERENCES PROJET_UPCYCLING(id) ON DELETE SET NULL,
+    CONSTRAINT fk_dm_conversation_annonce FOREIGN KEY (id_annonce) REFERENCES ANNONCE(id) ON DELETE SET NULL
+);
 
-DROP TABLE IF EXISTS `DM_MESSAGE`;
-CREATE TABLE `DM_MESSAGE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_conversation` INT NOT NULL,
-    `id_sender` INT NOT NULL,
-    `contenu` TEXT NOT NULL,
-    `lu` BOOLEAN DEFAULT FALSE,
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_dm_message_conversation` (`id_conversation`),
-    CONSTRAINT `fk_dm_message_conversation` FOREIGN KEY (`id_conversation`) REFERENCES `DM_CONVERSATION`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_message_sender` FOREIGN KEY (`id_sender`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS DM_MESSAGE;
+CREATE TABLE DM_MESSAGE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_conversation INT NOT NULL,
+    id_sender INT NOT NULL,
+    contenu TEXT NOT NULL,
+    lu BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_dm_message_conversation (id_conversation),
+    CONSTRAINT fk_dm_message_conversation FOREIGN KEY (id_conversation) REFERENCES DM_CONVERSATION(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_message_sender FOREIGN KEY (id_sender) REFERENCES UTILISATEUR(id) ON DELETE CASCADE
+);
 
-DROP TABLE IF EXISTS `DM_OFFER`;
-CREATE TABLE `DM_OFFER` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_conversation` INT NOT NULL,
-    `id_annonce` INT NULL,
-    `id_projet` INT NULL,
-    `id_buyer` INT NOT NULL,
-    `id_seller` INT NOT NULL,
-    `amount` DECIMAL(10,2) NOT NULL,
-    `status` ENUM('En attente','Acceptee','Refusee','Annulee') DEFAULT 'En attente',
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX `idx_dm_offer_projet` (`id_projet`),
-    INDEX `idx_dm_offer_conversation` (`id_conversation`),
-    CONSTRAINT `fk_dm_offer_projet` FOREIGN KEY (`id_projet`) REFERENCES `PROJET_UPCYCLING`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_dm_offer_conversation` FOREIGN KEY (`id_conversation`) REFERENCES `DM_CONVERSATION`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_offer_buyer` FOREIGN KEY (`id_buyer`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_offer_seller` FOREIGN KEY (`id_seller`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_offer_annonce` FOREIGN KEY (`id_annonce`) REFERENCES `ANNONCE`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS DM_OFFER;
+CREATE TABLE DM_OFFER (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_conversation INT NOT NULL,
+    id_annonce INT NULL,
+    id_projet INT NULL,
+    id_buyer INT NOT NULL,
+    id_seller INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    status ENUM('En attente','Acceptee','Refusee','Annulee') DEFAULT 'En attente',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_dm_offer_projet (id_projet),
+    INDEX idx_dm_offer_conversation (id_conversation),
+    CONSTRAINT fk_dm_offer_projet FOREIGN KEY (id_projet) REFERENCES PROJET_UPCYCLING(id) ON DELETE SET NULL,
+    CONSTRAINT fk_dm_offer_conversation FOREIGN KEY (id_conversation) REFERENCES DM_CONVERSATION(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_offer_buyer FOREIGN KEY (id_buyer) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_offer_seller FOREIGN KEY (id_seller) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_offer_annonce FOREIGN KEY (id_annonce) REFERENCES ANNONCE(id) ON DELETE SET NULL
+);
 
-DROP TABLE IF EXISTS `DM_SALE`;
-CREATE TABLE `DM_SALE` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_offer` INT NOT NULL,
-    `id_conversation` INT NOT NULL,
-    `id_annonce` INT NULL,
-    `id_projet` INT NULL,
-    `id_buyer` INT NOT NULL,
-    `id_seller` INT NOT NULL,
-    `amount` DECIMAL(10,2) NOT NULL,
-    `status` ENUM('Offre acceptee','Payee','Recue','Evaluee') DEFAULT 'Offre acceptee',
-    `received_at` DATETIME NULL,
-    `reviewed_at` DATETIME NULL,
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY `uniq_dm_sale_offer` (`id_offer`),
-    INDEX `idx_dm_sale_projet` (`id_projet`),
-    CONSTRAINT `fk_dm_sale_projet` FOREIGN KEY (`id_projet`) REFERENCES `PROJET_UPCYCLING`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_dm_sale_offer` FOREIGN KEY (`id_offer`) REFERENCES `DM_OFFER`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_sale_conversation` FOREIGN KEY (`id_conversation`) REFERENCES `DM_CONVERSATION`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_sale_buyer` FOREIGN KEY (`id_buyer`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_sale_seller` FOREIGN KEY (`id_seller`) REFERENCES `UTILISATEUR`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_dm_sale_annonce` FOREIGN KEY (`id_annonce`) REFERENCES `ANNONCE`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS DM_SALE;
+CREATE TABLE DM_SALE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_offer INT NOT NULL,
+    id_conversation INT NOT NULL,
+    id_annonce INT NULL,
+    id_projet INT NULL,
+    id_buyer INT NOT NULL,
+    id_seller INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    status ENUM('Offre acceptee','Payee','Recue','Evaluee') DEFAULT 'Offre acceptee',
+    received_at DATETIME NULL,
+    reviewed_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_dm_sale_offer (id_offer),
+    INDEX idx_dm_sale_projet (id_projet),
+    CONSTRAINT fk_dm_sale_projet FOREIGN KEY (id_projet) REFERENCES PROJET_UPCYCLING(id) ON DELETE SET NULL,
+    CONSTRAINT fk_dm_sale_offer FOREIGN KEY (id_offer) REFERENCES DM_OFFER(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_sale_conversation FOREIGN KEY (id_conversation) REFERENCES DM_CONVERSATION(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_sale_buyer FOREIGN KEY (id_buyer) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_sale_seller FOREIGN KEY (id_seller) REFERENCES UTILISATEUR(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dm_sale_annonce FOREIGN KEY (id_annonce) REFERENCES ANNONCE(id) ON DELETE SET NULL
+);
 
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+SET FOREIGN_KEY_CHECKS = 1;

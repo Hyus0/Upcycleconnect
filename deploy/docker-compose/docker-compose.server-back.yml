@@ -1,0 +1,52 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-upcycletest}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../mysql/init:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:8089:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+  backoffice:
+    build:
+      context: ../../mission-1-app/backoffice
+      dockerfile: Dockerfile
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:8090:80"
+    volumes:
+      - ../../mission-1-app/backoffice/storage:/var/www/storage
+    restart: unless-stopped
+
+  api-go:
+    build:
+      context: ../../mission-1-app/api-go
+      dockerfile: Dockerfile
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:8081:8081"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      DB_NAME: ${MYSQL_DATABASE:-upcycletest}
+    volumes:
+      - ../../mission-1-app/api-go/storage:/app/storage
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+volumes:
+  mysql-data:

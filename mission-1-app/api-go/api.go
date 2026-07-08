@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"upcycleconnect/api-go/app"
 	"upcycleconnect/api-go/db"
@@ -42,6 +43,9 @@ func enableCORS(next http.Handler) http.Handler {
 
 func main() {
 	db.Conn = db.NewDB()
+	if db.Conn == nil {
+		log.Fatal("[db] cannot start API without database connection")
+	}
 
 	http.HandleFunc("GET /", healthCheck)
 	http.HandleFunc("GET /health", healthCheck)
@@ -83,6 +87,11 @@ func main() {
 	http.HandleFunc("POST /api/admin/notifications", adminOnly(app.AdminCreateNotification))
 	http.HandleFunc("PATCH /api/admin/notifications/{id}/status", adminOnly(app.AdminUpdateNotificationStatus))
 	http.HandleFunc("DELETE /api/admin/notifications/{id}", adminOnly(app.AdminDeleteNotification))
+	http.HandleFunc("GET /api/admin/resources", adminOnly(app.AdminListResources))
+	http.HandleFunc("GET /api/admin/resources/{resource}", adminOnly(app.AdminListResourceRows))
+	http.HandleFunc("POST /api/admin/resources/{resource}", adminOnly(app.AdminCreateResourceRow))
+	http.HandleFunc("PUT /api/admin/resources/{resource}/{key}", adminOnly(app.AdminUpdateResourceRow))
+	http.HandleFunc("DELETE /api/admin/resources/{resource}/{key}", adminOnly(app.AdminDeleteResourceRow))
 
 	// Legacy routes.
 	http.HandleFunc("GET /api/admin/user/{id}", adminOnly(app.GetUser))

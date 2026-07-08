@@ -8,10 +8,41 @@ import (
 	"strings"
 	"time"
 	"upcycleconnect/api-go/db"
+	"upcycleconnect/api-go/passwordHashing"
 )
 
 func adminDBEnabled() bool {
 	return db.Conn != nil
+}
+
+func adminMetricsFromDB() (map[string]int, error) {
+	tables := map[string]string{
+		"users":      "UTILISATEUR",
+		"annonces":   "ANNONCE",
+		"categories": "CATEGORIE",
+		"events":     "EVENEMENT",
+	}
+	metrics := make(map[string]int, len(tables))
+	for key, table := range tables {
+		var count int
+		if err := db.Conn.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&count); err != nil {
+			return nil, err
+		}
+		metrics[key] = count
+	}
+	return metrics, nil
+}
+
+func firstAdminIDFromDB() (int, error) {
+	var id int
+	err := db.Conn.QueryRow(`
+		SELECT id
+		FROM UTILISATEUR
+		WHERE role = 'Admin' AND statut = 'Actif'
+		ORDER BY id ASC
+		LIMIT 1
+	`).Scan(&id)
+	return id, err
 }
 
 func parseAdminIntID(id string) (int, error) {
@@ -136,6 +167,24 @@ func dateOnly(value time.Time) string {
 	return value.Format("2006-01-02")
 }
 
+func nullableDateTime(value string) any {
+	normalized := normalizeDateTime(value)
+	if strings.TrimSpace(normalized) == "" {
+		return nil
+	}
+	return normalized
+}
+
+func eventStatusFromDate(value sql.NullTime) string {
+	if !value.Valid {
+		return "planned"
+	}
+	if value.Time.Before(time.Now()) {
+		return "done"
+	}
+	return "planned"
+}
+
 func activeAdminCountDB(excludedID int) (int, error) {
 	var count int
 	err := db.Conn.QueryRow(`
@@ -217,7 +266,10 @@ func createAdminUserInDB(payload AdminUser) (*AdminUser, error) {
 		return nil, errors.New("email must be unique")
 	}
 
-	tempPassword := "AdminTemp1!"
+	tempPassword, err := passwordHashing.HashPassword("AdminTemp1!")
+	if err != nil {
+		return nil, err
+	}
 	res, err := db.Conn.Exec(`
 		INSERT INTO UTILISATEUR (prenom, nom, password, mail, adresse, ville, code_postal, date_naissance, role, statut, id_langue, date_inscription)
 		VALUES (?, ?, ?, ?, '', ?, ?, NULL, ?, ?, 1, NOW())
@@ -325,15 +377,17 @@ func deleteAdminUserInDB(id string) error {
 
 func listAdminPrestationsFromDB(filterType string) ([]AdminPrestation, error) {
 	query := `
-		SELECT id, titre, description, type, prix, statut, est_valide, provider, date_creation
-		FROM ANNONCE
+		SELECT a.id, a.titre, a.description, a.type, COALESCE(a.prix, 0), a.statut, a.est_valide,
+		       COALESCE(CONCAT(u.prenom, ' ', u.nom), ''), a.date_creation
+		FROM ANNONCE a
+		LEFT JOIN UTILISATEUR u ON u.id = a.id_vendeur
 	`
 	args := []any{}
 	if filterType != "" {
-		query += ` WHERE type = ?`
+		query += ` WHERE a.type = ?`
 		args = append(args, annonceTypeToDB(filterType))
 	}
-	query += ` ORDER BY id DESC`
+	query += ` ORDER BY a.id DESC`
 
 	rows, err := db.Conn.Query(query, args...)
 	if err != nil {
@@ -366,8 +420,11 @@ func getAdminPrestationFromDB(id string) (*AdminPrestation, error) {
 	var dbType, statut, estValide string
 	var createdAt time.Time
 	err := db.Conn.QueryRow(`
-		SELECT id, titre, description, type, prix, statut, est_valide, provider, date_creation
-		FROM ANNONCE WHERE id = ?
+		SELECT a.id, a.titre, a.description, a.type, COALESCE(a.prix, 0), a.statut, a.est_valide,
+		       COALESCE(CONCAT(u.prenom, ' ', u.nom), ''), a.date_creation
+		FROM ANNONCE a
+		LEFT JOIN UTILISATEUR u ON u.id = a.id_vendeur
+		WHERE a.id = ?
 	`, id).Scan(&intIDValue, &item.Title, &item.Description, &dbType, &item.Price, &statut, &estValide, &item.Provider, &createdAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -386,10 +443,14 @@ func getAdminPrestationFromDB(id string) (*AdminPrestation, error) {
 func createAdminPrestationInDB(payload AdminPrestation) (*AdminPrestation, error) {
 	payload = normalizePrestation(payload)
 	statut, estValide := annonceStatusToDB(payload.Status)
+	sellerID, err := firstAdminIDFromDB()
+	if err != nil {
+		return nil, errors.New("prestation requires at least one active admin user")
+	}
 	res, err := db.Conn.Exec(`
-		INSERT INTO ANNONCE (id_vendeur, id_acheteur, titre, description, statut, est_valide, prix, etat_objet, adresse, ville, code_postal, provider, type, date_creation)
-		VALUES (1, NULL, ?, ?, ?, ?, ?, 'Bon etat', '', '', '', ?, ?, NOW())
-	`, payload.Title, payload.Description, statut, estValide, payload.Price, payload.Provider, annonceTypeToDB(payload.Type))
+		INSERT INTO ANNONCE (id_vendeur, id_acheteur, titre, description, statut, est_valide, prix, etat_objet, adresse, ville, code_postal, type, date_creation)
+		VALUES (?, NULL, ?, ?, ?, ?, ?, 'Bon etat', '', '', '', ?, NOW())
+	`, sellerID, payload.Title, payload.Description, statut, estValide, payload.Price, annonceTypeToDB(payload.Type))
 	if err != nil {
 		return nil, err
 	}
@@ -402,9 +463,9 @@ func updateAdminPrestationInDB(id string, payload AdminPrestation) (*AdminPresta
 	statut, estValide := annonceStatusToDB(payload.Status)
 	_, err := db.Conn.Exec(`
 		UPDATE ANNONCE
-		SET titre = ?, description = ?, prix = ?, provider = ?, type = ?, statut = ?, est_valide = ?
+		SET titre = ?, description = ?, prix = ?, type = ?, statut = ?, est_valide = ?
 		WHERE id = ?
-	`, payload.Title, payload.Description, payload.Price, payload.Provider, annonceTypeToDB(payload.Type), statut, estValide, id)
+	`, payload.Title, payload.Description, payload.Price, annonceTypeToDB(payload.Type), statut, estValide, id)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +579,7 @@ func deleteAdminCategoryInDB(id string) error {
 
 func listAdminEventsFromDB() ([]AdminEvent, error) {
 	rows, err := db.Conn.Query(`
-		SELECT id, titre, CONCAT_WS(', ', adresse, ville, code_postal) AS location, date_evenement, statut, capacite_max, description
+		SELECT id, titre, CONCAT_WS(', ', adresse, ville, code_postal) AS location, date_evenement, description
 		FROM EVENEMENT
 		ORDER BY date_evenement ASC, id DESC
 	`)
@@ -531,12 +592,16 @@ func listAdminEventsFromDB() ([]AdminEvent, error) {
 	for rows.Next() {
 		var item AdminEvent
 		var id int
-		var eventDate time.Time
-		if err := rows.Scan(&id, &item.Title, &item.Location, &eventDate, &item.Status, &item.Capacity, &item.Description); err != nil {
+		var eventDate sql.NullTime
+		if err := rows.Scan(&id, &item.Title, &item.Location, &eventDate, &item.Description); err != nil {
 			return nil, err
 		}
 		item.ID = strconv.Itoa(id)
-		item.Date = dateOnly(eventDate)
+		if eventDate.Valid {
+			item.Date = dateOnly(eventDate.Time)
+		}
+		item.Status = eventStatusFromDate(eventDate)
+		item.Capacity = 0
 		items = append(items, item)
 	}
 	return items, rows.Err()
@@ -545,12 +610,12 @@ func listAdminEventsFromDB() ([]AdminEvent, error) {
 func getAdminEventFromDB(id string) (*AdminEvent, error) {
 	var item AdminEvent
 	var intIDValue int
-	var eventDate time.Time
+	var eventDate sql.NullTime
 	err := db.Conn.QueryRow(`
-		SELECT id, titre, CONCAT_WS(', ', adresse, ville, code_postal) AS location, date_evenement, statut, capacite_max, description
+		SELECT id, titre, CONCAT_WS(', ', adresse, ville, code_postal) AS location, date_evenement, description
 		FROM EVENEMENT
 		WHERE id = ?
-	`, id).Scan(&intIDValue, &item.Title, &item.Location, &eventDate, &item.Status, &item.Capacity, &item.Description)
+	`, id).Scan(&intIDValue, &item.Title, &item.Location, &eventDate, &item.Description)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -558,7 +623,11 @@ func getAdminEventFromDB(id string) (*AdminEvent, error) {
 	if err != nil {
 		return nil, err
 	}
-	item.Date = dateOnly(eventDate)
+	if eventDate.Valid {
+		item.Date = dateOnly(eventDate.Time)
+	}
+	item.Status = eventStatusFromDate(eventDate)
+	item.Capacity = 0
 	return &item, nil
 }
 
@@ -580,11 +649,14 @@ func splitLocation(location string) (string, string, string) {
 func createAdminEventInDB(payload AdminEvent) (*AdminEvent, error) {
 	payload = normalizeEvent(payload)
 	address, city, postal := splitLocation(payload.Location)
-	// id_createur est NOT NULL : on rattache l'evenement a un compte Admin existant.
+	creatorID, err := firstAdminIDFromDB()
+	if err != nil {
+		return nil, errors.New("event requires at least one active admin user")
+	}
 	res, err := db.Conn.Exec(`
-		INSERT INTO EVENEMENT (id_createur, titre, description, adresse, ville, code_postal, date_evenement, capacite_max, statut, type)
-		VALUES ((SELECT id FROM UTILISATEUR WHERE role = 'Admin' ORDER BY id LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, 'Atelier')
-	`, payload.Title, payload.Description, address, city, postal, normalizeDateTime(payload.Date), payload.Capacity, payload.Status)
+		INSERT INTO EVENEMENT (id_createur, titre, description, adresse, ville, code_postal, date_evenement, type)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'Atelier')
+	`, creatorID, payload.Title, payload.Description, address, city, postal, nullableDateTime(payload.Date))
 	if err != nil {
 		return nil, err
 	}
@@ -597,9 +669,9 @@ func updateAdminEventInDB(id string, payload AdminEvent) (*AdminEvent, error) {
 	address, city, postal := splitLocation(payload.Location)
 	_, err := db.Conn.Exec(`
 		UPDATE EVENEMENT
-		SET titre = ?, description = ?, adresse = ?, ville = ?, code_postal = ?, date_evenement = ?, capacite_max = ?, statut = ?
+		SET titre = ?, description = ?, adresse = ?, ville = ?, code_postal = ?, date_evenement = ?
 		WHERE id = ?
-	`, payload.Title, payload.Description, address, city, postal, normalizeDateTime(payload.Date), payload.Capacity, payload.Status, id)
+	`, payload.Title, payload.Description, address, city, postal, nullableDateTime(payload.Date), id)
 	if err != nil {
 		return nil, err
 	}
@@ -670,7 +742,7 @@ func financeOverviewFromDB() (map[string]any, []AdminFinanceRecord, error) {
 
 func listAdminNotificationsFromDB() ([]AdminNotification, error) {
 	rows, err := db.Conn.Query(`
-		SELECT id, titre, canal, audience, statut, scheduled_at, message
+		SELECT id, titre, type, lu, date_envoi, message
 		FROM NOTIFICATION
 		ORDER BY date_envoi DESC, id DESC
 	`)
@@ -683,13 +755,20 @@ func listAdminNotificationsFromDB() ([]AdminNotification, error) {
 	for rows.Next() {
 		var item AdminNotification
 		var id int
-		var scheduledAt sql.NullTime
-		if err := rows.Scan(&id, &item.Title, &item.Channel, &item.Audience, &item.Status, &scheduledAt, &item.Message); err != nil {
+		var sentAt sql.NullTime
+		var read bool
+		if err := rows.Scan(&id, &item.Title, &item.Channel, &read, &sentAt, &item.Message); err != nil {
 			return nil, err
 		}
 		item.ID = strconv.Itoa(id)
-		if scheduledAt.Valid {
-			item.ScheduledAt = scheduledAt.Time.Format("2006-01-02T15:04")
+		item.Audience = "all"
+		if read {
+			item.Status = "sent"
+		} else {
+			item.Status = "draft"
+		}
+		if sentAt.Valid {
+			item.ScheduledAt = sentAt.Time.Format("2006-01-02T15:04")
 		}
 		items = append(items, item)
 	}
@@ -707,9 +786,9 @@ func createAdminNotificationInDB(payload AdminNotification) (*AdminNotification,
 		scheduled = normalizeDateTime(payload.ScheduledAt)
 	}
 	res, err := db.Conn.Exec(`
-		INSERT INTO NOTIFICATION (id_utilisateur, type, canal, audience, statut, titre, message, scheduled_at, lu, date_envoi)
-		VALUES (?, 'Message', ?, ?, ?, ?, ?, ?, 0, NOW())
-	`, userID, payload.Channel, payload.Audience, payload.Status, payload.Title, payload.Message, scheduled)
+		INSERT INTO NOTIFICATION (id_utilisateur, type, titre, message, lu, date_envoi)
+		VALUES (?, 'Message', ?, ?, ?, COALESCE(?, NOW()))
+	`, userID, payload.Title, payload.Message, payload.Status == "sent", scheduled)
 	if err != nil {
 		return nil, err
 	}
@@ -728,7 +807,7 @@ func createAdminNotificationInDB(payload AdminNotification) (*AdminNotification,
 }
 
 func updateAdminNotificationStatusInDB(id, status string) (*AdminNotification, error) {
-	_, err := db.Conn.Exec(`UPDATE NOTIFICATION SET statut = ? WHERE id = ?`, status, id)
+	_, err := db.Conn.Exec(`UPDATE NOTIFICATION SET lu = ? WHERE id = ?`, status == "sent", id)
 	if err != nil {
 		return nil, err
 	}
@@ -754,8 +833,9 @@ func moderationQueueFromDB() ([]map[string]string, error) {
 	items := []map[string]string{}
 
 	rows, err := db.Conn.Query(`
-		SELECT id, titre, description, provider
-		FROM ANNONCE
+		SELECT a.id, a.titre, a.description, COALESCE(CONCAT(u.prenom, ' ', u.nom), '')
+		FROM ANNONCE a
+		LEFT JOIN UTILISATEUR u ON u.id = a.id_vendeur
 		WHERE est_valide = 'En attente'
 	`)
 	if err != nil {
@@ -781,7 +861,7 @@ func moderationQueueFromDB() ([]map[string]string, error) {
 	eventRows, err := db.Conn.Query(`
 		SELECT id, titre, description, CONCAT_WS(', ', adresse, ville)
 		FROM EVENEMENT
-		WHERE statut = 'planned'
+		WHERE date_evenement IS NULL OR date_evenement >= NOW()
 	`)
 	if err != nil {
 		return nil, err
@@ -823,7 +903,7 @@ func archiveAdminPrestationInDB(id string) (*AdminPrestation, error) {
 }
 
 func publishAdminEventInDB(id string) (*AdminEvent, error) {
-	_, err := db.Conn.Exec(`UPDATE EVENEMENT SET statut = 'published' WHERE id = ?`, id)
+	_, err := db.Conn.Exec(`UPDATE EVENEMENT SET date_evenement = COALESCE(date_evenement, NOW()) WHERE id = ?`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -831,7 +911,7 @@ func publishAdminEventInDB(id string) (*AdminEvent, error) {
 }
 
 func archiveAdminEventInDB(id string) (*AdminEvent, error) {
-	_, err := db.Conn.Exec(`UPDATE EVENEMENT SET statut = 'archived' WHERE id = ?`, id)
+	_, err := db.Conn.Exec(`UPDATE EVENEMENT SET date_evenement = DATE_SUB(NOW(), INTERVAL 1 SECOND) WHERE id = ?`, id)
 	if err != nil {
 		return nil, err
 	}

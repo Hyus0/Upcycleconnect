@@ -75,19 +75,19 @@ type AdminNotification struct {
 }
 
 type adminStoreData struct {
-	Users          []AdminUser       `json:"users"`
-	Prestations    []AdminPrestation `json:"prestations"`
-	Categories     []AdminCategory   `json:"categories"`
-	Events         []AdminEvent      `json:"events"`
-	FinanceRecords []AdminFinanceRecord `json:"financeRecords"`
-	Notifications  []AdminNotification  `json:"notifications"`
-	UserSeq        int               `json:"userSeq"`
-	PrestationSeq  int               `json:"prestationSeq"`
-	CategorySeq    int               `json:"categorySeq"`
-	EventSeq       int               `json:"eventSeq"`
-	FinanceSeq     int               `json:"financeSeq"`
-	NotificationSeq int              `json:"notificationSeq"`
-	LastUpdatedAt  string            `json:"lastUpdatedAt"`
+	Users           []AdminUser          `json:"users"`
+	Prestations     []AdminPrestation    `json:"prestations"`
+	Categories      []AdminCategory      `json:"categories"`
+	Events          []AdminEvent         `json:"events"`
+	FinanceRecords  []AdminFinanceRecord `json:"financeRecords"`
+	Notifications   []AdminNotification  `json:"notifications"`
+	UserSeq         int                  `json:"userSeq"`
+	PrestationSeq   int                  `json:"prestationSeq"`
+	CategorySeq     int                  `json:"categorySeq"`
+	EventSeq        int                  `json:"eventSeq"`
+	FinanceSeq      int                  `json:"financeSeq"`
+	NotificationSeq int                  `json:"notificationSeq"`
+	LastUpdatedAt   string               `json:"lastUpdatedAt"`
 }
 
 type adminStore struct {
@@ -144,13 +144,13 @@ func defaultAdminStoreData() adminStoreData {
 			{ID: "n1", Title: "Collecte textile maintenue", Channel: "email", Audience: "all", Status: "scheduled", ScheduledAt: "2026-04-18T10:00", Message: "La collecte textile de Lyon est maintenue ce weekend."},
 			{ID: "n2", Title: "Nouveaux ateliers disponibles", Channel: "push", Audience: "particuliers", Status: "draft", ScheduledAt: "", Message: "Deux nouveaux ateliers viennent d'etre ajoutes au catalogue."},
 		},
-		UserSeq:       3,
-		PrestationSeq: 2,
-		CategorySeq:   2,
-		EventSeq:      2,
-		FinanceSeq:    3,
+		UserSeq:         3,
+		PrestationSeq:   2,
+		CategorySeq:     2,
+		EventSeq:        2,
+		FinanceSeq:      3,
 		NotificationSeq: 2,
-		LastUpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		LastUpdatedAt:   time.Now().UTC().Format(time.RFC3339),
 	}
 }
 
@@ -495,34 +495,14 @@ func writeValidationError(w http.ResponseWriter, issues []string) {
 
 func AdminMetrics(w http.ResponseWriter, r *http.Request) {
 	if adminDBEnabled() {
-		users, err := listAdminUsersFromDB()
+		metrics, err := adminMetricsFromDB()
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "cannot_read_users")
-			return
-		}
-		prestations, err := listAdminPrestationsFromDB("")
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "cannot_read_prestations")
-			return
-		}
-		categories, err := listAdminCategoriesFromDB()
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "cannot_read_categories")
-			return
-		}
-		events, err := listAdminEventsFromDB()
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "cannot_read_events")
+			writeError(w, http.StatusInternalServerError, "cannot_read_metrics")
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
-			"source": "database",
-			"metrics": map[string]int{
-				"users":      len(users),
-				"annonces":   len(prestations),
-				"categories": len(categories),
-				"events":     len(events),
-			},
+			"source":  "database",
+			"metrics": metrics,
 		})
 		return
 	}
@@ -1487,8 +1467,8 @@ func AdminFinanceOverview(w http.ResponseWriter, r *http.Request) {
 	copy(items, store.data.FinanceRecords)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"summary": map[string]any{
-			"paidTotal":          paidTotal,
-			"pendingTotal":       pendingTotal,
+			"paidTotal":           paidTotal,
+			"pendingTotal":        pendingTotal,
 			"activeSubscriptions": activeSubscriptions,
 		},
 		"items": items,

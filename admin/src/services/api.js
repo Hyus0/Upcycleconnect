@@ -309,7 +309,8 @@ export const capabilities = {
   events: { list: true, detail: true, create: true, update: true, delete: true },
   moderation: { queue: true, publish: true, archive: true },
   finance: { overview: true },
-  notifications: { list: true, create: true, update: true, delete: true }
+  notifications: { list: true, create: true, update: true, delete: true },
+  resources: { list: true, create: true, update: true, delete: true }
 };
 
 export const adminApi = {
@@ -548,6 +549,34 @@ export const adminApi = {
 
   async deleteNotification(id) {
     return request(`${GO_API_BASE}/admin/notifications/${id}`, { method: "DELETE" });
+  },
+
+  async listResources() {
+    return request(`${GO_API_BASE}/admin/resources`);
+  },
+
+  async listResourceRows(resource) {
+    return request(`${GO_API_BASE}/admin/resources/${resource}`);
+  },
+
+  async createResourceRow(resource, payload) {
+    const response = await request(`${GO_API_BASE}/admin/resources/${resource}`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    return response.created ?? response;
+  },
+
+  async updateResourceRow(resource, key, payload) {
+    const response = await request(`${GO_API_BASE}/admin/resources/${resource}/${key}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    return response.updated ?? response;
+  },
+
+  async deleteResourceRow(resource, key) {
+    return request(`${GO_API_BASE}/admin/resources/${resource}/${key}`, { method: "DELETE" });
   },
 
   getCapabilities() {

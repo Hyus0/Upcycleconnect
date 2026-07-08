@@ -377,9 +377,8 @@ const showReportModal = ref(false);
 const reportMessageId = ref(null);
 const reportMotif = ref("");
 
-// État de ban de l'utilisateur
 const isBanned = ref(false);
-const isCheckingBan = ref(true); // Ajout pour empêcher le clignotement des boutons
+const isCheckingBan = ref(true);
 
 const checkBanStatus = async () => {
     if (!isAuthenticated.value) {
@@ -390,18 +389,15 @@ const checkBanStatus = async () => {
     try {
         const currentUserId = parseInt(sessionStorage.getItem("userId"), 10);
         
-        // ASTUCE: On utilise directement l'API des utilisateurs bannis
         const res = await fetch(`${API_URL}/api/moderation/users/banned`);
         if (res.ok) {
             const bannedUsers = await res.json() || [];
             
-            // On vérifie si l'ID de l'utilisateur actuel est dans la liste des bannis
             isBanned.value = bannedUsers.some(user => user.id === currentUserId);
         }
     } catch (error) {
         console.error("Erreur lors de la vérification du statut:", error);
     } finally {
-        // La vérification est terminée, on peut afficher ou cacher les boutons
         isCheckingBan.value = false;
     }
 };
@@ -437,7 +433,7 @@ const fetchForums = async () => {
 
 onMounted(() => {
     fetchForums();
-    checkBanStatus(); // Appel lors du chargement de la page
+    checkBanStatus(); 
 });
 
 function formatDate(dateString) {
@@ -547,7 +543,6 @@ function initialsFor(name) {
         .join("");
 }
 
-// Fonction de sécurité JS qui empêche l'action même si l'interface est forcée
 function requireAuth() {
     if (isAuthenticated.value) {
         if (isBanned.value) {

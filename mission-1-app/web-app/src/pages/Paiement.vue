@@ -176,11 +176,10 @@ const currentUserId = computed(
     () => Number(sessionStorage.getItem("id") || sessionStorage.getItem("userId")) || 0
 );
 
-// ─── PAYMENT MODE ──────────────────────────────────────────────────────────────
 const paymentMode = computed(() => {
     if (route.query.plan_id) return "subscription";
     if (route.query.annonce_id) return "annonce";
-    if (route.query.projet_id) return "projet"; // AJOUT DU PROJET
+    if (route.query.projet_id) return "projet";
     if (route.query.source === "panier") return "panier";
     return null;
 });

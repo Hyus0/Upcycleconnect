@@ -77,7 +77,7 @@ func Checkout(userID int, stripePaymentID string) (*CheckoutResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback() 
+	defer tx.Rollback()
 
 	rows, err := tx.Query("SELECT id, type_item, reference_id, prix_unitaire FROM PANIER_ITEM WHERE id_utilisateur = ?", userID)
 	if err != nil {
@@ -126,7 +126,14 @@ func Checkout(userID int, stripePaymentID string) (*CheckoutResult, error) {
 		}
 
 		if item.TypeItem == "Formation" {
-			_, err = tx.Exec("INSERT IGNORE INTO FORMATION_INSCRIPTION (id_utilisateur, id_formation) VALUES (?, ?)", userID, item.ReferenceID)
+			var sessionID int
+			errSession := tx.QueryRow("SELECT id FROM FORMATION_SESSION WHERE id_formation = ? AND statut = 'Ouvert' ORDER BY date_debut ASC LIMIT 1", item.ReferenceID).Scan(&sessionID)
+			
+			if errSession != nil {
+				return nil, fmt.Errorf("aucune session ouverte trouvée pour la formation %d", item.ReferenceID)
+			}
+
+			_, err = tx.Exec("INSERT IGNORE INTO FORMATION_INSCRIPTION (id_utilisateur, id_formation, id_session) VALUES (?, ?, ?)", userID, item.ReferenceID, sessionID)
 			if err != nil {
 				return nil, fmt.Errorf("erreur lors de l'inscription à la formation : %v", err)
 			}
@@ -180,8 +187,7 @@ func Checkout(userID int, stripePaymentID string) (*CheckoutResult, error) {
 	}
 	transactionID, _ := transactionRes.LastInsertId()
 
-	factureID, numeroFacture, err := CreateFactureForTransaction(tx, transactionID)
-
+	factureID, numeroFacture, err := CreateFactureForTransaction(tx, int(transactionID))
 	if err != nil {
 		return nil, err
 	}
@@ -196,9 +202,9 @@ func Checkout(userID int, stripePaymentID string) (*CheckoutResult, error) {
 	}
 
 	return &CheckoutResult{
-		CommandeID:    int(commandeID),    
-		TransactionID: int(transactionID), 
-		FactureID:     factureID,          	
+		CommandeID:    int(commandeID),
+		TransactionID: int(transactionID),
+		FactureID:     factureID,
 		NumeroFacture: numeroFacture,
 	}, nil
 }

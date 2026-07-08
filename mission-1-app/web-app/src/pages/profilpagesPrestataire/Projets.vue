@@ -101,7 +101,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const API_URL = "http://95.216.9.170:8081";
+const API_URL = "/go";
 const loading = ref(true);
 const projets = ref([]);
 

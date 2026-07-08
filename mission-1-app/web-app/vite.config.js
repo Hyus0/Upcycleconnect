@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       "/go": {
-        target: "http://95.216.9.170:8081",
+        target: "/go",
         rewrite: (path) => path.replace(/^\/go/, ""),
         changeOrigin: true,
       },

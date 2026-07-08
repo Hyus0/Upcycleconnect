@@ -140,7 +140,7 @@
                                         $router.push('/profil/recuperer-objet')
                                     "
                                 >
-                                    Simuler le retrait 🏃‍♂️
+                                    Simuler le retrait
                                 </button>
                             </td>
                         </tr>

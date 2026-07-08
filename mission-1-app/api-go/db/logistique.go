@@ -84,7 +84,7 @@ func DeposerObjet(codeBarreDepot string, siteID int) (string, error) {
 		return "", fmt.Errorf("token invalide ou mauvaise borne") 
 	}
 
-	tokenRetrait, err := generateSecureToken(100)
+	tokenRetrait, err := generateSecureToken(20)
 	if err != nil { return "", err }
 
 	tx, err := Conn.Begin()

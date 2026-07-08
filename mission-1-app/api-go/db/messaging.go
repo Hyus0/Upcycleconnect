@@ -463,9 +463,6 @@ func RespondDMOffer(userID int, offerID int, action string) (*models.DMOffer, *m
 		}
 		if offer.ProjetID != nil {
 			projetValue = *offer.ProjetID
-			_, _ = Conn.Exec("UPDATE PROJET_UPCYCLING SET statut = 'Reserve', id_acheteur = ? WHERE id = ?", offer.BuyerID, *offer.ProjetID)
-		} else if offer.AnnonceID != nil {
-			_, _ = Conn.Exec("UPDATE ANNONCE SET statut = 'Reserve' WHERE id = ?", *offer.AnnonceID)
 		}
 
 		res, err := Conn.Exec(`
